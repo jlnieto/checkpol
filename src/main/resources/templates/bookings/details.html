@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Detalle de estancia | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/styles.css}">
+</head>
+<body>
+<main class="shell">
+    <header class="page-header page-header-row">
+        <div>
+            <a class="back-link" th:href="@{/bookings}">Volver a estancias</a>
+            <h1 th:text="${details.booking.referenceCode}"></h1>
+            <p>
+                <span th:text="${details.booking.accommodation.name}"></span>
+                <span class="muted" th:text="${' · ' + details.booking.checkInDate + ' a ' + details.booking.checkOutDate}"></span>
+            </p>
+        </div>
+    </header>
+
+    <div class="flash" th:if="${flashMessage}" th:text="${flashMessage}"></div>
+
+    <section class="assistant-hero card">
+        <div class="assistant-hero-copy">
+            <p class="eyebrow">Siguiente paso</p>
+            <h2 th:if="${details.pendingReviewGuestCount > 0}" th:text="${details.pendingReviewGuestCount == 1 ? 'Revisa 1 huesped pendiente' : 'Revisa ' + details.pendingReviewGuestCount + ' huespedes pendientes'}"></h2>
+            <h2 th:if="${details.pendingReviewGuestCount == 0 and !details.readyForTravelerPart}">Completa los datos que faltan</h2>
+            <h2 th:if="${details.pendingReviewGuestCount == 0 and details.readyForTravelerPart}">Ya puedes sacar el archivo</h2>
+
+            <p th:if="${details.pendingReviewGuestCount > 0}">Antes de generar el archivo, revisa los datos enviados por enlace.</p>
+            <p th:if="${details.pendingReviewGuestCount == 0 and !details.readyForTravelerPart}">Todavia faltan datos minimos para dejar esta estancia lista.</p>
+            <p th:if="${details.pendingReviewGuestCount == 0 and details.readyForTravelerPart}">La estancia ya tiene lo minimo necesario para sacar el archivo.</p>
+        </div>
+        <div class="assistant-hero-actions">
+            <a class="button-link" th:if="${details.pendingReviewGuestCount > 0}" href="#guests">Revisar huespedes</a>
+            <a class="button-link" th:if="${details.pendingReviewGuestCount == 0 and !details.readyForTravelerPart}" th:href="@{|/bookings/${details.booking.id}/guests/new|}">Añadir huesped</a>
+            <a class="button-link" th:if="${details.pendingReviewGuestCount == 0 and details.readyForTravelerPart}" href="#confirmar-archivo">Ver resumen final</a>
+        </div>
+    </section>
+
+    <section class="detail-grid">
+        <article class="detail-card card">
+            <p class="eyebrow">Estado de la estancia</p>
+            <div class="detail-status-row">
+                <h2 th:text="${details.operationalStatus.label}"></h2>
+                <span class="status-pill"
+                      th:classappend="${details.readyForTravelerPart} ? ' status-ready' : ' status-pending'"
+                      th:text="${details.readyForTravelerPart ? 'Lista' : 'Pendiente'}"></span>
+            </div>
+            <div class="stay-meta-grid">
+                <div class="stay-meta">
+                    <span class="stay-card-label">Entrada</span>
+                    <strong th:text="${details.booking.checkInDate}"></strong>
+                </div>
+                <div class="stay-meta">
+                    <span class="stay-card-label">Salida</span>
+                    <strong th:text="${details.booking.checkOutDate}"></strong>
+                </div>
+                <div class="stay-meta">
+                    <span class="stay-card-label">Huespedes</span>
+                    <strong th:text="${#lists.size(details.guests)}"></strong>
+                </div>
+            </div>
+            <p class="muted" th:if="${details.lastGeneratedCommunication.present}"
+               th:text="${'Ultimo archivo generado: ' + #temporals.format(details.lastGeneratedCommunication.get.generatedAt, 'dd/MM/yyyy HH:mm')}"></p>
+            <div class="actions">
+                <a class="button-link button-link-secondary"
+                   th:href="@{|/bookings/${details.booking.id}/edit|}">Editar estancia</a>
+            </div>
+        </article>
+
+        <article class="detail-card card">
+            <h2>Enlace para rellenar datos</h2>
+            <p>Usa este enlace para que los huespedes rellenen sus datos. Lo que llegue por aqui quedara pendiente de revision.</p>
+            <div th:if="${details.selfServiceAccess.present}">
+                <p class="muted" th:text="${'Caduca: ' + #temporals.format(details.selfServiceAccess.get.expiresAt, 'dd/MM/yyyy HH:mm')}"></p>
+                <p><a th:href="@{|/guest-access/${details.selfServiceAccess.get.token}|}" target="_blank">Abrir enlace publico</a></p>
+            </div>
+            <div class="actions">
+                <form th:action="@{|/bookings/${details.booking.id}/self-service-link|}" method="post">
+                    <button type="submit" class="button-link">Generar o renovar enlace</button>
+                </form>
+                <form th:if="${details.selfServiceAccess.present}" th:action="@{|/bookings/${details.booking.id}/self-service-link/revoke|}" method="post">
+                    <button type="submit" class="button-link button-link-secondary">Desactivar enlace</button>
+                </form>
+            </div>
+        </article>
+    </section>
+
+    <section id="confirmar-archivo" class="card" th:if="${details.readyForTravelerPart}">
+        <p class="eyebrow">Antes de descargar</p>
+        <h2>Resumen final</h2>
+        <p>Comprueba estos datos. Si todo esta bien, pulsa el boton y se guardara una nueva version del archivo.</p>
+
+        <div class="stay-meta-grid">
+            <div class="stay-meta">
+                <span class="stay-card-label">Vivienda</span>
+                <strong th:text="${details.booking.accommodation.name}"></strong>
+            </div>
+            <div class="stay-meta">
+                <span class="stay-card-label">Fechas</span>
+                <strong th:text="${details.booking.checkInDate + ' a ' + details.booking.checkOutDate}"></strong>
+            </div>
+            <div class="stay-meta">
+                <span class="stay-card-label">Personas</span>
+                <strong th:text="${#lists.size(details.guests)}"></strong>
+            </div>
+        </div>
+
+        <div class="helper-box">
+            <p>La vivienda tiene su codigo SES.</p>
+            <p>La estancia tiene fecha y pago informados.</p>
+            <p th:text="${details.pendingReviewGuestCount == 0 ? 'No quedan personas pendientes de revisar.' : 'Todavia quedan personas pendientes de revisar.'}"></p>
+        </div>
+
+        <div class="actions">
+            <a class="button-link" th:href="@{|/bookings/${details.booking.id}/traveler-part.xml|}">Descargar archivo para SES</a>
+        </div>
+    </section>
+
+    <section id="guests" class="card" th:if="${#lists.isEmpty(details.guests)}">
+        <h2>No hay huespedes todavia</h2>
+        <p>Añade la primera persona para empezar a completar los datos.</p>
+        <div class="actions">
+            <a class="button-link" th:href="@{|/bookings/${details.booking.id}/guests/new|}">Añadir huesped</a>
+        </div>
+    </section>
+
+    <section id="guests" class="card" th:unless="${#lists.isEmpty(details.guests)}">
+        <div class="section-header-row">
+            <div>
+                <h2>Huespedes</h2>
+                <p class="muted">Pulsa en cada tarjeta para revisar o cambiar los datos.</p>
+            </div>
+            <a class="button-link" th:href="@{|/bookings/${details.booking.id}/guests/new|}">Añadir huesped</a>
+        </div>
+
+        <div class="guest-card-list">
+            <article class="guest-card" th:each="guest : ${details.guests}">
+                <div class="guest-card-top">
+                    <div>
+                        <h3 th:text="${guest.displayName}"></h3>
+                        <p class="muted" th:text="${guest.documentType != null && guest.documentNumber != null ? guest.documentType + ' · ' + guest.documentNumber : 'Sin documento informado'}"></p>
+                    </div>
+                    <span class="status-pill"
+                          th:classappend="${guest.reviewStatus.name() == 'REVIEWED' and guest.hasMinimumDataForTravelerPart()} ? ' status-ready' : ' status-pending'"
+                          th:text="${guest.reviewStatus.name() == 'REVIEWED' and guest.hasMinimumDataForTravelerPart()} ? 'Revisado' : guest.reviewStatus.label}"></span>
+                </div>
+
+                <div class="stay-meta-grid">
+                    <div class="stay-meta">
+                        <span class="stay-card-label">Nacimiento</span>
+                        <strong th:text="${guest.birthDate}"></strong>
+                    </div>
+                    <div class="stay-meta">
+                        <span class="stay-card-label">Origen</span>
+                        <strong th:text="${guest.submissionSource.label}"></strong>
+                    </div>
+                    <div class="stay-meta">
+                        <span class="stay-card-label">Contacto</span>
+                        <strong th:text="${guest.phone != null && !guest.phone.isBlank() ? guest.phone : (guest.email != null && !guest.email.isBlank() ? guest.email : 'Sin contacto')}"></strong>
+                    </div>
+                </div>
+
+                <p class="muted" th:text="${guest.addressLine + ' · ' + guest.country + ' · ' + guest.postalCode}"></p>
+                <p class="muted" th:if="${guest.submittedAt != null}"
+                   th:text="${'Enviado: ' + #temporals.format(guest.submittedAt, 'dd/MM/yyyy HH:mm')}"></p>
+
+                <div class="actions">
+                    <a class="button-link button-link-secondary" th:href="@{|/bookings/${details.booking.id}/guests/${guest.id}/edit|}">Editar datos</a>
+                    <form th:if="${guest.reviewStatus.name() == 'PENDING_REVIEW'}"
+                          th:action="@{|/bookings/${details.booking.id}/guests/${guest.id}/review|}" method="post">
+                        <button type="submit" class="button-link">Marcar revisado</button>
+                    </form>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="card" th:if="${details.generatedCommunicationCount > 0}">
+        <h2>Archivos guardados</h2>
+        <div class="generated-file-list">
+            <article class="generated-file-card" th:each="communication : ${details.generatedCommunications}">
+                <div class="guest-card-top">
+                    <div>
+                        <h3 th:text="${communication.version == details.generatedCommunicationCount ? 'Archivo actual v' + communication.version : 'Archivo v' + communication.version}"></h3>
+                        <p class="muted" th:text="${#temporals.format(communication.generatedAt, 'dd/MM/yyyy HH:mm')}"></p>
+                    </div>
+                    <span class="status-pill status-ready" th:text="${communication.downloadCount + ' descargas'}"></span>
+                </div>
+                <p class="muted" th:if="${communication.lastDownloadedAt != null}"
+                   th:text="${'Ultima descarga: ' + #temporals.format(communication.lastDownloadedAt, 'dd/MM/yyyy HH:mm')}"></p>
+                <div class="actions">
+                    <a class="button-link button-link-secondary" th:href="@{|/bookings/${details.booking.id}/communications/${communication.id}.xml|}">
+                        Descargar este archivo
+                    </a>
+                </div>
+            </article>
+        </div>
+    </section>
+</main>
+</body>
+</html>

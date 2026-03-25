@@ -1,0 +1,6 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/checkpol}
+    username: ${SPRING_DATASOURCE_USERNAME:checkpol_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:checkpol_dev_password}
+    driver-class-name: org.postgresql.Driver

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Completar datos de huesped | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/styles.css}">
+    <script th:src="@{/wizard-form.js}" defer></script>
+</head>
+<body>
+<main class="shell shell-narrow">
+    <header class="page-header">
+        <p class="eyebrow">Formulario del huesped</p>
+        <h1>Completa tus datos</h1>
+        <p th:text="${'Estancia ' + access.booking.referenceCode + ' · ' + access.booking.accommodation.name}"></p>
+        <p class="muted" th:text="${'Personas dadas de alta en esta estancia: ' + access.guestCount}"></p>
+        <p class="muted">Cuando termines, el gestor revisara los datos antes de sacar el archivo.</p>
+    </header>
+
+    <div class="flash" th:if="${flashMessage}" th:text="${flashMessage}"></div>
+
+    <section class="card">
+        <div th:if="${!#lists.isEmpty(access.guests)}" class="card subtle-card">
+            <h2>Datos ya enviados desde este enlace</h2>
+            <div class="inline-list" th:each="guest : ${access.guests}">
+                <span th:text="${guest.displayName}"></span>
+                <a th:href="@{|/guest-access/${access.booking.selfServiceToken}/guests/${guest.id}/edit|}">Editar</a>
+            </div>
+        </div>
+
+        <form th:action="${publicEditGuestId != null} ? @{|/guest-access/${access.booking.selfServiceToken}/guests/${publicEditGuestId}|} : @{|/guest-access/${access.booking.selfServiceToken}|}"
+              th:object="${guestForm}" method="post" class="form-grid" data-wizard-form>
+            <div class="error-box" th:if="${#fields.hasGlobalErrors()}">
+                <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+            </div>
+
+            <div class="wizard-shell">
+                <div class="wizard-header">
+                    <div>
+                        <p class="eyebrow">Formulario guiado</p>
+                        <h2>Vamos poco a poco</h2>
+                    </div>
+                    <span class="wizard-progress" data-step-progress>Paso 1 de 4</span>
+                </div>
+
+                <div class="wizard-stepper">
+                    <div class="wizard-step wizard-step-active" data-step-indicator>
+                        <span>Paso 1</span>
+                        <strong>Persona</strong>
+                    </div>
+                    <div class="wizard-step" data-step-indicator>
+                        <span>Paso 2</span>
+                        <strong>Documento</strong>
+                    </div>
+                    <div class="wizard-step" data-step-indicator>
+                        <span>Paso 3</span>
+                        <strong>Direccion</strong>
+                    </div>
+                    <div class="wizard-step" data-step-indicator>
+                        <span>Paso 4</span>
+                        <strong>Contacto</strong>
+                    </div>
+                </div>
+
+                <section class="wizard-panel" data-step-panel>
+                    <div>
+                        <h2>Datos personales</h2>
+                        <p>Escribe el nombre tal como aparece en el documento.</p>
+                    </div>
+
+                    <div class="grid-two">
+                        <label>
+                            <span>Nombre</span>
+                            <input th:field="*{firstName}" type="text">
+                            <small class="error" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></small>
+                        </label>
+                        <label>
+                            <span>Primer apellido</span>
+                            <input th:field="*{lastName1}" type="text">
+                            <small class="error" th:if="${#fields.hasErrors('lastName1')}" th:errors="*{lastName1}"></small>
+                        </label>
+                    </div>
+
+                    <label>
+                        <span>Segundo apellido</span>
+                        <input th:field="*{lastName2}" type="text">
+                        <small class="error" th:if="${#fields.hasErrors('lastName2')}" th:errors="*{lastName2}"></small>
+                    </label>
+
+                    <div class="grid-two">
+                        <label>
+                            <span>Fecha de nacimiento</span>
+                            <input th:field="*{birthDate}" type="date">
+                            <small class="error" th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></small>
+                        </label>
+                        <label>
+                            <span>Nacionalidad</span>
+                            <input th:field="*{nationality}" type="text" maxlength="3">
+                            <small>Escribe 3 letras. Ejemplo: ESP.</small>
+                            <small class="error" th:if="${#fields.hasErrors('nationality')}" th:errors="*{nationality}"></small>
+                        </label>
+                    </div>
+
+                    <div class="wizard-actions">
+                        <button type="button" data-step-next>Seguir</button>
+                    </div>
+                </section>
+
+                <section class="wizard-panel" data-step-panel hidden>
+                    <div>
+                        <h2>Documento</h2>
+                        <p>Si tienes el documento a mano, añádelo ahora. Si no, continua con lo que sepas.</p>
+                    </div>
+
+                    <div class="grid-two">
+                        <label>
+                            <span>Tipo de documento</span>
+                            <select th:field="*{documentType}">
+                                <option value="">No informado</option>
+                                <option th:each="documentType : ${documentTypes}" th:value="${documentType}" th:text="${documentType.label}"></option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>Numero de documento</span>
+                            <input th:field="*{documentNumber}" type="text">
+                            <small class="error" th:if="${#fields.hasErrors('documentNumber')}" th:errors="*{documentNumber}"></small>
+                        </label>
+                    </div>
+
+                    <div class="grid-two">
+                        <label>
+                            <span>Soporte del documento</span>
+                            <input th:field="*{documentSupport}" type="text">
+                            <small class="error" th:if="${#fields.hasErrors('documentSupport')}" th:errors="*{documentSupport}"></small>
+                        </label>
+                        <label>
+                            <span>Sexo</span>
+                            <select th:field="*{sex}">
+                                <option value="">No informado</option>
+                                <option th:each="sex : ${sexes}" th:value="${sex}" th:text="${sex.label}"></option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <label>
+                        <span>Parentesco</span>
+                        <input th:field="*{relationship}" type="text">
+                        <small>Solo si es menor de edad.</small>
+                    </label>
+
+                    <div class="wizard-actions">
+                        <button type="button" class="button-ghost" data-step-prev>Volver</button>
+                        <button type="button" data-step-next>Seguir</button>
+                    </div>
+                </section>
+
+                <section class="wizard-panel" data-step-panel hidden>
+                    <div>
+                        <h2>Direccion</h2>
+                        <p>Escribe la direccion principal y, si la sabes, el municipio.</p>
+                    </div>
+
+                    <label>
+                        <span>Direccion</span>
+                        <input th:field="*{addressLine}" type="text">
+                        <small class="error" th:if="${#fields.hasErrors('addressLine')}" th:errors="*{addressLine}"></small>
+                    </label>
+
+                    <div class="grid-two">
+                        <label>
+                            <span>Codigo del municipio</span>
+                            <input th:field="*{municipalityCode}" type="text">
+                        </label>
+                        <label>
+                            <span>Nombre de municipio</span>
+                            <input th:field="*{municipalityName}" type="text">
+                        </label>
+                    </div>
+
+                    <div class="grid-two">
+                        <label>
+                            <span>Codigo postal</span>
+                            <input th:field="*{postalCode}" type="text">
+                            <small class="error" th:if="${#fields.hasErrors('postalCode')}" th:errors="*{postalCode}"></small>
+                        </label>
+                        <label>
+                            <span>Pais</span>
+                            <input th:field="*{country}" type="text" maxlength="3">
+                            <small class="error" th:if="${#fields.hasErrors('country')}" th:errors="*{country}"></small>
+                        </label>
+                    </div>
+
+                    <div class="wizard-actions">
+                        <button type="button" class="button-ghost" data-step-prev>Volver</button>
+                        <button type="button" data-step-next>Seguir</button>
+                    </div>
+                </section>
+
+                <section class="wizard-panel" data-step-panel hidden>
+                    <div>
+                        <h2>Contacto</h2>
+                        <p>Indica al menos un telefono o un correo para que el gestor pueda revisar los datos.</p>
+                    </div>
+
+                    <div class="grid-two">
+                        <label>
+                            <span>Telefono</span>
+                            <input th:field="*{phone}" type="text">
+                        </label>
+                        <label>
+                            <span>Correo</span>
+                            <input th:field="*{email}" type="email">
+                            <small class="error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></small>
+                        </label>
+                    </div>
+
+                    <div class="wizard-actions">
+                        <button type="button" class="button-ghost" data-step-prev>Volver</button>
+                        <button type="submit" th:text="${publicEditGuestId != null ? 'Guardar cambios' : 'Enviar datos'}">Enviar datos</button>
+                    </div>
+                </section>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,6 @@
+TYPE="docker-compose"
+DISPLAY_NAME="Checkpol"
+REPO_DIR="/home/jose/IdeaProjects/checkpol"
+COMPOSE_FILE="/home/jose/IdeaProjects/checkpol/docker-compose.yml"
+COMPOSE_PROJECT_NAME="checkpol"
+START_URL="http://localhost:8082/"

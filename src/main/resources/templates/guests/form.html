@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nuevo huesped | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/styles.css}">
+    <script th:src="@{/wizard-form.js}" defer></script>
+</head>
+<body>
+<main class="shell shell-narrow">
+    <header class="page-header">
+        <a class="back-link" th:href="@{|/bookings/${details.booking.id}|}">Volver a la estancia</a>
+        <h1 th:text="${formTitle}">Nuevo huesped</h1>
+        <p>Rellena los datos poco a poco.</p>
+    </header>
+
+    <section class="card">
+        <form th:action="${formAction}" th:object="${guestForm}" method="post" class="form-grid" data-wizard-form>
+            <div class="error-box" th:if="${#fields.hasGlobalErrors()}">
+                <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+            </div>
+
+            <div class="wizard-shell">
+                <div class="wizard-header">
+                    <div>
+                        <p class="eyebrow">Formulario guiado</p>
+                        <h2>Vamos paso a paso</h2>
+                    </div>
+                    <span class="wizard-progress" data-step-progress>Paso 1 de 4</span>
+                </div>
+
+                <div class="wizard-stepper">
+                    <div class="wizard-step wizard-step-active" data-step-indicator>
+                        <span>Paso 1</span>
+                        <strong>Persona</strong>
+                    </div>
+                    <div class="wizard-step" data-step-indicator>
+                        <span>Paso 2</span>
+                        <strong>Documento</strong>
+                    </div>
+                    <div class="wizard-step" data-step-indicator>
+                        <span>Paso 3</span>
+                        <strong>Direccion</strong>
+                    </div>
+                    <div class="wizard-step" data-step-indicator>
+                        <span>Paso 4</span>
+                        <strong>Contacto</strong>
+                    </div>
+                </div>
+
+                <section class="wizard-panel" data-step-panel>
+                    <div>
+                        <h2>Datos personales</h2>
+                        <p>Empieza escribiendo el nombre tal como aparece en el documento del huesped.</p>
+                    </div>
+
+                    <div class="grid-two">
+                        <label>
+                            <span>Nombre</span>
+                            <input th:field="*{firstName}" type="text" autocomplete="off">
+                            <small class="error" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></small>
+                        </label>
+
+                        <label>
+                            <span>Primer apellido</span>
+                            <input th:field="*{lastName1}" type="text" autocomplete="off">
+                            <small class="error" th:if="${#fields.hasErrors('lastName1')}" th:errors="*{lastName1}"></small>
+                        </label>
+                    </div>
+
+                    <label>
+                        <span>Segundo apellido</span>
+                        <input th:field="*{lastName2}" type="text" autocomplete="off">
+                        <small class="error" th:if="${#fields.hasErrors('lastName2')}" th:errors="*{lastName2}"></small>
+                    </label>
+
+                    <div class="grid-two">
+                        <label>
+                            <span>Fecha de nacimiento</span>
+                            <input th:field="*{birthDate}" type="date">
+                            <small class="error" th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></small>
+                        </label>
+
+                        <label>
+                            <span>Pais</span>
+                            <input th:field="*{country}" type="text" maxlength="3" autocomplete="off">
+                            <small>Escribe 3 letras. Ejemplo: ESP.</small>
+                            <small class="error" th:if="${#fields.hasErrors('country')}" th:errors="*{country}"></small>
+                        </label>
+                    </div>
+
+                    <div class="wizard-actions">
+                        <a class="button-ghost" th:href="@{|/bookings/${details.booking.id}|}">Volver</a>
+                        <button type="button" data-step-next>Seguir</button>
+                    </div>
+                </section>
+
+                <section class="wizard-panel" data-step-panel hidden>
+                    <div>
+                        <h2>Documento</h2>
+                        <p>Ahora añade el documento. Si no lo tienes a mano, deja lo que no sepas y revisalo despues.</p>
+                    </div>
+
+                    <div class="grid-two">
+                        <label>
+                            <span>Tipo de documento</span>
+                            <select th:field="*{documentType}">
+                                <option value="">No informado</option>
+                                <option th:each="documentType : ${documentTypes}" th:value="${documentType}" th:text="${documentType.label}"></option>
+                            </select>
+                        </label>
+
+                        <label>
+                            <span>Sexo</span>
+                            <select th:field="*{sex}">
+                                <option value="">No informado</option>
+                                <option th:each="sex : ${sexes}" th:value="${sex}" th:text="${sex.label}"></option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <div class="grid-two">
+                        <label>
+                            <span>Numero de documento</span>
+                            <input th:field="*{documentNumber}" type="text" autocomplete="off">
+                            <small class="error" th:if="${#fields.hasErrors('documentNumber')}" th:errors="*{documentNumber}"></small>
+                        </label>
+
+                        <label>
+                            <span>Soporte del documento</span>
+                            <input th:field="*{documentSupport}" type="text" autocomplete="off">
+                            <small class="error" th:if="${#fields.hasErrors('documentSupport')}" th:errors="*{documentSupport}"></small>
+                        </label>
+                    </div>
+
+                    <div class="grid-two">
+                        <label>
+                            <span>Nacionalidad</span>
+                            <input th:field="*{nationality}" type="text" maxlength="3" autocomplete="off">
+                            <small class="error" th:if="${#fields.hasErrors('nationality')}" th:errors="*{nationality}"></small>
+                        </label>
+
+                        <label>
+                            <span>Parentesco</span>
+                            <input th:field="*{relationship}" type="text" maxlength="5" autocomplete="off">
+                            <small>Solo si es menor de edad.</small>
+                            <small class="error" th:if="${#fields.hasErrors('relationship')}" th:errors="*{relationship}"></small>
+                        </label>
+                    </div>
+
+                    <div class="wizard-actions">
+                        <button type="button" class="button-ghost" data-step-prev>Volver</button>
+                        <button type="button" data-step-next>Seguir</button>
+                    </div>
+                </section>
+
+                <section class="wizard-panel" data-step-panel hidden>
+                    <div>
+                        <h2>Direccion</h2>
+                        <p>Escribe la direccion principal del huesped y, si la sabes, el municipio.</p>
+                    </div>
+
+                    <label>
+                        <span>Direccion</span>
+                        <input th:field="*{addressLine}" type="text" autocomplete="off">
+                        <small class="error" th:if="${#fields.hasErrors('addressLine')}" th:errors="*{addressLine}"></small>
+                    </label>
+
+                    <label>
+                        <span>Direccion complementaria</span>
+                        <input th:field="*{addressComplement}" type="text" autocomplete="off">
+                        <small class="error" th:if="${#fields.hasErrors('addressComplement')}" th:errors="*{addressComplement}"></small>
+                    </label>
+
+                    <div class="grid-two">
+                        <label>
+                            <span>Codigo del municipio</span>
+                            <input th:field="*{municipalityCode}" type="text" autocomplete="off">
+                            <small>Si el pais es ESP, suele ser lo preferente.</small>
+                            <small class="error" th:if="${#fields.hasErrors('municipalityCode')}" th:errors="*{municipalityCode}"></small>
+                        </label>
+
+                        <label>
+                            <span>Nombre de municipio</span>
+                            <input th:field="*{municipalityName}" type="text" autocomplete="off">
+                            <small class="error" th:if="${#fields.hasErrors('municipalityName')}" th:errors="*{municipalityName}"></small>
+                        </label>
+                    </div>
+
+                    <label>
+                        <span>Codigo postal</span>
+                        <input th:field="*{postalCode}" type="text" autocomplete="off">
+                        <small class="error" th:if="${#fields.hasErrors('postalCode')}" th:errors="*{postalCode}"></small>
+                    </label>
+
+                    <div class="wizard-actions">
+                        <button type="button" class="button-ghost" data-step-prev>Volver</button>
+                        <button type="button" data-step-next>Seguir</button>
+                    </div>
+                </section>
+
+                <section class="wizard-panel" data-step-panel hidden>
+                    <div>
+                        <h2>Contacto</h2>
+                        <p>Indica al menos un telefono o un correo para dejar el parte completo.</p>
+                    </div>
+
+                    <div class="grid-two">
+                        <label>
+                            <span>Telefono</span>
+                            <input th:field="*{phone}" type="text" autocomplete="off">
+                            <small class="error" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></small>
+                        </label>
+
+                        <label>
+                            <span>Telefono 2</span>
+                            <input th:field="*{phone2}" type="text" autocomplete="off">
+                            <small class="error" th:if="${#fields.hasErrors('phone2')}" th:errors="*{phone2}"></small>
+                        </label>
+                    </div>
+
+                    <label>
+                        <span>Correo</span>
+                        <input th:field="*{email}" type="email" autocomplete="off">
+                        <small>Debes informar al menos un telefono o un correo.</small>
+                        <small class="error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></small>
+                    </label>
+
+                    <div class="wizard-actions">
+                        <button type="button" class="button-ghost" data-step-prev>Volver</button>
+                        <button type="submit" th:text="${submitLabel}">Guardar huesped</button>
+                    </div>
+                </section>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>

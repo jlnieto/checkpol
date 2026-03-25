@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nueva vivienda | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/styles.css}">
+</head>
+<body>
+<main class="shell shell-narrow">
+    <header class="page-header">
+        <a class="back-link" th:href="@{/bookings}">Volver a estancias</a>
+        <h1 th:text="${formTitle}">Nueva vivienda</h1>
+        <p>Guarda solo los datos necesarios para empezar a trabajar.</p>
+    </header>
+
+    <section class="card">
+        <form th:action="${formAction}" th:object="${accommodationForm}" method="post" class="form-grid">
+            <label>
+                <span>Nombre de la vivienda</span>
+                <input th:field="*{name}" type="text" autocomplete="off">
+                <small class="error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></small>
+            </label>
+
+            <label>
+                <span>Codigo SES de la vivienda</span>
+                <input th:field="*{sesEstablishmentCode}" type="text" autocomplete="off">
+                <small>Es el codigo que despues ira en el archivo.</small>
+                <small class="error" th:if="${#fields.hasErrors('sesEstablishmentCode')}" th:errors="*{sesEstablishmentCode}"></small>
+            </label>
+
+            <label>
+                <span>Numero de registro</span>
+                <input th:field="*{registrationNumber}" type="text" autocomplete="off">
+                <small>Opcional por ahora. Sirve para identificar mejor la vivienda.</small>
+                <small class="error" th:if="${#fields.hasErrors('registrationNumber')}" th:errors="*{registrationNumber}"></small>
+            </label>
+
+            <div class="actions">
+                <button type="submit" th:text="${submitLabel}">Guardar vivienda</button>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>
