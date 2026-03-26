@@ -3,7 +3,6 @@ package es.checkpol.web;
 import es.checkpol.service.AccommodationService;
 import es.checkpol.service.BookingFilter;
 import es.checkpol.service.BookingService;
-import es.checkpol.domain.PaymentType;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import java.util.Objects;
 
 @Controller
 public class BookingController {
@@ -32,14 +32,24 @@ public class BookingController {
     public String list(@RequestParam(name = "filter", required = false) String filter, Model model) {
         BookingFilter selectedFilter = BookingFilter.fromParam(filter);
         List<es.checkpol.service.BookingListItem> allItems = bookingService.findAll();
-        model.addAttribute("bookings", bookingService.findAll(selectedFilter));
+        List<es.checkpol.service.BookingListItem> incompleteItems = bookingService.findAll(BookingFilter.INCOMPLETE);
+        List<es.checkpol.service.BookingListItem> readyItems = bookingService.findAll(BookingFilter.READY);
+        List<es.checkpol.service.BookingListItem> todayItems = bookingService.findAll(BookingFilter.TODAY);
+        List<es.checkpol.service.BookingListItem> upcomingItems = bookingService.findAll(BookingFilter.UPCOMING);
+
+        model.addAttribute("bookings", switch (selectedFilter) {
+            case ALL -> allItems;
+            case INCOMPLETE -> incompleteItems;
+            case READY -> readyItems;
+            case TODAY -> todayItems;
+            case UPCOMING -> upcomingItems;
+        });
         model.addAttribute("selectedFilter", selectedFilter.name());
         model.addAttribute("countAll", allItems.size());
-        model.addAttribute("countIncomplete", allItems.stream().filter(item -> !item.readyForTravelerPart()).count());
-        model.addAttribute("countReady", allItems.stream().filter(es.checkpol.service.BookingListItem::readyForTravelerPart).count());
-        java.time.LocalDate today = java.time.LocalDate.now();
-        model.addAttribute("countToday", allItems.stream().filter(item -> item.booking().getCheckInDate().isEqual(today)).count());
-        model.addAttribute("countUpcoming", allItems.stream().filter(item -> item.booking().getCheckInDate().isAfter(today)).count());
+        model.addAttribute("countIncomplete", incompleteItems.size());
+        model.addAttribute("countReady", readyItems.size());
+        model.addAttribute("countToday", todayItems.size());
+        model.addAttribute("countUpcoming", upcomingItems.size());
         return "bookings/list";
     }
 
@@ -99,13 +109,36 @@ public class BookingController {
     }
 
     private String populateForm(Model model, BookingForm form, String action, String title, String submitLabel) {
-        model.addAttribute("bookingForm", form);
-        model.addAttribute("accommodations", accommodationService.findAll());
-        model.addAttribute("channels", es.checkpol.domain.BookingChannel.values());
-        model.addAttribute("paymentTypes", PaymentType.values());
+        List<es.checkpol.domain.Accommodation> accommodations = accommodationService.findAll();
+        model.addAttribute("bookingForm", selectAccommodationIfOnlyOption(form, accommodations));
+        model.addAttribute("accommodations", accommodations);
         model.addAttribute("formAction", action);
         model.addAttribute("formTitle", title);
         model.addAttribute("submitLabel", submitLabel);
         return "bookings/form";
+    }
+
+    private BookingForm selectAccommodationIfOnlyOption(BookingForm form, List<es.checkpol.domain.Accommodation> accommodations) {
+        if (form.accommodationId() != null) {
+            return form;
+        }
+
+        List<Long> selectableAccommodationIds = accommodations.stream()
+            .map(es.checkpol.domain.Accommodation::getId)
+            .filter(Objects::nonNull)
+            .toList();
+
+        if (selectableAccommodationIds.size() != 1) {
+            return form;
+        }
+
+        return new BookingForm(
+            selectableAccommodationIds.getFirst(),
+            form.referenceCode(),
+            form.personCount(),
+            form.contractDate(),
+            form.checkInDate(),
+            form.checkOutDate()
+        );
     }
 }

@@ -2,9 +2,14 @@ package es.checkpol.service;
 
 import es.checkpol.domain.Accommodation;
 import es.checkpol.domain.Booking;
-import es.checkpol.domain.Guest;
+import es.checkpol.domain.BookingChannel;
 import es.checkpol.domain.DocumentType;
 import es.checkpol.domain.GeneratedCommunication;
+import es.checkpol.domain.Guest;
+import es.checkpol.domain.GuestRelationship;
+import es.checkpol.domain.GuestReviewStatus;
+import es.checkpol.domain.MunicipalityResolutionStatus;
+import es.checkpol.domain.PaymentType;
 import es.checkpol.repository.AccommodationRepository;
 import es.checkpol.repository.BookingRepository;
 import es.checkpol.repository.GeneratedCommunicationRepository;
@@ -21,7 +26,9 @@ import java.util.regex.Pattern;
 @Service
 public class BookingService {
 
-    private static final Pattern CARD_EXPIRY_PATTERN = Pattern.compile("^(0[1-9]|1[0-2])/\\d{4}$");
+    private static final Pattern ISO3_PATTERN = Pattern.compile("^[A-Za-z]{3}$");
+    private static final Pattern NIF_PATTERN = Pattern.compile("^\\d{8}[A-Za-z]$");
+    private static final Pattern NIE_PATTERN = Pattern.compile("^[XYZxyz]\\d{7}[A-Za-z]$");
 
     private final BookingRepository bookingRepository;
     private final AccommodationRepository accommodationRepository;
@@ -46,11 +53,16 @@ public class BookingService {
         for (Booking booking : bookingRepository.findAllForList()) {
             List<Guest> guests = guestRepository.findAllByBookingIdOrderByIdAsc(booking.getId());
             int generatedCount = generatedCommunicationRepository.findAllByBookingIdOrderByGeneratedAtDesc(booking.getId()).size();
+            ReadinessAssessment assessment = assessReadiness(booking, guests);
             items.add(new BookingListItem(
                 booking,
                 guests.size(),
-                isReadyForTravelerPart(guests),
-                calculateOperationalStatus(guests, generatedCount)
+                booking.getPersonCount() == null ? 0 : booking.getPersonCount(),
+                assessment.readyForTravelerPart(),
+                calculateOperationalStatus(assessment, generatedCount),
+                assessment.pendingReviewGuestCount(),
+                assessment.guestCountMismatch(),
+                assessment.blockingSummary()
             ));
         }
         return items;
@@ -73,15 +85,16 @@ public class BookingService {
         Booking booking = new Booking(
             accommodation,
             form.referenceCode().trim(),
+            form.personCount(),
             form.contractDate(),
-            form.channel(),
+            BookingChannel.AIRBNB,
             form.checkInDate(),
             form.checkOutDate(),
-            form.paymentType(),
-            form.paymentDate(),
-            normalize(form.paymentMethod()),
-            normalize(form.paymentHolder()),
-            normalize(form.cardExpiry())
+            PaymentType.PLATF,
+            null,
+            "Airbnb",
+            null,
+            null
         );
         return bookingRepository.save(booking);
     }
@@ -92,16 +105,11 @@ public class BookingService {
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa estancia."));
         return new BookingForm(
             booking.getAccommodation().getId(),
-            booking.getChannel(),
             booking.getReferenceCode(),
+            booking.getPersonCount(),
             booking.getContractDate(),
             booking.getCheckInDate(),
-            booking.getCheckOutDate(),
-            booking.getPaymentType(),
-            booking.getPaymentDate(),
-            booking.getPaymentMethod() == null ? "" : booking.getPaymentMethod(),
-            booking.getPaymentHolder() == null ? "" : booking.getPaymentHolder(),
-            booking.getCardExpiry() == null ? "" : booking.getCardExpiry()
+            booking.getCheckOutDate()
         );
     }
 
@@ -115,15 +123,16 @@ public class BookingService {
         booking.update(
             accommodation,
             form.referenceCode().trim(),
+            form.personCount(),
             form.contractDate(),
-            form.channel(),
+            BookingChannel.AIRBNB,
             form.checkInDate(),
             form.checkOutDate(),
-            form.paymentType(),
-            form.paymentDate(),
-            normalize(form.paymentMethod()),
-            normalize(form.paymentHolder()),
-            normalize(form.cardExpiry())
+            PaymentType.PLATF,
+            null,
+            "Airbnb",
+            null,
+            null
         );
         return booking;
     }
@@ -134,18 +143,30 @@ public class BookingService {
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa estancia."));
         List<Guest> guests = guestRepository.findAllByBookingIdOrderByIdAsc(id);
         List<GeneratedCommunication> communications = generatedCommunicationRepository.findAllByBookingIdOrderByGeneratedAtDesc(id);
+        ReadinessAssessment assessment = assessReadiness(booking, guests);
         return new BookingDetails(
             booking,
             guests,
-            isReadyForTravelerPart(guests),
+            guests.size(),
+            booking.getPersonCount() == null ? 0 : booking.getPersonCount(),
+            assessment.guestCountMismatch(),
+            assessment.readyForTravelerPart(),
             communications.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(communications.getFirst()),
             communications.size(),
             communications,
             booking.getSelfServiceToken() == null || booking.getSelfServiceExpiresAt() == null
                 ? java.util.Optional.empty()
                 : java.util.Optional.of(new SelfServiceAccess(booking.getSelfServiceToken(), booking.getSelfServiceExpiresAt())),
-            calculateOperationalStatus(guests, communications.size()),
-            guests.stream().filter(guest -> guest.getReviewStatus() == es.checkpol.domain.GuestReviewStatus.PENDING_REVIEW).count()
+            calculateOperationalStatus(assessment, communications.size()),
+            assessment.pendingReviewGuestCount(),
+            guests.stream().filter(guest -> guest.getSubmissionSource() == es.checkpol.domain.GuestSubmissionSource.SELF_SERVICE).count(),
+            assessment.blockedByBookingData(),
+            assessment.blockedByGuestData(),
+            assessment.blockedByPendingReview(),
+            assessment.blockedByAddressExport(),
+            assessment.blockingSummary(),
+            assessment.blockingMessage(),
+            assessment.blockingReasons()
         );
     }
 
@@ -162,50 +183,29 @@ public class BookingService {
         if (form.checkOutDate().isAfter(LocalDate.now().plusYears(5))) {
             throw new IllegalArgumentException("La fecha de salida no puede ir mas alla de cinco anos desde hoy.");
         }
-        if (form.paymentType() == es.checkpol.domain.PaymentType.TARJT && isBlank(form.cardExpiry())) {
-            throw new IllegalArgumentException("Si pagas con tarjeta, indica tambien la caducidad.");
-        }
-        if (!isBlank(form.cardExpiry()) && !CARD_EXPIRY_PATTERN.matcher(form.cardExpiry().trim()).matches()) {
-            throw new IllegalArgumentException("La caducidad debe escribirse como MM/AAAA.");
-        }
     }
 
     private boolean isReadyForTravelerPart(List<Guest> guests) {
         if (guests.isEmpty()) {
             return false;
         }
-        Booking booking = guests.getFirst().getBooking();
-        if (!hasRequiredBookingData(booking)) {
-            return false;
-        }
-        return guests.stream().allMatch(this::hasRequiredTravelerPartData);
+        return assessReadiness(guests.getFirst().getBooking(), guests).readyForTravelerPart();
     }
 
     private boolean hasRequiredBookingData(Booking booking) {
         return booking.getAccommodation() != null
             && !isBlank(booking.getAccommodation().getSesEstablishmentCode())
             && booking.getContractDate() != null
+            && booking.getCheckInDate() != null
+            && booking.getCheckOutDate() != null
             && booking.getPaymentType() != null;
     }
 
     private boolean hasRequiredTravelerPartData(Guest guest) {
-        if (!guest.hasMinimumDataForTravelerPart()) {
+        if (!hasRequiredTravelerCoreData(guest)) {
             return false;
         }
-
-        boolean documentRequired = isAdultOrSpanishOlderThan14(guest);
-        if (!documentRequired) {
-            return true;
-        }
-
-        if (guest.getDocumentType() == null || isBlank(guest.getDocumentNumber())) {
-            return false;
-        }
-        if ((guest.getDocumentType() == DocumentType.NIF || guest.getDocumentType() == DocumentType.NIE)
-            && isBlank(guest.getDocumentSupport())) {
-            return false;
-        }
-        return guest.getDocumentType() != DocumentType.NIF || !isBlank(guest.getLastName2());
+        return hasExportableAddress(guest);
     }
 
     private boolean isAdultOrSpanishOlderThan14(Guest guest) {
@@ -219,15 +219,6 @@ public class BookingService {
         }
         return age >= 18 || (age > 14 && "ESP".equalsIgnoreCase(guest.getNationality()));
     }
-
-    private String normalize(String value) {
-        if (value == null) {
-            return null;
-        }
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
-
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
     }
@@ -237,6 +228,7 @@ public class BookingService {
             case ALL -> true;
             case INCOMPLETE -> item.operationalStatus() == BookingOperationalStatus.INCOMPLETE
                 || item.operationalStatus() == BookingOperationalStatus.WAITING_GUESTS
+                || item.operationalStatus() == BookingOperationalStatus.GUEST_COUNT_MISMATCH
                 || item.operationalStatus() == BookingOperationalStatus.REVIEW_PENDING;
             case READY -> item.operationalStatus() == BookingOperationalStatus.READY_FOR_XML
                 || item.operationalStatus() == BookingOperationalStatus.XML_GENERATED;
@@ -245,19 +237,253 @@ public class BookingService {
         };
     }
 
-    private BookingOperationalStatus calculateOperationalStatus(List<Guest> guests, int generatedCount) {
-        if (guests.isEmpty()) {
+    private BookingOperationalStatus calculateOperationalStatus(ReadinessAssessment assessment, int generatedCount) {
+        if (assessment.guestCount() == 0) {
             return BookingOperationalStatus.WAITING_GUESTS;
         }
-        if (guests.stream().anyMatch(guest -> guest.getReviewStatus() == es.checkpol.domain.GuestReviewStatus.PENDING_REVIEW)) {
+        if (assessment.guestCountMismatch()) {
+            return BookingOperationalStatus.GUEST_COUNT_MISMATCH;
+        }
+        if (assessment.blockedByPendingReview()) {
             return BookingOperationalStatus.REVIEW_PENDING;
         }
-        if (generatedCount > 0) {
-            return BookingOperationalStatus.XML_GENERATED;
-        }
-        if (isReadyForTravelerPart(guests)) {
+        if (assessment.readyForTravelerPart()) {
+            if (generatedCount > 0) {
+                return BookingOperationalStatus.XML_GENERATED;
+            }
             return BookingOperationalStatus.READY_FOR_XML;
         }
         return BookingOperationalStatus.INCOMPLETE;
+    }
+
+    private ReadinessAssessment assessReadiness(Booking booking, List<Guest> guests) {
+        long guestCount = guests.size();
+        int expectedGuestCount = booking.getPersonCount() == null ? 0 : booking.getPersonCount();
+        boolean bookingDataBlocked = !hasRequiredBookingData(booking);
+        boolean guestCountMismatch = guestCount != expectedGuestCount;
+        long pendingReviewGuestCount = guests.stream()
+            .filter(guest -> guest.getReviewStatus() == GuestReviewStatus.PENDING_REVIEW)
+            .count();
+        boolean blockedByPendingReview = pendingReviewGuestCount > 0;
+        boolean blockedByGuestData = guests.stream().anyMatch(guest -> !hasRequiredTravelerCoreData(guest));
+        boolean blockedByAddressExport = guests.stream().anyMatch(guest -> !hasExportableAddress(guest));
+        boolean ready = guestCount > 0
+            && !bookingDataBlocked
+            && !guestCountMismatch
+            && !blockedByPendingReview
+            && !blockedByGuestData
+            && !blockedByAddressExport;
+
+        List<String> blockingReasons = buildBlockingReasons(
+            booking,
+            guestCount,
+            expectedGuestCount,
+            pendingReviewGuestCount,
+            bookingDataBlocked,
+            guestCountMismatch,
+            blockedByPendingReview,
+            blockedByGuestData,
+            blockedByAddressExport
+        );
+
+        return new ReadinessAssessment(
+            ready,
+            guestCount,
+            expectedGuestCount,
+            pendingReviewGuestCount,
+            guestCountMismatch,
+            bookingDataBlocked,
+            blockedByGuestData,
+            blockedByPendingReview,
+            blockedByAddressExport,
+            buildBlockingSummary(
+                guestCount,
+                expectedGuestCount,
+                pendingReviewGuestCount,
+                bookingDataBlocked,
+                guestCountMismatch,
+                blockedByPendingReview,
+                blockedByGuestData,
+                blockedByAddressExport
+            ),
+            blockingReasons.isEmpty() ? null : blockingReasons.getFirst(),
+            blockingReasons
+        );
+    }
+
+    private List<String> buildBlockingReasons(
+        Booking booking,
+        long guestCount,
+        int expectedGuestCount,
+        long pendingReviewGuestCount,
+        boolean bookingDataBlocked,
+        boolean guestCountMismatch,
+        boolean blockedByPendingReview,
+        boolean blockedByGuestData,
+        boolean blockedByAddressExport
+    ) {
+        List<String> reasons = new ArrayList<>();
+
+        if (bookingDataBlocked) {
+            if (booking.getAccommodation() == null || isBlank(booking.getAccommodation().getSesEstablishmentCode())) {
+                reasons.add("Falta el codigo SES de la vivienda. Añadelo en la ficha de la vivienda antes de generar el archivo.");
+            } else {
+                reasons.add("Faltan datos basicos de la estancia para generar el archivo. Revisa la fecha de contrato y el tipo de pago.");
+            }
+        }
+
+        if (guestCountMismatch) {
+            reasons.add("No se puede generar el XML porque el numero de huespedes registrados no coincide con el numero de personas de la estancia. Ahora mismo hay "
+                + guestCount + " huespedes dados de alta y la estancia esta configurada para " + expectedGuestCount
+                + " personas. Revisa los huespedes registrados y, si son correctos, ajusta el numero de personas de la estancia para poder generar el XML.");
+        }
+
+        if (blockedByPendingReview) {
+            reasons.add(pendingReviewGuestCount == 1
+                ? "Todavia hay 1 huesped pendiente de revision. Revisalo antes de generar el archivo."
+                : "Todavia hay " + pendingReviewGuestCount + " huespedes pendientes de revision. Revisalos antes de generar el archivo.");
+        }
+
+        if (blockedByAddressExport) {
+            reasons.add("Hay al menos una direccion en España sin un codigo de municipio exportable. Revisa la direccion o la resolucion del municipio antes de generar el archivo.");
+        }
+
+        if (blockedByGuestData) {
+            reasons.add("Faltan datos obligatorios en uno o varios huespedes. Completa documento, parentesco, nacionalidad, sexo y contacto antes de generar el archivo.");
+        }
+
+        if (reasons.isEmpty() && guestCount == 0) {
+            reasons.add("Todavia no hay huespedes registrados. Añade a las personas de la estancia antes de generar el archivo.");
+        }
+
+        return reasons;
+    }
+
+    private String buildBlockingSummary(
+        long guestCount,
+        int expectedGuestCount,
+        long pendingReviewGuestCount,
+        boolean bookingDataBlocked,
+        boolean guestCountMismatch,
+        boolean blockedByPendingReview,
+        boolean blockedByGuestData,
+        boolean blockedByAddressExport
+    ) {
+        if (guestCount == 0) {
+            return "Falta anadir a las personas de la estancia";
+        }
+        if (guestCountMismatch) {
+            return guestCount + " huespedes registrados · " + expectedGuestCount + " personas esperadas";
+        }
+        if (blockedByPendingReview) {
+            return pendingReviewGuestCount == 1
+                ? "1 huesped pendiente de revision"
+                : pendingReviewGuestCount + " huespedes pendientes de revision";
+        }
+        if (blockedByAddressExport) {
+            return "Hay una direccion sin municipio exportable";
+        }
+        if (blockedByGuestData) {
+            return "Faltan datos obligatorios de viajeros";
+        }
+        if (bookingDataBlocked) {
+            return "Faltan datos basicos de la estancia";
+        }
+        return "Lista para descargar el archivo SES";
+    }
+
+    private boolean hasRequiredTravelerCoreData(Guest guest) {
+        if (!guest.hasMinimumDataForTravelerPart()) {
+            return false;
+        }
+        if (isBlank(guest.getNationality()) || !ISO3_PATTERN.matcher(guest.getNationality().trim()).matches()) {
+            return false;
+        }
+        if (guest.getSex() == null) {
+            return false;
+        }
+        if (isMinorAtCheckIn(guest) && (isBlank(guest.getRelationship()) || !GuestRelationship.isValidCode(guest.getRelationship().trim().toUpperCase()))) {
+            return false;
+        }
+
+        boolean documentRequired = isAdultOrSpanishOlderThan14(guest);
+        if (!documentRequired) {
+            return true;
+        }
+        if (guest.getDocumentType() == null || isBlank(guest.getDocumentNumber())) {
+            return false;
+        }
+        if (guest.getDocumentType() == DocumentType.NIF) {
+            return NIF_PATTERN.matcher(guest.getDocumentNumber().trim()).matches()
+                && hasValidNifLetter(guest.getDocumentNumber().trim())
+                && !isBlank(guest.getLastName2())
+                && !isBlank(guest.getDocumentSupport());
+        }
+        if (guest.getDocumentType() == DocumentType.NIE) {
+            return NIE_PATTERN.matcher(guest.getDocumentNumber().trim()).matches()
+                && hasValidNieLetter(guest.getDocumentNumber().trim())
+                && !isBlank(guest.getDocumentSupport());
+        }
+        return true;
+    }
+
+    private boolean hasExportableAddress(Guest guest) {
+        if (guest.getAddress() == null || isBlank(guest.getAddressLine()) || isBlank(guest.getPostalCode()) || isBlank(guest.getCountry())) {
+            return false;
+        }
+        if ("ESP".equalsIgnoreCase(guest.getCountry())) {
+            MunicipalityResolutionStatus status = guest.getMunicipalityResolutionStatus();
+            return !isBlank(guest.getMunicipalityCode())
+                && status != null
+                && !status.requiresReview();
+        }
+        return !isBlank(guest.getMunicipalityName());
+    }
+
+    private boolean isMinorAtCheckIn(Guest guest) {
+        if (guest.getBirthDate() == null) {
+            return false;
+        }
+        LocalDate referenceDate = guest.getBooking().getCheckInDate();
+        int age = referenceDate.getYear() - guest.getBirthDate().getYear();
+        if (guest.getBirthDate().plusYears(age).isAfter(referenceDate)) {
+            age--;
+        }
+        return age < 18;
+    }
+
+    private boolean hasValidNifLetter(String nif) {
+        String letters = "TRWAGMYFPDXBNJZSQVHLCKE";
+        int number = Integer.parseInt(nif.substring(0, 8));
+        char expected = letters.charAt(number % 23);
+        return Character.toUpperCase(nif.charAt(8)) == expected;
+    }
+
+    private boolean hasValidNieLetter(String nie) {
+        char prefix = Character.toUpperCase(nie.charAt(0));
+        String mappedPrefix = switch (prefix) {
+            case 'X' -> "0";
+            case 'Y' -> "1";
+            case 'Z' -> "2";
+            default -> "";
+        };
+        String nifEquivalent = mappedPrefix + nie.substring(1);
+        return hasValidNifLetter(nifEquivalent);
+    }
+
+    private record ReadinessAssessment(
+        boolean readyForTravelerPart,
+        long guestCount,
+        int expectedGuestCount,
+        long pendingReviewGuestCount,
+        boolean guestCountMismatch,
+        boolean blockedByBookingData,
+        boolean blockedByGuestData,
+        boolean blockedByPendingReview,
+        boolean blockedByAddressExport,
+        String blockingSummary,
+        String blockingMessage,
+        List<String> blockingReasons
+    ) {
     }
 }

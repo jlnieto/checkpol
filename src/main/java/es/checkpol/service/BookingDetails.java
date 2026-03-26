@@ -10,12 +10,23 @@ import java.util.Optional;
 public record BookingDetails(
     Booking booking,
     List<Guest> guests,
+    long guestCount,
+    int expectedGuestCount,
+    boolean guestCountMismatch,
     boolean readyForTravelerPart,
     Optional<GeneratedCommunication> lastGeneratedCommunication,
     int generatedCommunicationCount,
     List<GeneratedCommunication> generatedCommunications,
     Optional<SelfServiceAccess> selfServiceAccess,
     BookingOperationalStatus operationalStatus,
-    long pendingReviewGuestCount
+    long pendingReviewGuestCount,
+    long selfServiceGuestCount,
+    boolean blockedByBookingData,
+    boolean blockedByGuestData,
+    boolean blockedByPendingReview,
+    boolean blockedByAddressExport,
+    String blockingSummary,
+    String blockingMessage,
+    List<String> blockingReasons
 ) {
 }

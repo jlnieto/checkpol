@@ -3,8 +3,11 @@ package es.checkpol.service;
 import es.checkpol.domain.Booking;
 import es.checkpol.domain.DocumentType;
 import es.checkpol.domain.Guest;
+import es.checkpol.domain.GuestRelationship;
 import es.checkpol.domain.GuestReviewStatus;
 import es.checkpol.domain.GuestSubmissionSource;
+import es.checkpol.domain.Address;
+import es.checkpol.repository.AddressRepository;
 import es.checkpol.repository.BookingRepository;
 import es.checkpol.repository.GuestRepository;
 import es.checkpol.web.GuestForm;
@@ -14,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 @Service
@@ -25,14 +27,22 @@ public class GuestService {
     private static final Pattern SPANISH_POSTAL_CODE_PATTERN = Pattern.compile("^\\d{5}$");
     private static final Pattern NIF_PATTERN = Pattern.compile("^\\d{8}[A-Za-z]$");
     private static final Pattern NIE_PATTERN = Pattern.compile("^[XYZxyz]\\d{7}[A-Za-z]$");
-    private static final Set<String> RELATIONSHIP_CODES = Set.of("AB","BA","BN","CY","CD","HR","HJ","PM","NI","SB","SG","TI","YN","TU","OT");
-
+    private static final Pattern INTERNATIONAL_PHONE_PATTERN = Pattern.compile("^\\+\\d[\\d\\s().-]{5,19}$");
+    private final AddressRepository addressRepository;
     private final GuestRepository guestRepository;
     private final BookingRepository bookingRepository;
+    private final MunicipalityReviewService municipalityReviewService;
 
-    public GuestService(GuestRepository guestRepository, BookingRepository bookingRepository) {
+    public GuestService(
+        AddressRepository addressRepository,
+        GuestRepository guestRepository,
+        BookingRepository bookingRepository,
+        MunicipalityReviewService municipalityReviewService
+    ) {
+        this.addressRepository = addressRepository;
         this.guestRepository = guestRepository;
         this.bookingRepository = bookingRepository;
+        this.municipalityReviewService = municipalityReviewService;
     }
 
     @Transactional(readOnly = true)
@@ -45,13 +55,15 @@ public class GuestService {
         Booking booking = bookingRepository.findById(bookingId)
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa estancia."));
 
-        validateMunicipality(form);
         validateContact(form);
         validateDocumentSupport(form);
-        validateCountryCodes(form);
+        validateNationality(form);
         validateDocumentData(form, booking);
-        validateMinorRelationship(form);
+        validateSex(form);
+        validateMinorRelationship(form, booking.getCheckInDate());
         validateRelationshipCode(form);
+        validatePhoneNumbers(form);
+        Address address = getBookingAddress(booking.getId(), form.addressId());
 
         Guest guest = new Guest(
             booking,
@@ -64,12 +76,7 @@ public class GuestService {
             form.birthDate(),
             normalizeUpper(form.nationality()),
             form.sex(),
-            form.addressLine().trim(),
-            normalize(form.addressComplement()),
-            normalize(form.municipalityCode()),
-            normalize(form.municipalityName()),
-            form.postalCode().trim(),
-            form.country().trim().toUpperCase(),
+            address,
             normalize(form.phone()),
             normalize(form.phone2()),
             normalize(form.email()),
@@ -78,7 +85,9 @@ public class GuestService {
             GuestReviewStatus.REVIEWED,
             null
         );
-        return guestRepository.save(guest);
+        Guest savedGuest = guestRepository.save(guest);
+        municipalityReviewService.registerAutomaticResolution(savedGuest, address.toMunicipalityResolution());
+        return savedGuest;
     }
 
     @Transactional(readOnly = true)
@@ -95,12 +104,7 @@ public class GuestService {
             guest.getBirthDate(),
             guest.getNationality() == null ? "" : guest.getNationality(),
             guest.getSex(),
-            guest.getAddressLine(),
-            guest.getAddressComplement() == null ? "" : guest.getAddressComplement(),
-            guest.getMunicipalityCode() == null ? "" : guest.getMunicipalityCode(),
-            guest.getMunicipalityName() == null ? "" : guest.getMunicipalityName(),
-            guest.getPostalCode(),
-            guest.getCountry(),
+            guest.getAddressId(),
             guest.getPhone() == null ? "" : guest.getPhone(),
             guest.getPhone2() == null ? "" : guest.getPhone2(),
             guest.getEmail() == null ? "" : guest.getEmail(),
@@ -113,13 +117,15 @@ public class GuestService {
         Guest guest = guestRepository.findById(guestId)
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa persona."));
 
-        validateMunicipality(form);
         validateContact(form);
         validateDocumentSupport(form);
-        validateCountryCodes(form);
+        validateNationality(form);
         validateDocumentData(form, guest.getBooking());
-        validateMinorRelationship(form);
+        validateSex(form);
+        validateMinorRelationship(form, guest.getBooking().getCheckInDate());
         validateRelationshipCode(form);
+        validatePhoneNumbers(form);
+        Address address = getBookingAddress(guest.getBooking().getId(), form.addressId());
         guest.update(
             form.firstName().trim(),
             form.lastName1().trim(),
@@ -130,18 +136,14 @@ public class GuestService {
             form.birthDate(),
             normalizeUpper(form.nationality()),
             form.sex(),
-            form.addressLine().trim(),
-            normalize(form.addressComplement()),
-            normalize(form.municipalityCode()),
-            normalize(form.municipalityName()),
-            form.postalCode().trim(),
-            form.country().trim().toUpperCase(),
+            address,
             normalize(form.phone()),
             normalize(form.phone2()),
             normalize(form.email()),
             normalize(form.relationship())
         );
         guest.markReviewed();
+        municipalityReviewService.registerAutomaticResolution(guest, address.toMunicipalityResolution());
         return guest;
     }
 
@@ -150,13 +152,15 @@ public class GuestService {
         Booking booking = bookingRepository.findById(bookingId)
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa estancia."));
 
-        validateMunicipality(form);
         validateContact(form);
         validateDocumentSupport(form);
-        validateCountryCodes(form);
+        validateNationality(form);
         validateDocumentData(form, booking);
-        validateMinorRelationship(form);
+        validateSex(form);
+        validateMinorRelationship(form, booking.getCheckInDate());
         validateRelationshipCode(form);
+        validatePhoneNumbers(form);
+        Address address = getBookingAddress(booking.getId(), form.addressId());
 
         Guest guest = new Guest(
             booking,
@@ -169,12 +173,7 @@ public class GuestService {
             form.birthDate(),
             normalizeUpper(form.nationality()),
             form.sex(),
-            form.addressLine().trim(),
-            normalize(form.addressComplement()),
-            normalize(form.municipalityCode()),
-            normalize(form.municipalityName()),
-            form.postalCode().trim(),
-            form.country().trim().toUpperCase(),
+            address,
             normalize(form.phone()),
             normalize(form.phone2()),
             normalize(form.email()),
@@ -183,7 +182,9 @@ public class GuestService {
             GuestReviewStatus.PENDING_REVIEW,
             OffsetDateTime.now()
         );
-        return guestRepository.save(guest);
+        Guest savedGuest = guestRepository.save(guest);
+        municipalityReviewService.registerAutomaticResolution(savedGuest, address.toMunicipalityResolution());
+        return savedGuest;
     }
 
     @Transactional
@@ -191,13 +192,15 @@ public class GuestService {
         Guest guest = guestRepository.findById(guestId)
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa persona."));
 
-        validateMunicipality(form);
         validateContact(form);
         validateDocumentSupport(form);
-        validateCountryCodes(form);
+        validateNationality(form);
         validateDocumentData(form, guest.getBooking());
-        validateMinorRelationship(form);
+        validateSex(form);
+        validateMinorRelationship(form, guest.getBooking().getCheckInDate());
         validateRelationshipCode(form);
+        validatePhoneNumbers(form);
+        Address address = getBookingAddress(guest.getBooking().getId(), form.addressId());
 
         guest.update(
             form.firstName().trim(),
@@ -209,17 +212,13 @@ public class GuestService {
             form.birthDate(),
             normalizeUpper(form.nationality()),
             form.sex(),
-            form.addressLine().trim(),
-            normalize(form.addressComplement()),
-            normalize(form.municipalityCode()),
-            normalize(form.municipalityName()),
-            form.postalCode().trim(),
-            form.country().trim().toUpperCase(),
+            address,
             normalize(form.phone()),
             normalize(form.phone2()),
             normalize(form.email()),
             normalize(form.relationship())
         );
+        municipalityReviewService.registerAutomaticResolution(guest, address.toMunicipalityResolution());
         return guest;
     }
 
@@ -230,20 +229,28 @@ public class GuestService {
         guest.markReviewed();
     }
 
-    private void validateMunicipality(GuestForm form) {
-        if ("ESP".equalsIgnoreCase(form.country())) {
-            if (isBlank(form.municipalityCode())) {
-                throw new IllegalArgumentException("Si el pais es ESP, indica el codigo del municipio.");
-            }
-            if (!MUNICIPALITY_CODE_PATTERN.matcher(form.municipalityCode().trim()).matches()) {
-                throw new IllegalArgumentException("El codigo del municipio debe tener 5 numeros.");
-            }
-            if (!SPANISH_POSTAL_CODE_PATTERN.matcher(form.postalCode().trim()).matches()) {
-                throw new IllegalArgumentException("Si el pais es ESP, el codigo postal debe tener 5 numeros.");
-            }
-        } else if (isBlank(form.municipalityName())) {
-            throw new IllegalArgumentException("Si el pais no es ESP, escribe la ciudad o municipio.");
-        }
+    @Transactional
+    public void assignAddress(Long guestId, Long addressId) {
+        Guest guest = guestRepository.findById(guestId)
+            .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa persona."));
+        Address address = getBookingAddress(guest.getBooking().getId(), addressId);
+        guest.update(
+            guest.getFirstName(),
+            guest.getLastName1(),
+            guest.getLastName2(),
+            guest.getDocumentType(),
+            guest.getDocumentNumber(),
+            guest.getDocumentSupport(),
+            guest.getBirthDate(),
+            guest.getNationality(),
+            guest.getSex(),
+            address,
+            guest.getPhone(),
+            guest.getPhone2(),
+            guest.getEmail(),
+            guest.getRelationship()
+        );
+        municipalityReviewService.registerAutomaticResolution(guest, address.toMunicipalityResolution());
     }
 
     private void validateContact(GuestForm form) {
@@ -252,18 +259,24 @@ public class GuestService {
         }
     }
 
-    private void validateDocumentSupport(GuestForm form) {
-        if ((form.documentType() == DocumentType.NIF || form.documentType() == DocumentType.NIE)
-            && isBlank(form.documentSupport())) {
-            throw new IllegalArgumentException("Si el documento es NIF o NIE, indica tambien el numero de soporte.");
+    private void validateSex(GuestForm form) {
+        if (form.sex() == null) {
+            throw new IllegalArgumentException("Selecciona el sexo.");
         }
     }
 
-    private void validateCountryCodes(GuestForm form) {
-        if (!ISO3_PATTERN.matcher(form.country().trim()).matches()) {
-            throw new IllegalArgumentException("El pais debe escribirse con 3 letras, por ejemplo ESP.");
+    private void validateDocumentSupport(GuestForm form) {
+        if ((form.documentType() == DocumentType.NIF || form.documentType() == DocumentType.NIE)
+            && isBlank(form.documentSupport())) {
+            throw new IllegalArgumentException("Si el documento es DNI o NIE, indica tambien el numero de soporte.");
         }
-        if (!isBlank(form.nationality()) && !ISO3_PATTERN.matcher(form.nationality().trim()).matches()) {
+    }
+
+    private void validateNationality(GuestForm form) {
+        if (isBlank(form.nationality())) {
+            throw new IllegalArgumentException("Selecciona la nacionalidad.");
+        }
+        if (!ISO3_PATTERN.matcher(form.nationality().trim()).matches()) {
             throw new IllegalArgumentException("La nacionalidad debe escribirse con 3 letras, por ejemplo ESP.");
         }
     }
@@ -283,10 +296,10 @@ public class GuestService {
 
         if (form.documentType() == DocumentType.NIF) {
             if (!NIF_PATTERN.matcher(form.documentNumber().trim()).matches() || !hasValidNifLetter(form.documentNumber().trim())) {
-                throw new IllegalArgumentException("El NIF no tiene un formato valido.");
+                throw new IllegalArgumentException("El DNI no tiene un formato valido.");
             }
             if (isBlank(form.lastName2())) {
-                throw new IllegalArgumentException("Si usas NIF, escribe tambien el segundo apellido.");
+                throw new IllegalArgumentException("Si usas DNI, escribe tambien el segundo apellido.");
             }
         }
 
@@ -297,17 +310,26 @@ public class GuestService {
         }
     }
 
-    private void validateMinorRelationship(GuestForm form) {
+    private void validatePhoneNumbers(GuestForm form) {
+        if (!isBlank(form.phone()) && !INTERNATIONAL_PHONE_PATTERN.matcher(form.phone().trim()).matches()) {
+            throw new IllegalArgumentException("El telefono debe incluir prefijo internacional. Ejemplo: +34 600 123 123.");
+        }
+        if (!isBlank(form.phone2()) && !INTERNATIONAL_PHONE_PATTERN.matcher(form.phone2().trim()).matches()) {
+            throw new IllegalArgumentException("El segundo telefono debe incluir prefijo internacional. Ejemplo: +34 600 123 123.");
+        }
+    }
+
+    private void validateMinorRelationship(GuestForm form, LocalDate checkInDate) {
         if (form.birthDate() == null) {
             return;
         }
-        if (form.birthDate().plusYears(18).isAfter(LocalDate.now()) && isBlank(form.relationship())) {
+        if (calculateAgeAt(form.birthDate(), checkInDate) < 18 && isBlank(form.relationship())) {
             throw new IllegalArgumentException("Si es menor de edad, indica el parentesco.");
         }
     }
 
     private void validateRelationshipCode(GuestForm form) {
-        if (!isBlank(form.relationship()) && !RELATIONSHIP_CODES.contains(form.relationship().trim().toUpperCase())) {
+        if (!isBlank(form.relationship()) && !GuestRelationship.isValidCode(form.relationship().trim().toUpperCase())) {
             throw new IllegalArgumentException("El parentesco no tiene un codigo valido.");
         }
     }
@@ -327,6 +349,14 @@ public class GuestService {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private Address getBookingAddress(Long bookingId, Long addressId) {
+        if (addressId == null) {
+            throw new IllegalArgumentException("Selecciona una direccion.");
+        }
+        return addressRepository.findByIdAndBookingId(addressId, bookingId)
+            .orElseThrow(() -> new IllegalArgumentException("La direccion seleccionada no pertenece a esta estancia."));
     }
 
     private boolean isDocumentRequired(GuestForm form, LocalDate checkInDate) {

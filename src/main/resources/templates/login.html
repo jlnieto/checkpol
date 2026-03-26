@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Acceso | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/styles.css}">
+</head>
+<body>
+<main class="shell shell-narrow login-shell">
+    <section class="card login-card">
+        <p class="eyebrow">Area privada</p>
+        <h1>Acceso de gestion</h1>
+        <p>Entra con tu usuario. Segun el rol accederas al area de propietarios o al panel de administracion.</p>
+
+        <div class="error-box" th:if="${param.error}">
+            <p>Usuario o contrasena incorrectos.</p>
+        </div>
+
+        <div class="flash-box" th:if="${param.logout}">
+            <p>La sesion se ha cerrado correctamente.</p>
+        </div>
+
+        <form th:action="@{/login}" method="post" class="form-grid" novalidate>
+            <label>
+                <span>Usuario</span>
+                <input type="text" name="username" autocomplete="username" required autofocus>
+            </label>
+
+            <label>
+                <span>Contrasena</span>
+                <input type="password" name="password" autocomplete="current-password" required>
+            </label>
+
+            <button type="submit">Entrar</button>
+        </form>
+    </section>
+</main>
+</body>
+</html>

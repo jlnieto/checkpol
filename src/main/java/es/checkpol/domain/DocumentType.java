@@ -1,7 +1,7 @@
 package es.checkpol.domain;
 
 public enum DocumentType {
-    NIF("NIF"),
+    NIF("DNI"),
     NIE("NIE"),
     PAS("Pasaporte"),
     OTRO("Otro");

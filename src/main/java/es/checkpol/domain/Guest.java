@@ -56,23 +56,9 @@ public class Guest {
     @Column(length = 1)
     private GuestSex sex;
 
-    @Column(name = "address_line", nullable = false, length = 120)
-    private String addressLine;
-
-    @Column(name = "address_complement", length = 120)
-    private String addressComplement;
-
-    @Column(name = "municipality_code", length = 5)
-    private String municipalityCode;
-
-    @Column(name = "municipality_name", length = 80)
-    private String municipalityName;
-
-    @Column(name = "postal_code", nullable = false, length = 12)
-    private String postalCode;
-
-    @Column(nullable = false, length = 3)
-    private String country;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "address_id", nullable = false)
+    private Address address;
 
     @Column(length = 20)
     private String phone;
@@ -111,12 +97,7 @@ public class Guest {
         LocalDate birthDate,
         String nationality,
         GuestSex sex,
-        String addressLine,
-        String addressComplement,
-        String municipalityCode,
-        String municipalityName,
-        String postalCode,
-        String country,
+        Address address,
         String phone,
         String phone2,
         String email,
@@ -135,12 +116,7 @@ public class Guest {
         this.birthDate = birthDate;
         this.nationality = nationality;
         this.sex = sex;
-        this.addressLine = addressLine;
-        this.addressComplement = addressComplement;
-        this.municipalityCode = municipalityCode;
-        this.municipalityName = municipalityName;
-        this.postalCode = postalCode;
-        this.country = country;
+        this.address = address;
         this.phone = phone;
         this.phone2 = phone2;
         this.email = email;
@@ -194,28 +170,48 @@ public class Guest {
         return sex;
     }
 
+    public Address getAddress() {
+        return address;
+    }
+
+    public Long getAddressId() {
+        return address == null ? null : address.getId();
+    }
+
     public String getAddressLine() {
-        return addressLine;
+        return address == null ? null : address.getAddressLine();
     }
 
     public String getAddressComplement() {
-        return addressComplement;
+        return address == null ? null : address.getAddressComplement();
     }
 
     public String getMunicipalityCode() {
-        return municipalityCode;
+        return address == null ? null : address.getMunicipalityCode();
     }
 
     public String getMunicipalityName() {
-        return municipalityName;
+        return address == null ? null : address.getMunicipalityName();
+    }
+
+    public String getMunicipalityResolvedName() {
+        return address == null ? null : address.getMunicipalityResolvedName();
+    }
+
+    public MunicipalityResolutionStatus getMunicipalityResolutionStatus() {
+        return address == null ? null : address.getMunicipalityResolutionStatus();
+    }
+
+    public String getMunicipalityResolutionNote() {
+        return address == null ? null : address.getMunicipalityResolutionNote();
     }
 
     public String getPostalCode() {
-        return postalCode;
+        return address == null ? null : address.getPostalCode();
     }
 
     public String getCountry() {
-        return country;
+        return address == null ? null : address.getCountry();
     }
 
     public String getPhone() {
@@ -256,10 +252,11 @@ public class Guest {
         return hasText(firstName)
             && hasText(lastName1)
             && birthDate != null
-            && hasText(addressLine)
-            && hasText(postalCode)
-            && hasText(country)
-            && (hasText(municipalityCode) || hasText(municipalityName))
+            && address != null
+            && hasText(getAddressLine())
+            && hasText(getPostalCode())
+            && hasText(getCountry())
+            && (hasText(getMunicipalityCode()) || hasText(getMunicipalityName()))
             && hasAnyContact();
     }
 
@@ -281,12 +278,7 @@ public class Guest {
         LocalDate birthDate,
         String nationality,
         GuestSex sex,
-        String addressLine,
-        String addressComplement,
-        String municipalityCode,
-        String municipalityName,
-        String postalCode,
-        String country,
+        Address address,
         String phone,
         String phone2,
         String email,
@@ -301,12 +293,7 @@ public class Guest {
         this.birthDate = birthDate;
         this.nationality = nationality;
         this.sex = sex;
-        this.addressLine = addressLine;
-        this.addressComplement = addressComplement;
-        this.municipalityCode = municipalityCode;
-        this.municipalityName = municipalityName;
-        this.postalCode = postalCode;
-        this.country = country;
+        this.address = address;
         this.phone = phone;
         this.phone2 = phone2;
         this.email = email;
@@ -315,5 +302,21 @@ public class Guest {
 
     public void markReviewed() {
         this.reviewStatus = GuestReviewStatus.REVIEWED;
+    }
+
+    public void applyMunicipalityResolution(
+        String municipalityCode,
+        String municipalityResolvedName,
+        MunicipalityResolutionStatus municipalityResolutionStatus,
+        String municipalityResolutionNote
+    ) {
+        if (this.address != null) {
+            this.address.applyMunicipalityResolution(
+                municipalityCode,
+                municipalityResolvedName,
+                municipalityResolutionStatus,
+                municipalityResolutionNote
+            );
+        }
     }
 }

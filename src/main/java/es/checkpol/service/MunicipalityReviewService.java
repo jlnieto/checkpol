@@ -1,0 +1,167 @@
+package es.checkpol.service;
+
+import es.checkpol.domain.Guest;
+import es.checkpol.domain.MunicipalityIssueStatus;
+import es.checkpol.domain.MunicipalityResolutionIssue;
+import es.checkpol.domain.MunicipalityResolutionRule;
+import es.checkpol.domain.MunicipalityResolutionStatus;
+import es.checkpol.repository.GuestRepository;
+import es.checkpol.repository.MunicipalityResolutionIssueRepository;
+import es.checkpol.repository.MunicipalityResolutionRuleRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.regex.Pattern;
+
+@Service
+public class MunicipalityReviewService {
+
+    private static final Pattern MUNICIPALITY_CODE_PATTERN = Pattern.compile("^\\d{5}$");
+
+    private final MunicipalityResolutionIssueRepository issueRepository;
+    private final MunicipalityResolutionRuleRepository ruleRepository;
+    private final GuestRepository guestRepository;
+
+    public MunicipalityReviewService(
+        MunicipalityResolutionIssueRepository issueRepository,
+        MunicipalityResolutionRuleRepository ruleRepository,
+        GuestRepository guestRepository
+    ) {
+        this.issueRepository = issueRepository;
+        this.ruleRepository = ruleRepository;
+        this.guestRepository = guestRepository;
+    }
+
+    @Transactional
+    public void registerAutomaticResolution(Guest guest, MunicipalityResolution resolution) {
+        if (!"ESP".equalsIgnoreCase(guest.getCountry())) {
+            closeOpenIssue(guest);
+            return;
+        }
+
+        if (!resolution.status().requiresReview()) {
+            closeOpenIssue(guest);
+            return;
+        }
+
+        MunicipalityResolutionIssue issue = issueRepository.findFirstByGuestIdAndIssueStatus(guest.getId(), MunicipalityIssueStatus.OPEN)
+            .orElseGet(() -> new MunicipalityResolutionIssue(
+                guest,
+                guest.getCountry(),
+                guest.getPostalCode(),
+                resolution.postalCodePrefix(),
+                resolution.municipalityQueryNormalized(),
+                resolution.municipalityQueryLabel(),
+                resolution.municipalityCode(),
+                resolution.municipalityResolvedName(),
+                resolution.status(),
+                resolution.note(),
+                MunicipalityIssueStatus.OPEN,
+                OffsetDateTime.now(),
+                null
+            ));
+
+        issue.refreshAutomaticAssignment(
+            guest.getPostalCode(),
+            resolution.postalCodePrefix(),
+            resolution.municipalityQueryNormalized(),
+            resolution.municipalityQueryLabel(),
+            resolution.municipalityCode(),
+            resolution.municipalityResolvedName(),
+            resolution.status(),
+            resolution.note()
+        );
+        issueRepository.save(issue);
+    }
+
+    @Transactional(readOnly = true)
+    public MunicipalityAdminDashboard getDashboard() {
+        List<MunicipalityIssueSummary> openIssues = issueRepository.findAllByIssueStatusOrderByCreatedAtDesc(MunicipalityIssueStatus.OPEN).stream()
+            .map(issue -> new MunicipalityIssueSummary(
+                issue.getId(),
+                issue.getGuest().getBooking().getId(),
+                issue.getGuest().getBooking().getReferenceCode(),
+                issue.getGuest().getBooking().getAccommodation().getName(),
+                issue.getGuest().getDisplayName(),
+                issue.getPostalCode(),
+                issue.getMunicipalityQueryLabel(),
+                issue.getAssignedMunicipalityCode(),
+                issue.getAssignedMunicipalityName(),
+                issue.getResolutionStatus(),
+                issue.getResolutionNote(),
+                issue.getCreatedAt()
+            ))
+            .toList();
+
+        List<MunicipalityRuleSummary> learnedRules = ruleRepository.findAllByOrderByUpdatedAtDesc().stream()
+            .map(rule -> new MunicipalityRuleSummary(
+                rule.getCountryCode(),
+                rule.getPostalCodePrefix(),
+                rule.getMunicipalityQueryLabel(),
+                rule.getMunicipalityCode(),
+                rule.getMunicipalityName(),
+                rule.getUpdatedAt()
+            ))
+            .toList();
+
+        return new MunicipalityAdminDashboard(openIssues, learnedRules);
+    }
+
+    @Transactional
+    public void correctIssue(Long issueId, String municipalityCode, String municipalityName, String resolutionNote) {
+        if (municipalityCode == null || !MUNICIPALITY_CODE_PATTERN.matcher(municipalityCode.trim()).matches()) {
+            throw new IllegalArgumentException("El codigo de municipio debe tener 5 numeros.");
+        }
+        if (municipalityName == null || municipalityName.isBlank()) {
+            throw new IllegalArgumentException("Indica el nombre oficial del municipio.");
+        }
+
+        MunicipalityResolutionIssue issue = issueRepository.findById(issueId)
+            .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa incidencia."));
+
+        String normalizedCode = municipalityCode.trim();
+        String normalizedName = municipalityName.trim();
+        String normalizedNote = resolutionNote == null || resolutionNote.isBlank()
+            ? "Correccion manual desde administracion."
+            : resolutionNote.trim();
+
+        Guest guest = guestRepository.findById(issue.getGuest().getId())
+            .orElseThrow(() -> new IllegalArgumentException("No he encontrado la persona asociada a esta incidencia."));
+
+        guest.applyMunicipalityResolution(
+            normalizedCode,
+            normalizedName,
+            MunicipalityResolutionStatus.MANUAL_OVERRIDE,
+            normalizedNote
+        );
+
+        MunicipalityResolutionRule rule = ruleRepository
+            .findFirstByCountryCodeAndPostalCodePrefixAndMunicipalityQueryNormalized(
+                issue.getCountryCode(),
+                issue.getPostalCodePrefix(),
+                issue.getMunicipalityQueryNormalized()
+            )
+            .orElseGet(() -> new MunicipalityResolutionRule(
+                issue.getCountryCode(),
+                issue.getPostalCodePrefix(),
+                issue.getMunicipalityQueryNormalized(),
+                issue.getMunicipalityQueryLabel(),
+                normalizedCode,
+                normalizedName,
+                OffsetDateTime.now(),
+                OffsetDateTime.now()
+            ));
+
+        rule.updateResolution(normalizedCode, normalizedName, OffsetDateTime.now());
+        ruleRepository.save(rule);
+
+        issue.markResolved(normalizedCode, normalizedName, normalizedNote, OffsetDateTime.now());
+    }
+
+    private void closeOpenIssue(Guest guest) {
+        issueRepository.findFirstByGuestIdAndIssueStatus(guest.getId(), MunicipalityIssueStatus.OPEN)
+            .ifPresent(issue -> issue.closeSilently(OffsetDateTime.now()));
+    }
+}

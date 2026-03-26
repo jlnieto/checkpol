@@ -26,7 +26,7 @@
     </section>
 
     <section class="card" th:unless="${#lists.isEmpty(accommodations)}">
-        <form th:action="${formAction}" th:object="${bookingForm}" method="post" class="form-grid" data-wizard-form>
+        <form th:action="${formAction}" th:object="${bookingForm}" method="post" class="form-grid" data-wizard-form data-booking-form novalidate>
             <div class="error-box" th:if="${#fields.hasGlobalErrors()}">
                 <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
             </div>
@@ -34,10 +34,11 @@
             <div class="wizard-shell">
                 <div class="wizard-header">
                     <div>
-                        <p class="eyebrow">Formulario guiado</p>
-                        <h2>Vamos paso a paso</h2>
+                        <p class="eyebrow">Alta de estancia</p>
+                        <h2 data-current-step-title>1. Datos basicos de la reserva</h2>
+                        <p class="muted" data-current-step-help>Primero identifica la vivienda y la reserva de Airbnb. Despues te pediremos las fechas.</p>
                     </div>
-                    <span class="wizard-progress" data-step-progress>Paso 1 de 3</span>
+                    <span class="wizard-progress" data-step-progress>Paso 1 de 2</span>
                 </div>
 
                 <div class="wizard-stepper">
@@ -49,17 +50,15 @@
                         <span>Paso 2</span>
                         <strong>Fechas</strong>
                     </div>
-                    <div class="wizard-step" data-step-indicator>
-                        <span>Paso 3</span>
-                        <strong>Pago</strong>
-                    </div>
                 </div>
 
-                <section class="wizard-panel" data-step-panel>
+                <section class="wizard-panel" data-step-panel data-step-title="1. Datos basicos de la reserva"
+                         data-step-help="Identifica la vivienda, la referencia de Airbnb y cuantas personas vienen en esta reserva.">
                     <div>
                         <h2>Datos de la estancia</h2>
-                        <p>Empieza eligiendo la vivienda y una referencia que te ayude a reconocer este caso.</p>
+                        <p>Empieza eligiendo la vivienda y la referencia de Airbnb para reconocer esta reserva.</p>
                     </div>
+                    <div class="error-box" data-panel-errors hidden></div>
 
                     <label>
                         <span>Vivienda</span>
@@ -69,23 +68,28 @@
                                     th:value="${accommodation.id}"
                                     th:text="${accommodation.name}"></option>
                         </select>
+                        <small class="error" data-client-error-for="accommodationId"></small>
                         <small class="error" th:if="${#fields.hasErrors('accommodationId')}" th:errors="*{accommodationId}"></small>
                     </label>
 
+                    <div class="info-block">
+                        <strong>Canal</strong>
+                        <p>Esta estancia se guardara como reserva de Airbnb. El cobro se registrara automaticamente como pago a traves de plataforma.</p>
+                    </div>
+
                     <label>
-                        <span>Canal</span>
-                        <select th:field="*{channel}">
-                            <option th:each="channel : ${channels}"
-                                    th:value="${channel}"
-                                    th:text="${channel.label}"></option>
-                        </select>
-                        <small class="error" th:if="${#fields.hasErrors('channel')}" th:errors="*{channel}"></small>
+                        <span>Referencia Airbnb</span>
+                        <input th:field="*{referenceCode}" type="text" autocomplete="off">
+                        <small class="error" data-client-error-for="referenceCode"></small>
+                        <small class="error" th:if="${#fields.hasErrors('referenceCode')}" th:errors="*{referenceCode}"></small>
                     </label>
 
                     <label>
-                        <span>Referencia</span>
-                        <input th:field="*{referenceCode}" type="text" autocomplete="off">
-                        <small class="error" th:if="${#fields.hasErrors('referenceCode')}" th:errors="*{referenceCode}"></small>
+                        <span>Numero de personas</span>
+                        <input th:field="*{personCount}" type="number" min="1" max="20" inputmode="numeric">
+                        <small>Indica cuantas personas vienen en esta reserva.</small>
+                        <small class="error" data-client-error-for="personCount"></small>
+                        <small class="error" th:if="${#fields.hasErrors('personCount')}" th:errors="*{personCount}"></small>
                     </label>
 
                     <div class="wizard-actions">
@@ -94,82 +98,37 @@
                     </div>
                 </section>
 
-                <section class="wizard-panel" data-step-panel hidden>
+                <section class="wizard-panel" data-step-panel hidden
+                         data-step-title="2. Fechas de la estancia"
+                         data-step-help="Indica cuando se hizo la reserva y las fechas reales de entrada y salida.">
                     <div>
                         <h2>Fechas importantes</h2>
-                        <p>Ahora indica el contrato y las fechas de entrada y salida.</p>
+                        <p>Ahora indica cuando se cerro la reserva y las fechas de entrada y salida.</p>
                     </div>
+                    <div class="error-box" data-panel-errors hidden></div>
 
                     <div class="grid-two">
                         <label>
-                            <span>Fecha de contrato</span>
-                            <input th:field="*{contractDate}" type="date">
+                            <span>Fecha de reserva</span>
+                            <input th:field="*{contractDate}" type="date" autocomplete="off">
+                            <small class="error" data-client-error-for="contractDate"></small>
                             <small class="error" th:if="${#fields.hasErrors('contractDate')}" th:errors="*{contractDate}"></small>
                         </label>
 
                         <label>
                             <span>Entrada</span>
-                            <input th:field="*{checkInDate}" type="date">
+                            <input th:field="*{checkInDate}" type="date" autocomplete="off">
+                            <small class="error" data-client-error-for="checkInDate"></small>
                             <small class="error" th:if="${#fields.hasErrors('checkInDate')}" th:errors="*{checkInDate}"></small>
                         </label>
 
                         <label>
                             <span>Salida</span>
-                            <input th:field="*{checkOutDate}" type="date">
+                            <input th:field="*{checkOutDate}" type="date" autocomplete="off">
+                            <small class="error" data-client-error-for="checkOutDate"></small>
                             <small class="error" th:if="${#fields.hasErrors('checkOutDate')}" th:errors="*{checkOutDate}"></small>
                         </label>
                     </div>
-
-                    <div class="wizard-actions">
-                        <button type="button" class="button-ghost" data-step-prev>Volver</button>
-                        <button type="button" data-step-next>Seguir</button>
-                    </div>
-                </section>
-
-                <section class="wizard-panel" data-step-panel hidden>
-                    <div>
-                        <h2>Datos del pago</h2>
-                        <p>Estos datos ayudan a preparar el archivo. Si pagaste con tarjeta, añade tambien su caducidad.</p>
-                    </div>
-
-                    <div class="grid-two">
-                        <label>
-                            <span>Tipo de pago</span>
-                            <select th:field="*{paymentType}">
-                                <option th:each="paymentType : ${paymentTypes}"
-                                        th:value="${paymentType}"
-                                        th:text="${paymentType.label}"></option>
-                            </select>
-                            <small class="error" th:if="${#fields.hasErrors('paymentType')}" th:errors="*{paymentType}"></small>
-                        </label>
-
-                        <label>
-                            <span>Fecha de pago</span>
-                            <input th:field="*{paymentDate}" type="date">
-                            <small class="error" th:if="${#fields.hasErrors('paymentDate')}" th:errors="*{paymentDate}"></small>
-                        </label>
-                    </div>
-
-                    <div class="grid-two">
-                        <label>
-                            <span>Medio de pago</span>
-                            <input th:field="*{paymentMethod}" type="text" autocomplete="off">
-                            <small class="error" th:if="${#fields.hasErrors('paymentMethod')}" th:errors="*{paymentMethod}"></small>
-                        </label>
-
-                        <label>
-                            <span>Titular del pago</span>
-                            <input th:field="*{paymentHolder}" type="text" autocomplete="off">
-                            <small class="error" th:if="${#fields.hasErrors('paymentHolder')}" th:errors="*{paymentHolder}"></small>
-                        </label>
-                    </div>
-
-                    <label>
-                        <span>Caducidad de tarjeta</span>
-                        <input th:field="*{cardExpiry}" type="text" autocomplete="off" placeholder="MM/AAAA">
-                        <small>Solo si aplica para pagos con tarjeta.</small>
-                        <small class="error" th:if="${#fields.hasErrors('cardExpiry')}" th:errors="*{cardExpiry}"></small>
-                    </label>
 
                     <div class="wizard-actions">
                         <button type="button" class="button-ghost" data-step-prev>Volver</button>

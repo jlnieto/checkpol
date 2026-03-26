@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Check-in finalizado | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/styles.css}">
+</head>
+<body>
+<main class="shell shell-narrow">
+    <section class="card public-access-stack">
+        <div class="public-access-progress">
+            <div>
+                <strong>Check-in finalizado ✅</strong>
+                <p class="muted">Ya has completado los datos de todas las personas de la estancia.</p>
+            </div>
+        </div>
+
+        <div class="public-access-block public-access-stay">
+            <span class="public-access-label">Tu estancia</span>
+            <strong th:text="${access.booking.accommodation.name}">Casita</strong>
+            <p class="muted" th:text="${'Código de acceso: ' + access.booking.referenceCode}">Código de acceso: HMYECBTMZM</p>
+        </div>
+
+        <div class="public-access-block">
+            <p>Puedes cerrar esta página.</p>
+        </div>
+    </section>
+</main>
+</body>
+</html>

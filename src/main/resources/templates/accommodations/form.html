@@ -15,7 +15,7 @@
     </header>
 
     <section class="card">
-        <form th:action="${formAction}" th:object="${accommodationForm}" method="post" class="form-grid">
+        <form th:action="${formAction}" th:object="${accommodationForm}" method="post" class="form-grid" novalidate>
             <label>
                 <span>Nombre de la vivienda</span>
                 <input th:field="*{name}" type="text" autocomplete="off">
@@ -23,17 +23,24 @@
             </label>
 
             <label>
-                <span>Codigo SES de la vivienda</span>
+                <span>Codigo SES del establecimiento</span>
                 <input th:field="*{sesEstablishmentCode}" type="text" autocomplete="off">
-                <small>Es el codigo que despues ira en el archivo.</small>
+                <small>Es el codigo del establecimiento que aparece en SES Hospedajes.</small>
                 <small class="error" th:if="${#fields.hasErrors('sesEstablishmentCode')}" th:errors="*{sesEstablishmentCode}"></small>
             </label>
 
             <label>
-                <span>Numero de registro</span>
+                <span>Numero de registro turistico</span>
                 <input th:field="*{registrationNumber}" type="text" autocomplete="off">
-                <small>Opcional por ahora. Sirve para identificar mejor la vivienda.</small>
+                <small>Es la licencia o registro turistico oficial de la vivienda.</small>
                 <small class="error" th:if="${#fields.hasErrors('registrationNumber')}" th:errors="*{registrationNumber}"></small>
+            </label>
+
+            <label>
+                <span>Numero de habitaciones</span>
+                <input th:field="*{roomCount}" type="number" min="1" max="50" inputmode="numeric">
+                <small>Sirve para completar mejor los datos de la vivienda.</small>
+                <small class="error" th:if="${#fields.hasErrors('roomCount')}" th:errors="*{roomCount}"></small>
             </label>
 
             <div class="actions">

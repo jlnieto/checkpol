@@ -29,7 +29,9 @@ public class TravelerPartService {
     public String generateXml(Long bookingId) {
         BookingDetails details = bookingService.getDetails(bookingId);
         if (!details.readyForTravelerPart()) {
-            throw new IllegalStateException("La estancia no tiene todavia los datos minimos para generar el parte de viajeros.");
+            throw new IllegalStateException(details.blockingMessage() == null
+                ? "La estancia no esta lista para generar el archivo SES."
+                : details.blockingMessage());
         }
         String xml = xmlGenerator.generate(details);
         int nextVersion = generatedCommunicationRepository.findFirstByBookingIdOrderByVersionDesc(bookingId)

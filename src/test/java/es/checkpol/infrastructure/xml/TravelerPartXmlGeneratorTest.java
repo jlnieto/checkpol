@@ -1,6 +1,7 @@
 package es.checkpol.infrastructure.xml;
 
 import es.checkpol.domain.Accommodation;
+import es.checkpol.domain.Address;
 import es.checkpol.domain.Booking;
 import es.checkpol.domain.BookingChannel;
 import es.checkpol.domain.DocumentType;
@@ -8,6 +9,7 @@ import es.checkpol.domain.Guest;
 import es.checkpol.domain.GuestReviewStatus;
 import es.checkpol.domain.GuestSex;
 import es.checkpol.domain.GuestSubmissionSource;
+import es.checkpol.domain.MunicipalityResolutionStatus;
 import es.checkpol.domain.PaymentType;
 import es.checkpol.service.BookingDetails;
 import es.checkpol.service.BookingOperationalStatus;
@@ -30,6 +32,7 @@ class TravelerPartXmlGeneratorTest {
         Booking booking = new Booking(
             accommodation,
             "ABC123",
+            2,
             LocalDate.of(2026, 3, 20),
             BookingChannel.DIRECT,
             LocalDate.of(2026, 4, 1),
@@ -39,6 +42,18 @@ class TravelerPartXmlGeneratorTest {
             "Caja",
             "Ana Lopez",
             null
+        );
+        Address address = new Address(
+            booking,
+            "Calle Mayor 1",
+            null,
+            "28079",
+            null,
+            "Madrid",
+            MunicipalityResolutionStatus.EXACT,
+            "Municipio resuelto automaticamente.",
+            "28001",
+            "ESP"
         );
         Guest guest = new Guest(
             booking,
@@ -51,12 +66,7 @@ class TravelerPartXmlGeneratorTest {
             LocalDate.of(1990, 5, 1),
             "ESP",
             GuestSex.M,
-            "Calle Mayor 1",
-            null,
-            "28079",
-            null,
-            "28001",
-            "ESP",
+            address,
             "600000000",
             null,
             "ana@example.com",
@@ -69,13 +79,24 @@ class TravelerPartXmlGeneratorTest {
         String xml = generator.generate(new BookingDetails(
             booking,
             List.of(guest),
+            1,
+            1,
+            false,
             true,
             Optional.empty(),
             0,
             List.of(),
             Optional.empty(),
             BookingOperationalStatus.READY_FOR_XML,
-            0
+            0,
+            0,
+            false,
+            false,
+            false,
+            false,
+            null,
+            null,
+            List.of()
         ));
 
         assertTrue(xml.contains("<codigoEstablecimiento>H123456789</codigoEstablecimiento>"));

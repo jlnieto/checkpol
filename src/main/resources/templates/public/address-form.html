@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nueva direccion | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/styles.css}">
+</head>
+<body>
+<main class="shell shell-narrow">
+    <header class="page-header page-header-compact">
+        <a class="back-link" th:href="${backUrl}">← Volver</a>
+        <h1 th:text="${pageTitle}">Nueva direccion</h1>
+        <p class="muted" th:text="${access.booking.accommodation.name + ' · ' + access.booking.referenceCode}">Casita · ABC123</p>
+    </header>
+
+    <section class="card">
+        <form th:action="${formAction}" th:object="${addressForm}" method="post" class="form-grid">
+            <input th:if="${guestId != null}" type="hidden" name="guestId" th:value="${guestId}">
+            <input th:if="${slot != null}" type="hidden" name="slot" th:value="${slot}">
+            <input th:if="${extra}" type="hidden" name="extra" value="true">
+
+            <div class="error-box" th:if="${#fields.hasGlobalErrors()}">
+                <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+            </div>
+
+            <label>
+                <span>Direccion</span>
+                <input th:field="*{addressLine}" type="text" autocomplete="street-address" placeholder="Calle, numero y piso">
+                <small class="error" th:if="${#fields.hasErrors('addressLine')}" th:errors="*{addressLine}"></small>
+            </label>
+
+            <label>
+                <span>Complemento</span>
+                <input th:field="*{addressComplement}" type="text" autocomplete="address-line2" placeholder="Piso, puerta, escalera...">
+                <small class="error" th:if="${#fields.hasErrors('addressComplement')}" th:errors="*{addressComplement}"></small>
+            </label>
+
+            <div class="grid-two">
+                <label>
+                    <span>Codigo postal</span>
+                    <input th:field="*{postalCode}" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="28001">
+                    <small class="error" th:if="${#fields.hasErrors('postalCode')}" th:errors="*{postalCode}"></small>
+                </label>
+                <label>
+                    <span>Municipio</span>
+                    <input th:field="*{municipalityName}" type="text" autocomplete="address-level2" placeholder="Madrid">
+                    <small class="error" th:if="${#fields.hasErrors('municipalityName')}" th:errors="*{municipalityName}"></small>
+                </label>
+            </div>
+
+            <label>
+                <span>Pais</span>
+                <select th:field="*{country}">
+                    <option value="">Selecciona...</option>
+                    <option th:each="country : ${countries}" th:value="${country.code}" th:text="${country.label + ' (' + country.code + ')'}"></option>
+                </select>
+                <small class="error" th:if="${#fields.hasErrors('country')}" th:errors="*{country}"></small>
+            </label>
+
+            <div class="wizard-actions">
+                <a class="button-ghost" th:href="${backUrl}">Cancelar</a>
+                <button type="submit">Guardar direccion</button>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>

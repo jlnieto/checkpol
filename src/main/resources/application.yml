@@ -9,3 +9,14 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
   shutdown: graceful
+
+checkpol:
+  security:
+    owner:
+      username: ${CHECKPOL_SECURITY_OWNER_USERNAME:owner}
+      password: ${CHECKPOL_SECURITY_OWNER_PASSWORD:cambiar-esta-clave}
+    admin:
+      username: ${CHECKPOL_SECURITY_ADMIN_USERNAME:admin}
+      password: ${CHECKPOL_SECURITY_ADMIN_PASSWORD:cambiar-clave-admin}
+  municipality:
+    cartociudad-base-url: ${CHECKPOL_MUNICIPALITY_CARTOCIUDAD_BASE_URL:https://www.cartociudad.es/geocoder/api/geocoder}

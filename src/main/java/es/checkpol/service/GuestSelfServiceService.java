@@ -1,8 +1,10 @@
 package es.checkpol.service;
 
 import es.checkpol.domain.Booking;
+import es.checkpol.repository.AddressRepository;
 import es.checkpol.repository.BookingRepository;
 import es.checkpol.repository.GuestRepository;
+import es.checkpol.web.AddressForm;
 import es.checkpol.web.GuestForm;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,17 +16,23 @@ import java.util.UUID;
 public class GuestSelfServiceService {
 
     private final BookingRepository bookingRepository;
+    private final AddressRepository addressRepository;
     private final GuestRepository guestRepository;
     private final GuestService guestService;
+    private final AddressService addressService;
 
     public GuestSelfServiceService(
         BookingRepository bookingRepository,
+        AddressRepository addressRepository,
         GuestRepository guestRepository,
-        GuestService guestService
+        GuestService guestService,
+        AddressService addressService
     ) {
         this.bookingRepository = bookingRepository;
+        this.addressRepository = addressRepository;
         this.guestRepository = guestRepository;
         this.guestService = guestService;
+        this.addressService = addressService;
     }
 
     @Transactional
@@ -42,12 +50,15 @@ public class GuestSelfServiceService {
         Booking booking = bookingRepository.findBySelfServiceToken(token)
             .orElseThrow(() -> new IllegalArgumentException("El enlace indicado no existe."));
         validateToken(booking);
+        var bookingGuests = guestRepository.findAllByBookingIdOrderByIdAsc(booking.getId());
         return new GuestSelfServiceDetails(
             booking,
             guestRepository.countByBookingId(booking.getId()),
-            guestRepository.findAllByBookingIdOrderByIdAsc(booking.getId()).stream()
+            booking.getPersonCount() == null ? 0 : booking.getPersonCount(),
+            bookingGuests.stream()
                 .filter(guest -> guest.getSubmissionSource() == es.checkpol.domain.GuestSubmissionSource.SELF_SERVICE)
-                .toList()
+                .toList(),
+            addressRepository.findAllByBookingIdOrderByIdAsc(booking.getId())
         );
     }
 
@@ -77,6 +88,14 @@ public class GuestSelfServiceService {
             throw new IllegalArgumentException("El huesped indicado no pertenece a este enlace.");
         }
         guestService.updateFromSelfService(guestId, form);
+    }
+
+    @Transactional
+    public Long createAddress(String token, AddressForm form) {
+        Booking booking = bookingRepository.findBySelfServiceToken(token)
+            .orElseThrow(() -> new IllegalArgumentException("El enlace indicado no existe."));
+        validateToken(booking);
+        return addressService.create(booking.getId(), form).getId();
     }
 
     @Transactional

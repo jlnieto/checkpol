@@ -27,7 +27,8 @@ public class AccommodationService {
         Accommodation accommodation = new Accommodation(
             form.name().trim(),
             form.sesEstablishmentCode().trim(),
-            normalize(form.registrationNumber())
+            normalize(form.registrationNumber()),
+            form.roomCount()
         );
         return accommodationRepository.save(accommodation);
     }
@@ -39,7 +40,8 @@ public class AccommodationService {
         return new AccommodationForm(
             accommodation.getName(),
             accommodation.getSesEstablishmentCode(),
-            accommodation.getRegistrationNumber() == null ? "" : accommodation.getRegistrationNumber()
+            accommodation.getRegistrationNumber() == null ? "" : accommodation.getRegistrationNumber(),
+            accommodation.getRoomCount()
         );
     }
 
@@ -50,7 +52,8 @@ public class AccommodationService {
         accommodation.update(
             form.name().trim(),
             form.sesEstablishmentCode().trim(),
-            normalize(form.registrationNumber())
+            normalize(form.registrationNumber()),
+            form.roomCount()
         );
         return accommodation;
     }

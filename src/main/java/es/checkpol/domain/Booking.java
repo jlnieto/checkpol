@@ -30,6 +30,9 @@ public class Booking {
     @Column(name = "reference_code", nullable = false, length = 80)
     private String referenceCode;
 
+    @Column(name = "person_count", nullable = false)
+    private Integer personCount;
+
     @Column(name = "contract_date", nullable = false)
     private LocalDate contractDate;
 
@@ -71,6 +74,7 @@ public class Booking {
     public Booking(
         Accommodation accommodation,
         String referenceCode,
+        Integer personCount,
         LocalDate contractDate,
         BookingChannel channel,
         LocalDate checkInDate,
@@ -83,6 +87,7 @@ public class Booking {
     ) {
         this.accommodation = accommodation;
         this.referenceCode = referenceCode;
+        this.personCount = personCount;
         this.contractDate = contractDate;
         this.channel = channel;
         this.checkInDate = checkInDate;
@@ -104,6 +109,10 @@ public class Booking {
 
     public String getReferenceCode() {
         return referenceCode;
+    }
+
+    public Integer getPersonCount() {
+        return personCount;
     }
 
     public LocalDate getContractDate() {
@@ -153,6 +162,7 @@ public class Booking {
     public void update(
         Accommodation accommodation,
         String referenceCode,
+        Integer personCount,
         LocalDate contractDate,
         BookingChannel channel,
         LocalDate checkInDate,
@@ -165,6 +175,7 @@ public class Booking {
     ) {
         this.accommodation = accommodation;
         this.referenceCode = referenceCode;
+        this.personCount = personCount;
         this.contractDate = contractDate;
         this.channel = channel;
         this.checkInDate = checkInDate;

@@ -2,6 +2,7 @@ package es.checkpol.service;
 
 public enum BookingOperationalStatus {
     WAITING_GUESTS("Sin huespedes"),
+    GUEST_COUNT_MISMATCH("Huespedes no coinciden"),
     REVIEW_PENDING("Revision pendiente"),
     INCOMPLETE("Incompleta"),
     READY_FOR_XML("Lista para XML"),

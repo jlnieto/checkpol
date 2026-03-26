@@ -7,6 +7,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
 
 import java.time.LocalDate;
 
@@ -32,33 +34,18 @@ public record GuestForm(
 
     @NotNull(message = "Indica la fecha de nacimiento.")
     @Past(message = "La fecha de nacimiento debe estar en el pasado.")
+    @DateTimeFormat(iso = ISO.DATE)
     LocalDate birthDate,
 
+    @NotBlank(message = "Selecciona la nacionalidad.")
     @Size(max = 3, message = "La nacionalidad debe tener 3 letras.")
     String nationality,
 
+    @NotNull(message = "Selecciona el sexo.")
     GuestSex sex,
 
-    @NotBlank(message = "Indica la direccion.")
-    @Size(max = 120, message = "La direccion no puede superar los 120 caracteres.")
-    String addressLine,
-
-    @Size(max = 120, message = "La informacion extra de direccion no puede superar los 120 caracteres.")
-    String addressComplement,
-
-    @Size(max = 5, message = "El codigo del municipio no puede superar los 5 caracteres.")
-    String municipalityCode,
-
-    @Size(max = 80, message = "El nombre de municipio no puede superar los 80 caracteres.")
-    String municipalityName,
-
-    @NotBlank(message = "Indica el codigo postal.")
-    @Size(max = 12, message = "El codigo postal no puede superar los 12 caracteres.")
-    String postalCode,
-
-    @NotBlank(message = "Indica el pais con 3 letras, por ejemplo ESP.")
-    @Size(min = 3, max = 3, message = "El pais debe tener 3 letras.")
-    String country,
+    @NotNull(message = "Selecciona una direccion.")
+    Long addressId,
 
     @Size(max = 20, message = "El telefono no puede superar los 20 caracteres.")
     String phone,
@@ -70,11 +57,30 @@ public record GuestForm(
     @Size(max = 250, message = "El correo no puede superar los 250 caracteres.")
     String email,
 
-    @Size(max = 5, message = "El parentesco no puede superar los 5 caracteres.")
+    @Size(max = 2, message = "El parentesco no puede superar los 2 caracteres.")
     String relationship
 ) {
 
     public GuestForm() {
-        this("", "", "", null, "", "", null, "ESP", null, "", "", "", "", "", "ESP", "", "", "", "");
+        this("", "", "", null, "", "", null, "ESP", null, null, "", "", "", "");
+    }
+
+    public GuestForm withAddressId(Long newAddressId) {
+        return new GuestForm(
+            firstName,
+            lastName1,
+            lastName2,
+            documentType,
+            documentNumber,
+            documentSupport,
+            birthDate,
+            nationality,
+            sex,
+            newAddressId,
+            phone,
+            phone2,
+            email,
+            relationship
+        );
     }
 }

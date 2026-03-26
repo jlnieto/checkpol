@@ -17,6 +17,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -50,7 +51,8 @@ class TravelerPartServiceTest {
     void rejectsGenerationWhenBookingIsIncomplete() {
         Mockito.when(bookingService.getDetails(1L)).thenReturn(sampleDetails(false));
 
-        assertThrows(IllegalStateException.class, () -> travelerPartService.generateXml(1L));
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> travelerPartService.generateXml(1L));
+        assertEquals("La estancia no esta lista.", exception.getMessage());
     }
 
     @Test
@@ -70,6 +72,7 @@ class TravelerPartServiceTest {
         Booking booking = new Booking(
             accommodation,
             "ABC123",
+            2,
             LocalDate.now(),
             BookingChannel.DIRECT,
             LocalDate.now().plusDays(2),
@@ -83,13 +86,24 @@ class TravelerPartServiceTest {
         return new BookingDetails(
             booking,
             List.<Guest>of(),
+            0,
+            2,
+            false,
             ready,
             Optional.empty(),
             0,
             List.of(),
             Optional.empty(),
             ready ? BookingOperationalStatus.READY_FOR_XML : BookingOperationalStatus.INCOMPLETE,
-            0
+            0,
+            0,
+            !ready,
+            !ready,
+            false,
+            false,
+            ready ? null : "La estancia no esta lista.",
+            ready ? null : "La estancia no esta lista.",
+            ready ? List.of() : List.of("La estancia no esta lista.")
         );
     }
 }

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Datos del huesped | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/styles.css}">
+</head>
+<body>
+<main class="shell shell-narrow">
+    <header class="page-header">
+        <h1>Datos de los huéspedes</h1>
+        <p class="public-access-intro">Completa los datos de todas las personas que se alojan</p>
+        <p class="muted public-access-intro-note">Es obligatorio y solo lleva 1–2 minutos por persona.</p>
+    </header>
+
+    <div class="flash" th:if="${flashMessage}" th:text="${flashMessage}"></div>
+
+    <section class="card public-access-stack">
+        <div class="public-access-progress">
+            <div>
+                <strong th:if="${!allGuestsCompleted}"
+                        th:text="${'Te falta ' + (access.expectedGuestCount - completedGuestCount) + ' huésped' + ((access.expectedGuestCount - completedGuestCount) == 1 ? '' : 'es') + ' por completar'}">Te falta 1 huésped por completar</strong>
+                <strong th:if="${allGuestsCompleted}"
+                        th:text="${completedGuestCount + ' de ' + access.expectedGuestCount + ' huéspedes completados ✅'}">2 de 2 huéspedes completados ✅</strong>
+            </div>
+            <div class="public-progress-bar" aria-hidden="true">
+                <span th:style="${'width:' + (access.expectedGuestCount == 0 ? 0 : (completedGuestCount * 100 / access.expectedGuestCount)) + '%'}"></span>
+            </div>
+        </div>
+
+        <div class="public-access-block public-access-stay">
+            <span class="public-access-label">Tu estancia</span>
+            <strong th:text="${access.booking.accommodation.name}">Casita</strong>
+            <p class="muted" th:text="${'Código de acceso: ' + access.booking.referenceCode}">Código de acceso: HMYECBTMZM</p>
+        </div>
+
+        <section class="public-guest-grid">
+            <a class="guest-card public-guest-link"
+               th:each="card : ${guestCards}"
+               th:href="@{${card.href}}"
+               th:classappend="${card.fullWidth} ? ' public-guest-link-wide' : ''">
+                <div class="guest-card-top">
+                    <div>
+                        <h3 th:text="${card.title}">Huésped 1</h3>
+                        <p class="muted" th:if="${!card.detail.isBlank()}" th:text="${card.detail}">Solo si sois más personas</p>
+                    </div>
+                    <span th:if="${!card.statusLabel.isBlank()}"
+                          class="status-pill"
+                          th:classappend="${' ' + card.statusClass}"
+                          th:text="${card.statusLabel}">Faltan datos</span>
+                </div>
+                <div class="public-guest-footer">
+                    <p class="public-guest-action" th:text="${card.actionLabel}">Completar datos</p>
+                    <span class="public-guest-chevron" aria-hidden="true">›</span>
+                </div>
+            </a>
+        </section>
+
+        <div class="public-access-finish" th:if="${allGuestsCompleted}">
+            <p class="public-access-finish-note">Todo listo para enviar ✅</p>
+            <a class="button-link public-finish-button" th:href="@{|/guest-access/${access.booking.selfServiceToken}/complete|}">Finalizar check-in</a>
+        </div>
+    </section>
+</main>
+</body>
+</html>
