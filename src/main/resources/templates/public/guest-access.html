@@ -16,7 +16,7 @@
 
     <div class="flash" th:if="${flashMessage}" th:text="${flashMessage}"></div>
 
-    <section class="card public-access-stack">
+    <section class="panel public-access-stack">
         <div class="public-access-progress">
             <div>
                 <strong th:if="${!allGuestsCompleted}"
@@ -59,7 +59,7 @@
 
         <div class="public-access-finish" th:if="${allGuestsCompleted}">
             <p class="public-access-finish-note">Todo listo para enviar ✅</p>
-            <a class="button-link public-finish-button" th:href="@{|/guest-access/${access.booking.selfServiceToken}/complete|}">Finalizar check-in</a>
+            <a class="btn public-finish-button" th:href="@{|/guest-access/${access.booking.selfServiceToken}/complete|}">Finalizar check-in</a>
         </div>
     </section>
 </main>

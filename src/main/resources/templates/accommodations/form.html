@@ -14,7 +14,7 @@
         <p>Guarda solo los datos necesarios para empezar a trabajar.</p>
     </header>
 
-    <section class="card">
+    <section class="panel">
         <form th:action="${formAction}" th:object="${accommodationForm}" method="post" class="form-grid" novalidate>
             <label>
                 <span>Nombre de la vivienda</span>
@@ -44,7 +44,7 @@
             </label>
 
             <div class="actions">
-                <button type="submit" th:text="${submitLabel}">Guardar vivienda</button>
+                <button class="btn" type="submit" th:text="${submitLabel}">Guardar vivienda</button>
             </div>
         </form>
     </section>

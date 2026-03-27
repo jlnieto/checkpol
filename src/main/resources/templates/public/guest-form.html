@@ -17,7 +17,7 @@
 
     <div class="flash" th:if="${flashMessage}" th:text="${flashMessage}"></div>
 
-    <section class="card">
+    <section class="panel">
         <form th:action="${publicEditGuestId != null} ? @{|/guest-access/${access.booking.selfServiceToken}/guests/${publicEditGuestId}|} : @{|/guest-access/${access.booking.selfServiceToken}/guests|}"
               th:object="${guestForm}" method="post" class="form-grid" data-wizard-form data-guest-form data-public-self-service novalidate
               th:attr="data-check-in-date=${#temporals.format(access.booking.checkInDate, 'yyyy-MM-dd')},data-initial-step=${initialStep}">
@@ -42,7 +42,7 @@
                          data-step-help="">
                     <div class="error-box" data-panel-errors hidden></div>
 
-                    <div class="grid-two">
+                    <div class="grid-2">
                         <label>
                             <span>Nombre</span>
                             <input th:field="*{firstName}" type="text" autocomplete="given-name"
@@ -67,7 +67,7 @@
                         <small class="error" th:if="${#fields.hasErrors('lastName2')}" th:errors="*{lastName2}"></small>
                     </label>
 
-                    <div class="grid-two">
+                    <div class="grid-2">
                         <label>
                             <span>Fecha de nacimiento</span>
                             <input th:field="*{birthDate}" type="date" autocomplete="bday" data-birth-date-field data-next-field="nationalityDisplay">
@@ -98,7 +98,7 @@
                          data-step-help="">
                     <div class="error-box" data-panel-errors hidden></div>
 
-                    <div class="grid-two">
+                    <div class="grid-2">
                         <label>
                             <span>Tipo de documento</span>
                             <select th:field="*{documentType}">
@@ -117,7 +117,7 @@
                         </label>
                     </div>
 
-                    <div class="grid-two">
+                    <div class="grid-2">
                         <label data-document-support-group hidden>
                             <span>Soporte del documento</span>
                             <input th:field="*{documentSupport}" type="text" autocomplete="off" data-document-support-field>
@@ -200,7 +200,7 @@
                          data-step-help="">
                     <div class="error-box" data-panel-errors hidden></div>
 
-                    <div class="grid-two">
+                    <div class="grid-2">
                         <label>
                             <span>Telefono</span>
                             <input th:field="*{phone}" type="tel" autocomplete="tel" inputmode="tel" placeholder="+34 600 123 123" data-phone-primary>

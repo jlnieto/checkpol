@@ -20,12 +20,12 @@
         </p>
     </header>
 
-    <section class="card" th:if="${#lists.isEmpty(accommodations)}">
+    <section class="panel" th:if="${#lists.isEmpty(accommodations)}">
         <p>No hay viviendas creadas todavia.</p>
-        <a class="button-link" th:href="@{/accommodations/new}">Crear primera vivienda</a>
+        <a class="btn" th:href="@{/accommodations/new}">Crear primera vivienda</a>
     </section>
 
-    <section class="card" th:unless="${#lists.isEmpty(accommodations)}">
+    <section class="panel" th:unless="${#lists.isEmpty(accommodations)}">
         <form th:action="${formAction}" th:object="${bookingForm}" method="post" class="form-grid" data-wizard-form data-booking-form novalidate>
             <div class="error-box" th:if="${#fields.hasGlobalErrors()}">
                 <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
@@ -94,7 +94,7 @@
 
                     <div class="wizard-actions">
                         <a class="button-ghost" th:href="@{/bookings}">Volver</a>
-                        <button type="button" data-step-next>Seguir</button>
+                        <button class="btn" type="button" data-step-next>Seguir</button>
                     </div>
                 </section>
 
@@ -107,7 +107,7 @@
                     </div>
                     <div class="error-box" data-panel-errors hidden></div>
 
-                    <div class="grid-two">
+                    <div class="grid-2">
                         <label>
                             <span>Fecha de reserva</span>
                             <input th:field="*{contractDate}" type="date" autocomplete="off">
@@ -132,7 +132,7 @@
 
                     <div class="wizard-actions">
                         <button type="button" class="button-ghost" data-step-prev>Volver</button>
-                        <button type="submit" th:text="${submitLabel}">Guardar estancia</button>
+                        <button class="btn" type="submit" th:text="${submitLabel}">Guardar estancia</button>
                     </div>
                 </section>
             </div>

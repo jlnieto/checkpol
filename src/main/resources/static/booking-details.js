@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const detailRoot = document.querySelector("[data-booking-detail]");
+    const detailRoot = document.querySelector(".booking-detail-page");
     if (!detailRoot) {
         return;
     }
@@ -17,10 +17,21 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        const originalLabel = copyButton.textContent;
+        window.clearTimeout(copyButton.copyResetTimeoutId);
+
         try {
             await navigator.clipboard.writeText(messageNode.textContent.trim());
+            copyButton.classList.add("button-link-copied");
+            copyButton.textContent = "Copiado";
+            copyButton.copyResetTimeoutId = window.setTimeout(() => {
+                copyButton.classList.remove("button-link-copied");
+                copyButton.textContent = originalLabel;
+            }, 1800);
             showFeedback("Mensaje copiado.", "success");
         } catch (error) {
+            copyButton.classList.remove("button-link-copied");
+            copyButton.textContent = originalLabel;
             showFeedback("No se pudo copiar el mensaje. Copialo manualmente.", "error");
         }
     });

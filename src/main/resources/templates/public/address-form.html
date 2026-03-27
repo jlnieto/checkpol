@@ -14,7 +14,7 @@
         <p class="muted" th:text="${access.booking.accommodation.name + ' · ' + access.booking.referenceCode}">Casita · ABC123</p>
     </header>
 
-    <section class="card">
+    <section class="panel">
         <form th:action="${formAction}" th:object="${addressForm}" method="post" class="form-grid">
             <input th:if="${guestId != null}" type="hidden" name="guestId" th:value="${guestId}">
             <input th:if="${slot != null}" type="hidden" name="slot" th:value="${slot}">
@@ -36,7 +36,7 @@
                 <small class="error" th:if="${#fields.hasErrors('addressComplement')}" th:errors="*{addressComplement}"></small>
             </label>
 
-            <div class="grid-two">
+            <div class="grid-2">
                 <label>
                     <span>Codigo postal</span>
                     <input th:field="*{postalCode}" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="28001">

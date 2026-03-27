@@ -7,7 +7,7 @@
     <link rel="stylesheet" th:href="@{/styles.css}">
 </head>
 <body>
-<main class="shell owner-page-stack">
+<main class="shell page-stack owner-page-stack">
     <header class="page-header page-header-row page-header-compact">
         <div>
             <p class="eyebrow">Asistente diario</p>
@@ -15,14 +15,14 @@
             <p>Empieza por lo importante y abre despues el detalle de cada caso.</p>
         </div>
         <div class="top-actions">
-            <a class="button-link button-link-secondary" th:href="@{/accommodations/new}">Nueva vivienda</a>
-            <a class="button-link" th:href="@{/bookings/new}">Nueva estancia</a>
+            <a class="btn btn--secondary" th:href="@{/accommodations/new}">Nueva vivienda</a>
+            <a class="btn" th:href="@{/bookings/new}">Nueva estancia</a>
         </div>
     </header>
 
     <div class="flash" th:if="${flashMessage}" th:text="${flashMessage}"></div>
 
-    <section class="assistant-hero card">
+    <section class="assistant-hero panel">
         <div class="assistant-hero-copy">
             <p class="eyebrow">Siguiente paso</p>
             <h2 th:if="${countIncomplete > 0}">Revisa lo pendiente</h2>
@@ -41,10 +41,10 @@
             </p>
         </div>
         <div class="assistant-hero-actions">
-            <a class="button-link" th:if="${countIncomplete > 0}" th:href="@{/bookings(filter='incomplete')}">Ver pendientes</a>
-            <a class="button-link" th:if="${countIncomplete == 0 and countToday > 0}" th:href="@{/bookings(filter='today')}">Ver entradas de hoy</a>
-            <a class="button-link" th:if="${countIncomplete == 0 and countToday == 0 and countReady > 0}" th:href="@{/bookings(filter='ready')}">Ver listas para XML</a>
-            <a class="button-link" th:if="${countIncomplete == 0 and countToday == 0 and countReady == 0}" th:href="@{/bookings/new}">Crear estancia</a>
+            <a class="btn" th:if="${countIncomplete > 0}" th:href="@{/bookings(filter='incomplete')}">Ver pendientes</a>
+            <a class="btn" th:if="${countIncomplete == 0 and countToday > 0}" th:href="@{/bookings(filter='today')}">Ver entradas de hoy</a>
+            <a class="btn" th:if="${countIncomplete == 0 and countToday == 0 and countReady > 0}" th:href="@{/bookings(filter='ready')}">Ver listas para XML</a>
+            <a class="btn" th:if="${countIncomplete == 0 and countToday == 0 and countReady == 0}" th:href="@{/bookings/new}">Crear estancia</a>
         </div>
     </section>
 
@@ -71,7 +71,7 @@
         </a>
     </section>
 
-    <section class="card task-card owner-block" th:if="${selectedFilter == 'INCOMPLETE' and !#lists.isEmpty(bookings)}">
+    <section class="panel task-card owner-block" th:if="${selectedFilter == 'INCOMPLETE' and !#lists.isEmpty(bookings)}">
         <p class="eyebrow">Lista de tareas</p>
         <h2>Empieza por el primer caso de la lista</h2>
         <p>Cada tarjeta ya te dice que paso toca ahora.</p>
@@ -91,13 +91,13 @@
         </div>
     </section>
 
-    <section class="card owner-block" th:if="${#lists.isEmpty(bookings)}">
+    <section class="panel owner-block" th:if="${#lists.isEmpty(bookings)}">
         <h2>No hay estancias todavia</h2>
         <p th:if="${selectedFilter != 'INCOMPLETE'}">Empieza creando una vivienda y despues registra la primera estancia.</p>
         <p th:if="${selectedFilter == 'INCOMPLETE'}">Ahora mismo no hay nada pendiente. Puedes volver a la lista general o crear una nueva estancia.</p>
     </section>
 
-    <section class="card owner-block" th:unless="${#lists.isEmpty(bookings)}">
+    <section class="panel owner-block" th:unless="${#lists.isEmpty(bookings)}">
         <div class="stay-list">
             <article class="stay-card" th:each="item : ${bookings}">
                 <div class="stay-card-top">
@@ -138,7 +138,7 @@
                    th:text="${item.blockingSummary}"></p>
 
                 <div class="actions actions-single">
-                    <a class="button-link"
+                    <a class="btn"
                        th:href="@{|/bookings/${item.booking.id}|}"
                        th:with="actionLabel=(${item.operationalStatus.name() == 'REVIEW_PENDING'} ? 'Revisar huéspedes' : (${item.operationalStatus.name() == 'GUEST_COUNT_MISMATCH'} ? 'Editar estancia' : (${item.readyForTravelerPart} ? 'Revisar antes de generar' : (${item.operationalStatus.name() == 'WAITING_GUESTS'} ? 'Editar estancia' : 'Completar estancia'))))"
                        th:text="${actionLabel}">Abrir estancia</a>

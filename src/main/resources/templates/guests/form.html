@@ -15,7 +15,7 @@
         <p class="muted" th:text="${details.booking.accommodation.name + ' · ' + details.booking.referenceCode}">Casita · ABC123</p>
     </header>
 
-    <section class="card">
+    <section class="panel">
         <form th:action="${formAction}" th:object="${guestForm}" method="post" class="form-grid" data-wizard-form data-guest-form novalidate
               th:attr="data-check-in-date=${#temporals.format(details.booking.checkInDate, 'yyyy-MM-dd')},data-initial-step=${initialStep}">
             <div class="error-box" th:if="${#fields.hasGlobalErrors()}">
@@ -37,7 +37,7 @@
                          data-step-help="">
                     <div class="error-box" data-panel-errors hidden></div>
 
-                    <div class="grid-two">
+                    <div class="grid-2">
                         <label>
                             <span>Nombre</span>
                             <input th:field="*{firstName}" type="text" autocomplete="given-name"
@@ -62,7 +62,7 @@
                         <small class="error" th:if="${#fields.hasErrors('lastName2')}" th:errors="*{lastName2}"></small>
                     </label>
 
-                    <div class="grid-two">
+                    <div class="grid-2">
                         <label>
                             <span>Fecha de nacimiento</span>
                             <input th:field="*{birthDate}" type="date" autocomplete="bday" data-birth-date-field data-next-field="nationalityDisplay">
@@ -84,7 +84,7 @@
 
                     <div class="wizard-actions">
                         <a class="button-ghost" th:href="@{|/bookings/${details.booking.id}|}">Volver</a>
-                        <button type="button" data-step-next>Continuar</button>
+                        <button class="btn" type="button" data-step-next>Continuar</button>
                     </div>
                 </section>
 
@@ -94,7 +94,7 @@
                          data-step-help="">
                     <div class="error-box" data-panel-errors hidden></div>
 
-                    <div class="grid-two">
+                    <div class="grid-2">
                         <label>
                             <span>Tipo de documento</span>
                             <select th:field="*{documentType}">
@@ -113,7 +113,7 @@
                         </label>
                     </div>
 
-                    <div class="grid-two">
+                    <div class="grid-2">
                         <label data-document-support-group hidden>
                             <span>Soporte del documento</span>
                             <input th:field="*{documentSupport}" type="text" autocomplete="off" data-document-support-field>
@@ -145,7 +145,7 @@
 
                     <div class="wizard-actions">
                         <button type="button" class="button-ghost" data-step-prev>Volver</button>
-                        <button type="button" data-step-next>Continuar</button>
+                        <button class="btn" type="button" data-step-next>Continuar</button>
                     </div>
                 </section>
 
@@ -169,7 +169,7 @@
                             </label>
 
                             <button type="submit"
-                                    class="address-choice-card address-choice-card-secondary address-choice-card-link"
+                                    class="btn btn--secondary address-choice-card address-choice-card-secondary address-choice-card-link"
                                     th:formaction="${saveAddressDraftAction}"
                                     formmethod="post"
                                     data-skip-panel-validation>
@@ -186,7 +186,7 @@
 
                     <div class="wizard-actions">
                         <button type="button" class="button-ghost" data-step-prev>Volver</button>
-                        <button type="button" data-step-next>Continuar</button>
+                        <button class="btn" type="button" data-step-next>Continuar</button>
                     </div>
                 </section>
 
@@ -196,7 +196,7 @@
                          data-step-help="">
                     <div class="error-box" data-panel-errors hidden></div>
 
-                    <div class="grid-two">
+                    <div class="grid-2">
                         <label>
                             <span>Telefono</span>
                             <input th:field="*{phone}" type="tel" autocomplete="tel" inputmode="tel" placeholder="+34 600 123 123" data-phone-primary>
@@ -220,7 +220,7 @@
 
                     <div class="wizard-actions">
                         <button type="button" class="button-ghost" data-step-prev>Volver</button>
-                        <button type="submit">Guardar y finalizar</button>
+                        <button class="btn" type="submit">Guardar y finalizar</button>
                     </div>
                 </section>
             </div>

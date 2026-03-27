@@ -20,7 +20,7 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationSuccessHandler authenticationSuccessHandler) throws Exception {
         http
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/guest-access/**", "/login", "/error", "/styles.css", "/wizard-form.js").permitAll()
+                .requestMatchers("/guest-access/**", "/login", "/error", "/styles.css", "/css/**", "/wizard-form.js").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/").authenticated()
                 .requestMatchers("/bookings/**", "/accommodations/**").hasRole("OWNER")

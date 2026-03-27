@@ -97,7 +97,7 @@ class GuestControllerTest {
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                 .string(org.hamcrest.Matchers.containsString("Hay 1 huespedes registrados y la estancia esta configurada para 2 personas.")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
-                .string(org.hamcrest.Matchers.containsString("button-link button-link-disabled")))
+                .string(org.hamcrest.Matchers.containsString("btn btn--disabled")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                 .string(org.hamcrest.Matchers.containsString("Corrige esto para descargar.")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
