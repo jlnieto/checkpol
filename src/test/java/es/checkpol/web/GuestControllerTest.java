@@ -10,6 +10,7 @@ import es.checkpol.service.BookingService;
 import es.checkpol.service.AddressService;
 import es.checkpol.service.GuestService;
 import es.checkpol.service.GuestSelfServiceService;
+import es.checkpol.service.SelfServiceAccess;
 import es.checkpol.service.TravelerPartService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -102,6 +104,18 @@ class GuestControllerTest {
                 .string(org.hamcrest.Matchers.containsString("data-review-feedback")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                 .string(org.hamcrest.Matchers.containsString("booking-details.js")));
+    }
+
+    @Test
+    @WithMockUser(username = "owner", roles = "OWNER")
+    void preparesShareMessageUsingSelfServiceLink() throws Exception {
+        when(bookingService.getDetails(1L)).thenReturn(sampleDetails());
+        when(guestSelfServiceService.issueAccess(1L)).thenReturn(new SelfServiceAccess("abc123", OffsetDateTime.now().plusDays(7)));
+
+        mockMvc.perform(post("/bookings/1/share-self-service-link").with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/bookings/1"))
+            .andExpect(flash().attributeExists("shareMessage"));
     }
 
     @Test

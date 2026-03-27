@@ -6,6 +6,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const feedbackNode = detailRoot.querySelector("[data-review-feedback]");
 
+    detailRoot.addEventListener("click", async (event) => {
+        const copyButton = event.target.closest("[data-copy-share-message]");
+        if (!copyButton) {
+            return;
+        }
+
+        const messageNode = detailRoot.querySelector("[data-share-message-text]");
+        if (!messageNode) {
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(messageNode.textContent.trim());
+            showFeedback("Mensaje copiado.", "success");
+        } catch (error) {
+            showFeedback("No se pudo copiar el mensaje. Copialo manualmente.", "error");
+        }
+    });
+
     detailRoot.addEventListener("submit", async (event) => {
         const form = event.target.closest("[data-review-form]");
         if (!form) {
@@ -63,7 +82,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         syncSection("[data-owner-top-stack]", nextDocument);
         syncSection("[data-guests-section]", nextDocument);
-        syncSection("[data-files-section]", nextDocument, "[data-guests-section]");
+        syncSection("[data-owner-secondary]", nextDocument, "[data-guests-section]");
+        syncSection("[data-files-section]", nextDocument, "[data-owner-secondary]");
     }
 
     function syncSection(selector, nextDocument, insertAfterSelector) {

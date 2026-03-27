@@ -4,9 +4,11 @@ import es.checkpol.domain.DocumentType;
 import es.checkpol.domain.GuestRelationship;
 import es.checkpol.domain.GuestSex;
 import es.checkpol.service.AddressService;
+import es.checkpol.service.BookingDetails;
 import es.checkpol.service.BookingService;
 import es.checkpol.service.GuestService;
 import es.checkpol.service.GuestSelfServiceService;
+import es.checkpol.service.SelfServiceAccess;
 import es.checkpol.service.TravelerPartService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -22,8 +24,11 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @Controller
@@ -217,6 +222,32 @@ public class GuestController {
     public String issueSelfServiceLink(@PathVariable Long bookingId, RedirectAttributes redirectAttributes) {
         guestSelfServiceService.issueAccess(bookingId);
         redirectAttributes.addFlashAttribute("flashMessage", "Enlace para rellenar datos preparado.");
+        return "redirect:/bookings/" + bookingId;
+    }
+
+    @PostMapping("/bookings/{bookingId}/share-self-service-link")
+    public String prepareShareSelfServiceLink(@PathVariable Long bookingId, RedirectAttributes redirectAttributes) {
+        BookingDetails details = bookingService.getDetails(bookingId);
+        SelfServiceAccess access = details.selfServiceAccess()
+            .orElseGet(() -> guestSelfServiceService.issueAccess(bookingId));
+
+        String linkUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
+            .path("/guest-access/{token}")
+            .buildAndExpand(access.token())
+            .toUriString();
+        String message = "Hola. Para completar los datos de los huespedes de la estancia en "
+            + details.booking().getAccommodation().getName()
+            + ", usa este enlace: "
+            + linkUrl;
+
+        redirectAttributes.addFlashAttribute(
+            "shareMessage",
+            new GuestLinkShareMessage(
+                linkUrl,
+                message,
+                "https://wa.me/?text=" + URLEncoder.encode(message, StandardCharsets.UTF_8)
+            )
+        );
         return "redirect:/bookings/" + bookingId;
     }
 
