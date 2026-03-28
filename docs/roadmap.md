@@ -1,67 +1,90 @@
 # Roadmap de alto nivel
 
-## Objetivo de las fases
+## Objetivo
 
-Construir el producto por incrementos pequenos, manteniendo siempre coherencia con la vision global.
+Construir el producto por incrementos pequenos, dejando siempre algo usable y sin ensanchar el alcance por inercia.
 
-## Secuencia orientativa
+## Fases ya materializadas
 
-### Fase 0
-
-Base tecnica y estructura del proyecto.
-
-Resultado esperado:
+### Base tecnica
 
 - proyecto Spring Boot arrancable,
-- estructura clara,
-- documentacion base.
+- estructura de capas clara,
+- migraciones con Flyway,
+- tests base.
 
-### Fase 1
+### Operativa interna
 
-Primer flujo util minimo.
+- alta y edicion de viviendas,
+- alta y edicion de estancias,
+- alta y edicion de huespedes,
+- estados operativos de estancias,
+- detalle de estancia con acciones principales.
 
-Posible objetivo:
+### XML
 
-- alta simple de estancia o vivienda,
-- primer listado o detalle basico.
+- generacion manual de XML de `parte de viajeros`,
+- persistencia del XML generado,
+- versionado por estancia,
+- historial y descargas.
 
-### Fase 2
+### Autoservicio publico
 
-Captura de huespedes y validacion minima.
+- enlace por estancia con token y caducidad,
+- resumen publico de progreso,
+- alta y edicion publica de huespedes,
+- wizard guiado de varios pasos,
+- seleccion o creacion de direccion sin perder el contexto,
+- revision interna final antes del XML.
 
-### Fase 3
+### Admin de municipios
 
-Estado operativo de estancias y completitud.
+- dashboard inicial de incidencias de resolucion,
+- correccion manual,
+- aprendizaje de reglas para futuras coincidencias.
 
-### Fase 4
+## Fases razonables siguientes
 
-Generacion XML de parte de viajeros desacoplada y descarga manual.
+### 1. Cierre visual del frontend compartido
 
-### Fase 5
+- terminar la migracion de `owner` a la base visual compartida,
+- eliminar carga residual de CSS legacy cuando ya no sea necesaria.
 
-Vista operativa con pendientes, hoy e incompletas.
+### 2. Mejora operativa del autoservicio
 
-### Fase 6
+- reforzar mensajes y ayudas por paso,
+- ajustar edge cases del wizard,
+- mejorar consistencia movil entre vistas publicas relacionadas.
 
-Captura de datos por enlace para huespedes, con revision final del gestor antes de generar el XML.
-
-Estado:
-
-- implementada una primera version funcional.
-
-Pendientes razonables sobre esa linea:
+### 3. Mayor control del enlace publico
 
 - enlace individual por huesped,
-- limite de uso o cierre automatico,
-- notificaciones,
-- mayor control del ciclo de revision.
+- cierre por numero esperado de huespedes,
+- reglas mas estrictas de ciclo de vida del acceso.
+
+### 4. Capas de ayuda al gestor
+
+- mejoras en revision interna,
+- mejoras en resolucion de municipios,
+- mejor soporte a datos dudosos o incompletos.
+
+## Fuera del roadmap inmediato
+
+- integracion oficial con SES,
+- envio automatico al Ministerio,
+- OCR de documentos,
+- recordatorios automaticos,
+- integraciones con PMS,
+- multiusuario,
+- SaaS multi-tenant.
 
 ## Regla del roadmap
 
-Este roadmap orienta, pero no obliga a implementar nada fuera de la fase concreta pedida por el usuario.
+El roadmap orienta, pero no justifica implementar nada fuera del alcance concreto pedido.
 
 Cada fase debe:
 
 - dejar algo usable,
 - tener cierre funcional claro,
-- no ensanchar alcance sin autorizacion.
+- mantener el MVP pequeno,
+- no introducir complejidad estructural que hoy no haga falta.

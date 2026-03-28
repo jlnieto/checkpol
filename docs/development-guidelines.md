@@ -2,20 +2,19 @@
 
 ## Principios generales
 
-- Cambios pequenos.
+- Cambios pequenos y cerrados.
 - Implementar solo lo pedido.
 - No inventar requisitos.
 - Priorizar claridad y mantenibilidad.
-- Codigo sobrio y profesional.
-- Sin sobreingenieria.
+- Mantener el enfoque MVP-first.
 
 ## Estilo de implementacion
 
 - Preferir soluciones directas y explicitas.
 - Evitar capas o interfaces sin necesidad real.
-- Usar validaciones cercanas al caso de uso o al dominio.
 - Mantener nombres consistentes con el lenguaje del producto.
-- No meter patrones por costumbre.
+- Dejar la logica de negocio en servicios o dominio cuando aporte claridad.
+- No introducir patrones por costumbre.
 
 ## UX
 
@@ -24,39 +23,63 @@ La UX debe priorizar a una persona no tecnica.
 Criterios:
 
 - formularios claros,
+- siguiente accion evidente,
 - pocos pasos,
-- textos comprensibles,
 - validaciones utiles,
+- textos comprensibles,
 - vistas limpias,
-- sin ruido visual.
+- sin ruido visual innecesario.
 
-## Vistas
+## Frontend
 
-La interfaz inicial debe apoyarse en:
+La base visual objetivo converge hacia una unica compilacion de estilos.
 
-- Thymeleaf,
-- HTML simple,
-- CSS limpio,
-- sin JavaScript complejo salvo necesidad puntual.
+Reglas:
+
+- Tailwind CSS v4 es la base compartida para la evolucion del frontend.
+- No usar el CDN de Tailwind en plantillas.
+- La entrada compartida de estilos es `src/main/frontend/app.css`.
+- El CSS compilado servido por Spring es `src/main/resources/static/app.css`.
+- `public` y `admin` ya deben usar esa compilacion compartida.
+- `owner` puede seguir cargando CSS legacy mientras dure la migracion.
+- Si un patron visual se repite, extraerlo como fragmento Thymeleaf o capa pequena de utilidades compartidas.
+
+Scripts:
+
+- `npm install`
+- `npm run build:css`
+- `npm run watch:css`
+
+## JavaScript
+
+No introducir frameworks de frontend pesados para este MVP.
+
+Reglas:
+
+- usar JS propio cuando haya logica real de formulario o wizard,
+- evitar dependencias nuevas si no aportan retorno claro,
+- no introducir Alpine, React o SPA sin necesidad explicitamente justificada.
 
 ## Base de datos
 
-- PostgreSQL como base de datos objetivo.
-- Flyway para todas las migraciones.
+- PostgreSQL es la base objetivo.
+- Flyway es obligatorio para todos los cambios de esquema.
 - No modificar esquemas manualmente fuera de migraciones.
 
 ## Testing
 
-Cada fase debe dejar una verificacion proporcionada a su alcance.
+Cada cambio debe dejar una verificacion proporcionada a su alcance.
 
 Preferencias:
 
-- tests de contexto y de arranque para la base,
+- tests MVC para flujos web importantes,
 - tests de servicio para reglas de negocio,
-- tests MVC para formularios y flujos simples cuando aporten valor.
+- tests de contexto y arranque para la base,
+- tests de regresion cuando se corrija un bug operativo real.
 
-Documentar tambien el estado real cuando una fase quede implementada.
-No dejar en `README`, `AGENTS.md` o `docs/` una funcionalidad como futura si ya existe en el codigo.
+Comando base:
+
+- `./mvnw test`
 
 ## XML
 
@@ -65,29 +88,26 @@ Si una fase toca generacion XML:
 - aislar la generacion en un componente claro,
 - definir entradas bien nombradas,
 - no fijar como oficial una estructura no verificada,
-- implementar solo la modalidad de `parte de viajeros` salvo cambio explicito de alcance.
+- implementar solo `parte de viajeros` salvo cambio explicito de alcance.
+
+## Documentacion
+
+Actualizar `docs/` y `README.md` cuando cambie cualquiera de estos puntos:
+
+- alcance funcional real,
+- arquitectura,
+- frontend compartido,
+- flujos publicos o internos,
+- reglas de implementacion,
+- decisiones relevantes de producto.
+
+La documentacion debe reflejar lo que existe hoy en el codigo, no una mezcla de pasado y futuro.
 
 ## Lo que debe evitarse
 
-- React o SPA al inicio,
+- SPA al inicio,
 - microservicios,
 - colas,
 - automatizaciones prematuras,
 - autenticacion avanzada sin necesidad,
 - diseno de un PMS generalista.
-
-## Cuando actualizar la documentacion
-
-Actualizar `docs/` cuando cambie:
-
-- el alcance funcional,
-- la arquitectura,
-- el modelo de dominio,
-- las reglas de implementacion,
-- una decision importante de producto.
-
-Revisar tambien `README.md` y `AGENTS.md` cuando el cambio afecte:
-
-- al alcance real del MVP,
-- a flujos disponibles para el usuario,
-- a restricciones activas del proyecto.

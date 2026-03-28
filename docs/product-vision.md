@@ -2,85 +2,90 @@
 
 ## Problema que resolvemos
 
-El producto nace para resolver un problema real de pequeños propietarios de viviendas turisticas en Espana: registrar huespedes y preparar la comunicacion obligatoria a SES Hospedajes de una forma mas simple, mas rapida y con menos errores.
+Pequenos propietarios y gestores de viviendas turisticas en Espana tienen que recoger datos de huespedes y preparar la comunicacion obligatoria a SES Hospedajes. Hoy ese trabajo suele ser manual, repetitivo y propenso a errores.
 
-Hoy ese trabajo suele ser manual, incomodo y propenso a fallos. El objetivo del producto es reducir al minimo esa carga administrativa.
+`checkpol` busca reducir esa carga administrativa sin obligar al usuario a entender XML, normativa o flujos tecnicos complejos.
 
 ## Usuario principal
 
-Usuario inicial:
+Usuario objetivo inicial:
 
-- pequeño propietario o gestor de una o pocas viviendas,
+- pequeno propietario o gestor de una o pocas viviendas,
 - no tecnico,
-- centrado en rapidez y simplicidad,
-- sin interes en entender XML ni requisitos burocraticos.
-
-Usuario real de referencia:
-
-- el padre del promotor del producto.
+- orientado a rapidez y simplicidad,
+- con poca tolerancia a burocracia o interfaces recargadas.
 
 ## Resultado ideal
 
-El flujo objetivo para el usuario es:
+El flujo ideal del producto es:
 
-1. entrar en la aplicacion,
-2. ver o crear una estancia,
-3. completar los datos de los huespedes,
-4. validar que no falta nada esencial,
-5. pulsar un boton para generar el XML de parte de viajeros,
-6. descargar el XML,
-7. subirlo manualmente a SES.
+1. crear o abrir una estancia,
+2. completar los datos de los huespedes,
+3. revisar que no falta nada esencial,
+4. generar el XML de `parte de viajeros`,
+5. descargarlo,
+6. subirlo manualmente a SES.
 
 ## Propuesta de valor
 
-No se busca construir un PMS completo ni una plataforma compleja. Se busca resolver muy bien un problema concreto:
+El producto no compite como PMS completo. Su valor esta en resolver bien un trabajo muy concreto:
 
 - guardar la informacion necesaria,
-- validarla correctamente,
-- preparar un XML de parte de viajeros para carga masiva,
-- dejar trazabilidad operativa,
-- reducir parte de la carga manual mediante captura publica inicial de datos.
+- validarla con criterio operativo,
+- permitir una primera captura publica por enlace,
+- mantener revision interna cuando haga falta,
+- preparar el XML correcto para carga manual,
+- dejar trazabilidad de lo generado.
 
-## Objetivo del MVP
+## Estado real del MVP
 
-Entregar valor real desde fases tempranas con una herramienta util y sencilla.
+Hoy el MVP ya cubre:
 
-El MVP debe:
-
-- ser usable,
-- tener alcance pequeno,
-- evitar sobreingenieria,
-- permitir evolucion controlada.
+- gestion de viviendas,
+- gestion de estancias,
+- gestion manual de huespedes,
+- estados operativos de estancias,
+- generacion manual de XML de `parte de viajeros`,
+- historial versionado de XML,
+- enlace publico por estancia,
+- alta y edicion publica de huespedes,
+- creacion de direccion desde el flujo publico,
+- revision interna de huespedes enviados por enlace,
+- panel admin inicial para revisar incidencias de resolucion de municipios.
 
 ## Alcance XML confirmado
 
-La unica modalidad XML objetivo del MVP es `parte de viajeros`.
+La unica modalidad XML objetivo del producto es `parte de viajeros`.
 
-Queda fuera del alcance:
+Queda fuera de alcance:
 
-- XML de reserva de hospedaje,
-- otras modalidades de carga masiva de SES.
+- XML de `reserva de hospedaje`,
+- otras modalidades de carga masiva de SES,
+- integracion automatica con la API oficial.
 
-## Flujo publico ya implementado
+## Flujo publico implementado
 
-El producto ya incluye una primera implementacion para que el huesped complete sus datos mediante un enlace externo asociado a una estancia.
+El autoservicio publico ya no es una prueba minima. Ahora cubre un flujo guiado:
 
-Ese flujo:
+- acceso por token asociado a la estancia,
+- resumen publico del estado del check-in,
+- alta publica de huespedes por pasos,
+- edicion publica de huespedes ya creados,
+- seleccion de direccion existente o creacion de una nueva sin perder el progreso,
+- cierre del flujo con confirmacion y vuelta al resumen,
+- revision final interna antes de generar el XML.
 
-- usa token y fecha de caducidad,
-- permite alta y edicion publica de los huespedes enviados por enlace,
-- mantiene revision final interna antes de generar el XML.
+## Fuera del MVP actual
 
-Todavia no cubre variantes mas avanzadas como enlace individual por huesped, uso unico o notificaciones.
-
-## Fuera del MVP inicial
-
-Estas lineas de evolucion son posibles, pero no deben condicionar el diseno inicial mas alla de dejar puntos de extension razonables:
+Estas lineas pueden explorarse mas adelante, pero no deben condicionar el diseno actual:
 
 - OCR de documentos,
 - recordatorios automaticos,
-- integracion oficial,
+- integracion oficial con SES,
+- enlace individual por huesped,
+- uso unico o autocierre del enlace,
+- notificaciones,
 - check-in remoto,
 - integraciones con Airbnb o PMS,
 - multiusuario,
-- multi-tenant SaaS.
+- SaaS multi-tenant.

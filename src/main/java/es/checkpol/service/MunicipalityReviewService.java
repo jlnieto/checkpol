@@ -11,8 +11,10 @@ import es.checkpol.repository.MunicipalityResolutionRuleRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Normalizer;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 @Service
@@ -46,14 +48,24 @@ public class MunicipalityReviewService {
             return;
         }
 
+        String municipalityQueryLabel = normalizeResolutionLabel(
+            resolution.municipalityQueryLabel(),
+            resolution.municipalityResolvedName(),
+            resolution.municipalityCode()
+        );
+        String municipalityQueryNormalized = normalizeResolutionQuery(
+            resolution.municipalityQueryNormalized(),
+            municipalityQueryLabel
+        );
+
         MunicipalityResolutionIssue issue = issueRepository.findFirstByGuestIdAndIssueStatus(guest.getId(), MunicipalityIssueStatus.OPEN)
             .orElseGet(() -> new MunicipalityResolutionIssue(
                 guest,
                 guest.getCountry(),
                 guest.getPostalCode(),
                 resolution.postalCodePrefix(),
-                resolution.municipalityQueryNormalized(),
-                resolution.municipalityQueryLabel(),
+                municipalityQueryNormalized,
+                municipalityQueryLabel,
                 resolution.municipalityCode(),
                 resolution.municipalityResolvedName(),
                 resolution.status(),
@@ -66,8 +78,8 @@ public class MunicipalityReviewService {
         issue.refreshAutomaticAssignment(
             guest.getPostalCode(),
             resolution.postalCodePrefix(),
-            resolution.municipalityQueryNormalized(),
-            resolution.municipalityQueryLabel(),
+            municipalityQueryNormalized,
+            municipalityQueryLabel,
             resolution.municipalityCode(),
             resolution.municipalityResolvedName(),
             resolution.status(),
@@ -163,5 +175,47 @@ public class MunicipalityReviewService {
     private void closeOpenIssue(Guest guest) {
         issueRepository.findFirstByGuestIdAndIssueStatus(guest.getId(), MunicipalityIssueStatus.OPEN)
             .ifPresent(issue -> issue.closeSilently(OffsetDateTime.now()));
+    }
+
+    private String normalizeResolutionLabel(String queryLabel, String resolvedName, String municipalityCode) {
+        String label = blankToNull(queryLabel);
+        if (label != null) {
+            return label;
+        }
+        label = blankToNull(resolvedName);
+        if (label != null) {
+            return label;
+        }
+        return municipalityCode == null || municipalityCode.isBlank() ? "Municipio no indicado" : municipalityCode.trim();
+    }
+
+    private String normalizeResolutionQuery(String queryNormalized, String fallbackLabel) {
+        String normalized = blankToNull(queryNormalized);
+        if (normalized != null) {
+            return normalized;
+        }
+
+        String fallback = normalizeText(fallbackLabel);
+        return fallback == null ? "municipio no indicado" : fallback;
+    }
+
+    private String blankToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private String normalizeText(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+            .replaceAll("\\p{M}+", "")
+            .replaceAll("[^A-Za-z0-9 ]", " ")
+            .toLowerCase(Locale.ROOT)
+            .replaceAll("\\s+", " ")
+            .trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 }

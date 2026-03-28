@@ -14,7 +14,7 @@ checkpol:
   security:
     owner:
       username: ${CHECKPOL_SECURITY_OWNER_USERNAME:owner}
-      password: ${CHECKPOL_SECURITY_OWNER_PASSWORD:cambiar-esta-clave}
+      password: ${CHECKPOL_SECURITY_OWNER_PASSWORD:1234}
     admin:
       username: ${CHECKPOL_SECURITY_ADMIN_USERNAME:admin}
       password: ${CHECKPOL_SECURITY_ADMIN_PASSWORD:cambiar-clave-admin}

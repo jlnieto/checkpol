@@ -2,15 +2,16 @@
 
 ## Decision principal
 
-La aplicacion se construye como un monolito clasico Spring Boot.
+`checkpol` se construye como un monolito clasico Spring Boot.
 
 No existe separacion `backend/frontend` porque el producto usa:
 
 - Spring MVC,
 - Thymeleaf,
-- recursos estaticos simples.
+- recursos estaticos simples,
+- JavaScript puntual para formularios guiados.
 
-Esta decision reduce complejidad, acelera el MVP y encaja con una UX sencilla para escritorio y movil.
+Esta decision reduce complejidad, acelera el MVP y encaja con un producto de operativa sencilla para escritorio y movil.
 
 ## Stack
 
@@ -21,6 +22,7 @@ Esta decision reduce complejidad, acelera el MVP y encaja con una UX sencilla pa
 - PostgreSQL
 - Flyway
 - Bean Validation
+- Tailwind CSS v4
 
 ## Estructura del repositorio
 
@@ -28,11 +30,13 @@ Esta decision reduce complejidad, acelera el MVP y encaja con una UX sencilla pa
 checkpol/
   AGENTS.md
   README.md
+  package.json
   docs/
   ops/
   pom.xml
   src/
     main/
+      frontend/
       java/es/checkpol/
       resources/
         application.yml
@@ -44,8 +48,6 @@ checkpol/
 ```
 
 ## Estructura de paquetes
-
-La organizacion base prevista es:
 
 ```text
 es.checkpol
@@ -62,8 +64,9 @@ Responsabilidades:
 
 - controladores MVC,
 - formularios,
-- mapeo web basico,
-- vistas Thymeleaf.
+- binding y validacion web,
+- vistas Thymeleaf,
+- flujos internos y publicos.
 
 ### `service`
 
@@ -72,72 +75,79 @@ Responsabilidades:
 - coordinar casos de uso,
 - aplicar reglas de aplicacion,
 - orquestar repositorios y adaptadores,
-- calcular estado operativo de estancias,
-- gestionar revision interna de datos cargados por enlace.
+- gestionar el ciclo de vida operativo de estancias,
+- gestionar autoservicio publico y revision,
+- resolver y revisar municipios cuando haga falta.
 
 ### `domain`
 
 Responsabilidades:
 
 - entidades,
-- value objects si aportan claridad,
 - enums,
 - reglas del dominio,
 - trazabilidad de origen y revision de huespedes,
-- versionado de XML generado.
+- versionado de XML generado,
+- estado de resolucion de municipio en direcciones.
 
 ### `repository`
 
 Responsabilidades:
 
-- acceso a persistencia,
-- repositorios JPA o adaptadores equivalentes.
+- acceso a persistencia con Spring Data JPA,
+- consultas operativas por estado y revision,
+- soporte a incidencias y reglas aprendidas.
 
 ### `infrastructure`
 
 Responsabilidades:
 
+- generacion XML,
 - adaptadores tecnicos,
-- generacion XML de parte de viajeros,
-- configuracion externa,
-- integraciones futuras cuando existan.
+- integraciones externas futuras,
+- lookup tecnico de municipios cuando aplique.
 
-## Principios arquitectonicos
+## Frontend
 
-- Mantener capas claras.
-- Evitar abstracciones prematuras.
-- No crear modulos o servicios separados sin necesidad.
-- Mantener aislada la logica de generacion XML.
-- Permitir evolucion futura sin pagar coste ahora.
+El frontend vive dentro del mismo monolito.
+
+Estado actual:
+
+- `public` y `admin` usan la compilacion compartida de Tailwind,
+- `owner` sigue parcialmente en CSS legacy,
+- existe una transicion controlada hacia una unica base visual.
+
+Piezas relevantes:
+
+- entrada de estilos: `src/main/frontend/app.css`
+- CSS compilado: `src/main/resources/static/app.css`
+- JS del wizard: `src/main/resources/static/wizard-form.js`
+
+No se usa SPA ni framework de frontend pesado.
 
 ## Persistencia
 
-La base de datos objetivo es PostgreSQL.
+La base de datos objetivo es PostgreSQL y se versiona con Flyway.
 
-Se usara Flyway para:
+La aplicacion ya persiste, entre otras cosas:
 
-- versionar esquema,
-- dejar trazabilidad de cambios,
-- mantener despliegues repetibles.
+- viviendas,
+- estancias,
+- huespedes,
+- direcciones separadas de huespedes,
+- XML generados con versionado,
+- acceso publico por token,
+- incidencias y reglas de resolucion de municipios.
 
-En tests puede usarse una base embebida para arrancar el contexto sin depender del entorno local.
+En tests se usa una base embebida para arrancar el contexto sin depender del entorno local.
 
 ## XML de SES
 
-La generacion XML debe estar desacoplada del resto del sistema.
+La generacion XML debe seguir desacoplada del resto del sistema.
 
-Para este proyecto, la unica modalidad XML objetivo es `parte de viajeros`.
-No se implementara la modalidad `reserva de hospedaje`.
+En este proyecto solo se implementa `parte de viajeros`.
 
-Diseno recomendado cuando toque implementarlo:
-
-1. modelo de entrada para la generacion,
-2. interfaz del generador,
-3. implementacion concreta.
-
-Esto permite cambiar la implementacion si se verifica el formato oficial o aparece una integracion distinta.
-
-Actualmente el sistema ya persiste cada XML generado asociado a una estancia, con:
+El sistema ya persiste cada XML generado asociado a una estancia, con:
 
 - version incremental por estancia,
 - fecha de generacion,
@@ -146,16 +156,35 @@ Actualmente el sistema ya persiste cada XML generado asociado a una estancia, co
 
 ## Enlace publico para huespedes
 
-Existe una primera implementacion separada del backoffice interno:
+El flujo publico ya es una parte estructural del producto:
 
-- el gestor genera o revoca un enlace por estancia,
+- el gestor genera o renueva un enlace por estancia,
 - el enlace tiene token y caducidad,
-- el huesped puede crear o editar sus propios datos en una vista publica,
-- los huespedes creados por este flujo quedan pendientes de revision interna.
+- el huesped puede crear o editar sus datos,
+- puede seleccionar una direccion existente o crear una nueva sin romper el wizard,
+- los datos enviados quedan sujetos a revision interna antes del XML.
+
+## Admin de municipios
+
+Existe un area admin inicial para resolver incidencias de municipio:
+
+- lista de incidencias abiertas,
+- correccion manual de municipio,
+- aprendizaje de reglas futuras a partir de la correccion.
+
+No es un backoffice generalista; es una herramienta puntual para no bloquear el flujo.
+
+## Principios arquitectonicos
+
+- Mantener capas claras.
+- Evitar abstracciones prematuras.
+- No crear modulos o servicios separados sin necesidad.
+- Mantener aislada la generacion XML.
+- Mantener el MVP pequeno, usable y evolutivo.
 
 ## Lo que no se debe hacer
 
 - No crear una API independiente y un frontend SPA por defecto.
-- No anadir eventos, colas o microservicios.
+- No anadir microservicios, colas o eventos sin necesidad real.
 - No disenar ya para multi-tenant.
 - No meter seguridad avanzada antes de que una fase lo requiera.

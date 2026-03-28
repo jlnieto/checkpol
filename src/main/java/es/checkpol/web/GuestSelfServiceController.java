@@ -38,8 +38,40 @@ public class GuestSelfServiceController {
     public String showDashboard(@PathVariable String token, Model model) {
         var access = guestSelfServiceService.getByToken(token);
         long completedGuestCount = access.guests().stream().filter(Guest::hasMinimumDataForTravelerPart).count();
+        List<PublicGuestCard> guestCards = buildGuestCards(access);
+        PublicGuestCard nextActionCard = null;
+        List<PublicGuestCard> remainingPendingGuestCards = new ArrayList<>();
+        List<PublicGuestCard> completedGuestCards = new ArrayList<>();
+        PublicGuestCard extraGuestCard = null;
+
+        for (PublicGuestCard card : guestCards) {
+            if (card.fullWidth()) {
+                extraGuestCard = card;
+                continue;
+            }
+            if ("status-ready".equals(card.statusClass())) {
+                completedGuestCards.add(card);
+                continue;
+            }
+            if (nextActionCard == null) {
+                nextActionCard = card;
+            } else {
+                remainingPendingGuestCards.add(card);
+            }
+        }
+
         model.addAttribute("access", access);
-        model.addAttribute("guestCards", buildGuestCards(access));
+        model.addAttribute("guestCards", guestCards);
+        model.addAttribute("nextActionCard", nextActionCard);
+        model.addAttribute("remainingPendingGuestCards", remainingPendingGuestCards);
+        model.addAttribute("completedGuestCards", completedGuestCards);
+        model.addAttribute("extraGuestCard", extraGuestCard);
+        model.addAttribute(
+            "guestSectionTitle",
+            access.expectedGuestCount() > 0 && completedGuestCount >= access.expectedGuestCount()
+                ? "Todo completo"
+                : (!remainingPendingGuestCards.isEmpty() ? "Sigue con lo que falta" : "Ya puedes revisar lo completado")
+        );
         model.addAttribute("completedGuestCount", completedGuestCount);
         model.addAttribute("allGuestsCompleted", access.expectedGuestCount() > 0 && completedGuestCount >= access.expectedGuestCount());
         return "public/guest-access";

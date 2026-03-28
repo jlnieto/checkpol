@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+@theme {
+    --color-primary: #137fec;
+    --color-background-light: #f7f9fc;
+    --color-background-dark: #101922;
+
+    --color-brand-text: #1c2733;
+    --color-brand-muted: #5a6b7c;
+    --color-brand-line: #ced9e5;
+    --color-brand-surface: #ffffff;
+    --color-brand-surface-strong: #f8fbff;
+
+    --font-sans: "Trebuchet MS", "Segoe UI", sans-serif;
+    --font-display: "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+@layer base {
+    body {
+        color: var(--color-brand-text);
+        background-color: var(--color-background-light);
+        font-family: var(--font-sans);
+    }
+}
+
+@layer components {
+    .public-panel {
+        @apply rounded-[28px] border border-slate-200/80 bg-white/94 shadow-[0_18px_48px_rgba(15,23,42,0.06)] ring-1 ring-white/60 backdrop-blur-sm;
+    }
+
+    .public-label {
+        @apply block text-sm font-semibold text-slate-700;
+    }
+
+    .public-input,
+    .public-select {
+        @apply mt-2 block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 shadow-sm outline-hidden transition duration-150 placeholder:text-slate-400 focus:border-primary/35 focus:ring-4 focus:ring-primary/10;
+    }
+
+    .public-hint {
+        @apply mt-2 block text-xs leading-5 text-slate-500;
+    }
+
+    .public-error {
+        @apply mt-2 block text-sm font-medium text-rose-600;
+    }
+
+    .public-error-box {
+        @apply rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-700;
+    }
+
+    .public-button-primary {
+        @apply inline-flex items-center justify-center rounded-2xl bg-slate-900 px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(15,23,42,0.16)] transition duration-150 hover:bg-primary focus:outline-hidden focus:ring-4 focus:ring-primary/15;
+    }
+
+    .public-button-secondary {
+        @apply inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-semibold text-slate-700 shadow-sm transition duration-150 hover:border-primary/25 hover:text-primary focus:outline-hidden focus:ring-4 focus:ring-primary/10;
+    }
+
+    .public-step-chip {
+        @apply rounded-2xl border border-slate-200/80 bg-white px-3 py-2 text-left transition duration-150;
+    }
+
+    .public-step-chip-title {
+        @apply text-sm font-semibold text-slate-700;
+    }
+
+    .public-step-chip-copy {
+        @apply mt-1 text-xs leading-5 text-slate-500;
+    }
+
+    .wizard-step-active {
+        @apply border-primary/25 bg-primary/8 shadow-sm;
+    }
+
+    .wizard-step-active .public-step-chip-title {
+        @apply text-primary;
+    }
+
+    .wizard-step-done {
+        @apply border-emerald-200 bg-emerald-50;
+    }
+
+    .wizard-step-done .public-step-chip-title {
+        @apply text-emerald-700;
+    }
+
+    .field-invalid .public-input,
+    .field-invalid .public-select,
+    .public-input.input-invalid,
+    .public-select.input-invalid {
+        @apply border-rose-300 bg-rose-50/60 text-rose-900 focus:border-rose-300 focus:ring-rose-100;
+    }
+
+    .field-valid .public-input,
+    .field-valid .public-select,
+    .public-input.input-valid,
+    .public-select.input-valid {
+        @apply border-emerald-300 bg-emerald-50/40 focus:border-emerald-300 focus:ring-emerald-100;
+    }
+
+    .address-choice-card-selected {
+        @apply border-primary/25 bg-primary/6 shadow-[0_14px_30px_rgba(19,127,236,0.10)];
+    }
+}

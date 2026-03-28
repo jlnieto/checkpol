@@ -1,19 +1,17 @@
 # Checkpol
 
-Aplicacion MVP para gestionar estancias y huespedes de viviendas turisticas y preparar el XML de parte de viajeros para carga manual en SES Hospedajes.
+Aplicacion MVP para pequenos propietarios o gestores de viviendas turisticas que necesitan registrar estancias, recoger datos de huespedes y preparar el XML de `parte de viajeros` para carga manual en SES Hospedajes.
 
 ## Proposito
 
-El producto esta orientado a pequeños propietarios o gestores de viviendas turisticas que necesitan reducir el trabajo manual de la comunicacion obligatoria de huespedes.
+`checkpol` no intenta ser un PMS ni automatizar toda la operativa de hospedaje. Su objetivo es resolver bien un problema concreto:
 
-Objetivo del MVP:
-
-1. registrar una estancia o contrato,
-2. registrar huespedes,
-3. validar datos esenciales,
-4. generar un XML descargable de parte de viajeros,
-5. permitir su carga manual en SES,
-6. ofrecer una primera captura publica de datos de huespedes por enlace con revision interna final.
+1. registrar una estancia,
+2. completar los datos de los huespedes,
+3. validar la informacion esencial,
+4. generar un XML descargable,
+5. mantener trazabilidad operativa,
+6. reducir carga manual con un flujo publico de autoservicio para huespedes.
 
 ## Estado actual
 
@@ -21,30 +19,32 @@ La aplicacion ya incluye:
 
 - alta y edicion de viviendas,
 - alta y edicion de estancias,
-- alta y edicion de huespedes,
-- validaciones operativas para preparar el parte de viajeros,
-- listado de estancias con filtros operativos,
-- generacion manual de XML de parte de viajeros,
-- historial de XML generados con version, fecha y descargas,
-- enlace publico por estancia para que los huespedes añadan o editen sus datos,
-- revision interna de huespedes enviados por enlace antes de generar el XML.
+- alta y edicion de huespedes desde backoffice,
+- wizard interno para alta y edicion de huespedes,
+- generacion manual de XML de `parte de viajeros`,
+- historial de XML generados por estancia con version y descargas,
+- enlace publico por estancia para que los huespedes completen sus datos,
+- flujo publico guiado en varios pasos con seleccion o creacion de direccion,
+- revision interna de huespedes enviados por enlace,
+- panel admin inicial para incidencias de resolucion de municipios.
 
-Limitaciones actuales importantes:
+Limitaciones importantes:
 
 - no existe integracion oficial con SES,
 - no se envia nada automaticamente al Ministerio,
-- el enlace publico es por estancia, no individual por huesped,
-- no hay uso unico del enlace ni cierre automatico por numero de huespedes,
-- no hay notificaciones ni envio automatico del enlace.
+- solo se trabaja con la modalidad XML de `parte de viajeros`,
+- el enlace publico sigue siendo por estancia, no individual por huesped,
+- no hay notificaciones ni envio automatico del enlace,
+- la migracion visual a Tailwind aun no esta cerrada en todo `owner`.
 
 ## Restricciones clave
 
 - No integrar por ahora con la API oficial de SES.
 - No automatizar el envio al Ministerio.
-- No inventar el formato oficial del XML como si fuera definitivo.
-- No implementar la modalidad XML de reserva de hospedaje.
-- No construir una SPA ni un PMS completo.
-- No introducir complejidad tecnica innecesaria.
+- No presentar como definitivo un formato XML no verificado.
+- No implementar la modalidad XML de `reserva de hospedaje`.
+- No convertir el producto en un PMS ni en una SPA compleja.
+- No introducir complejidad tecnica sin retorno claro para el MVP.
 
 ## Stack
 
@@ -54,10 +54,36 @@ Limitaciones actuales importantes:
 - Thymeleaf
 - PostgreSQL
 - Flyway
+- Bean Validation
+- Tailwind CSS v4 para la base visual compartida
+
+## Frontend
+
+La interfaz se sirve desde el mismo monolito Spring Boot.
+
+Estado actual del frontend:
+
+- `public` usa la compilacion compartida de Tailwind,
+- `admin` usa la compilacion compartida de Tailwind,
+- `owner` sigue en transicion desde CSS legacy a la base visual nueva.
+
+Archivos principales de estilo:
+
+- entrada Tailwind: `src/main/frontend/app.css`
+- CSS compilado servido por Spring: `src/main/resources/static/app.css`
+- JS del wizard: `src/main/resources/static/wizard-form.js`
+
+Scripts disponibles:
+
+```bash
+npm install
+npm run build:css
+npm run watch:css
+```
 
 ## Arranque local
 
-Forma recomendada, igual que en `whatsappbot`:
+Forma recomendada:
 
 ```bash
 dev up checkpol
@@ -72,38 +98,32 @@ dev logs checkpol
 dev url checkpol
 ```
 
-Si todavia no has dado de alta `checkpol` en `dev`, puedes arrancarlo manualmente:
-
-1. Levanta el stack local:
+Si `checkpol` todavia no esta dado de alta en `dev`, puedes arrancarlo manualmente:
 
 ```bash
 docker compose up -d
-```
-
-2. Ejecuta tests:
-
-```bash
 ./mvnw test
 ```
 
-3. Si necesitas compilar fuera de Docker:
+Si necesitas compilar fuera de Docker:
 
 ```bash
 ./mvnw clean package
 ```
-
-`checkpol` ya incluye `mvnw`, igual que `whatsappbot`, para no depender de la version de Maven instalada en la maquina.
 
 ## Estructura
 
 ```text
 checkpol/
   AGENTS.md
+  README.md
+  package.json
   docs/
   ops/
   pom.xml
   src/
     main/
+      frontend/
       java/es/checkpol/
       resources/
         application.yml
@@ -116,9 +136,9 @@ checkpol/
 
 ## Arquitectura
 
-Se usa un monolito clasico en la raiz del repositorio. No hay separacion `backend/frontend` porque en este MVP las vistas Thymeleaf y la logica MVC viven dentro de la misma aplicacion Spring Boot.
+Se usa un monolito clasico en la raiz del repositorio. No hay frontend separado.
 
-Paquetes previstos:
+Paquetes principales:
 
 - `es.checkpol.web`
 - `es.checkpol.service`
@@ -139,4 +159,4 @@ Documentacion principal del proyecto:
 - `docs/roadmap.md`
 - `docs/guest-self-service.md`
 - `docs/xml/README.md`
-- `ops/dev-java-projects/checkpol.conf.example`
+- `docs/stitch-mcp-usage.md`

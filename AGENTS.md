@@ -131,6 +131,42 @@ Los archivos clave son:
 - `docs/roadmap.md`
 - `docs/guest-self-service.md`
 - `docs/xml/README.md`
+- `docs/stitch-mcp-usage.md`
+
+## Uso de Stitch
+
+Para tareas de UI/UX usar Stitch por defecto, pero con estas reglas operativas:
+
+- consultar `docs/stitch-mcp-usage.md` antes de llamadas no triviales,
+- no asumir que los valores de ejemplo del MCP son exactamente los aceptados por backend,
+- para `deviceType`, preferir `MOBILE` o `DESKTOP` en mayusculas,
+- si `generate_screen_from_text` falla, reintentar sin `deviceType`,
+- no depender de `list_screens` como unica fuente de verdad,
+- usar `edit_screens` como alternativa a `generate_variants` si este falla con `invalid argument`.
+
+### Checklist rapido de Stitch
+
+Antes de una tarea de diseno:
+
+1. Crear o identificar `projectId`.
+2. Empezar por una llamada minima a `generate_screen_from_text`.
+3. Usar `deviceType` en mayusculas o no enviarlo.
+4. Guardar siempre `projectId`, `screenId` y `name` devueltos.
+5. Recuperar pantallas con `get_screen` si `list_screens` no devuelve nada.
+6. Para variantes A/B, preferir dos llamadas separadas a `edit_screens` si `generate_variants` falla.
+7. Si Stitch sigue fallando, explicarlo y continuar con la mejor alternativa local.
+
+### Ejemplos seguros
+
+- `generate_screen_from_text(projectId, prompt)` con prompt corto y claro.
+- `generate_screen_from_text(projectId, prompt, deviceType=\"MOBILE\")`
+- `edit_screens(projectId, selectedScreenIds, prompt, deviceType=\"MOBILE\")`
+
+### Casos a evitar
+
+- `deviceType` en minusculas (`mobile`, `desktop`) porque ha fallado en esta sesion.
+- depender de `list_screens` para descubrir pantallas recien creadas.
+- depender de `generate_variants` sin una prueba minima previa.
 
 ## Criterio de decision
 

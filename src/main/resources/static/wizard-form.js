@@ -10,6 +10,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const progressBar = form.querySelector("[data-step-progress-bar]");
         const stepTitle = form.querySelector("[data-current-step-title]");
         const stepHelp = form.querySelector("[data-current-step-help]");
+        const stepNoteShell = document.querySelector("[data-step-note-shell]");
+        const stepNote = document.querySelector("[data-step-note-text]");
         if (panels.length === 0) {
             return;
         }
@@ -37,10 +39,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const activePanel = panels[index];
             if (stepTitle && activePanel.dataset.stepTitle) {
-                stepTitle.textContent = `${activePanel.dataset.stepCount || `Paso ${index + 1} de ${panels.length}`} · ${activePanel.dataset.stepTitle}`;
+                stepTitle.textContent = activePanel.dataset.stepTitle;
             }
             if (stepHelp && activePanel.dataset.stepHelp) {
                 stepHelp.textContent = activePanel.dataset.stepHelp;
+            }
+            if (stepHelp) {
+                const helpText = activePanel.dataset.stepHelp || "";
+                stepHelp.textContent = helpText;
+                stepHelp.hidden = helpText.trim() === "";
+            }
+            if (stepNoteShell && stepNote) {
+                const noteText = activePanel.dataset.stepNote || "";
+                stepNote.textContent = noteText;
+                stepNoteShell.hidden = noteText.trim() === "";
             }
 
             syncGuestFormState(form);
@@ -860,13 +872,7 @@ function documentHint(documentType) {
 }
 
 function progressCopy(index, panelCount) {
-    if (index === 0) {
-        return `Paso 1 de ${panelCount} · Vas bien`;
-    }
-    if (index < panelCount - 1) {
-        return `Paso ${index + 1} de ${panelCount} · Solo quedan ${panelCount - (index + 1)} pasos`;
-    }
-    return `Paso ${index + 1} de ${panelCount} · Ultimo paso`;
+    return `Paso ${index + 1} de ${panelCount}`;
 }
 
 function scrollWizardToTop(form) {

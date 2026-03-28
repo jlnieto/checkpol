@@ -1,63 +1,70 @@
 # Alcance funcional
 
-## Vision completa del producto
-
-La vision completa cubre estas areas:
+## Alcance cubierto hoy
 
 ### A. Gestion de viviendas
 
-- alta de vivienda turistica,
-- datos del titular o responsable,
+- alta y edicion de vivienda turistica,
 - datos basicos de la vivienda,
-- posibilidad futura de varias viviendas por usuario.
+- datos del titular o responsable.
 
 ### B. Gestion de estancias
 
-- crear una estancia o contrato manualmente,
-- asociarlo a una vivienda,
-- indicar canal de origen si aporta valor operativo,
-- guardar numero de contrato o referencia interna,
-- guardar fechas de entrada y salida,
-- gestionar estado operativo.
+- crear una estancia manualmente,
+- asociarla a una vivienda,
+- guardar referencia interna o del canal,
+- guardar fechas operativas,
+- calcular estado operativo.
 
 ### C. Gestion de huespedes
 
-- añadir uno o varios huespedes a una estancia,
-- guardar datos obligatorios,
-- validar completitud,
-- permitir edicion sencilla,
+- anadir varios huespedes a una estancia,
+- editar huespedes existentes,
+- validar datos operativos,
 - distinguir origen manual o por enlace,
-- permitir revision final interna de datos enviados por enlace.
+- permitir revision final interna.
 
-### D. Generacion SES
+### D. Direcciones
 
-- generar XML de parte de viajeros desde una estancia,
-- persistir XML o referencia,
-- permitir descarga,
-- registrar trazabilidad,
-- mantener historial versionado.
+- direcciones separadas del huesped,
+- seleccion desde wizard,
+- creacion de nueva direccion desde el flujo interno o publico.
 
-### E. Vista operativa
+### E. Generacion SES
+
+- generar XML de `parte de viajeros`,
+- persistir versiones,
+- descargar XML ya generado,
+- registrar trazabilidad de descargas.
+
+### F. Vista operativa
 
 - listado de estancias,
-- pendientes de comunicar,
-- entradas de hoy,
-- estancias incompletas,
-- estancias con XML generado.
+- detalle de estancia,
+- pendientes de completar,
+- estado de revision,
+- estado de XML generado.
 
-### F. Captura publica inicial
+### G. Captura publica
 
-- generar enlace publico por estancia,
-- permitir alta publica de huespedes,
-- permitir edicion publica de los huespedes enviados por enlace,
-- mantener revision interna antes del XML.
+- enlace publico por estancia,
+- resumen publico de progreso,
+- alta y edicion publica de huespedes,
+- creacion de direccion dentro del flujo,
+- revision interna antes del XML.
+
+### H. Admin de municipios
+
+- listado de incidencias abiertas,
+- correccion manual,
+- aprendizaje de reglas de resolucion.
 
 ## Fuera del alcance actual
 
 - OCR de DNI o pasaporte,
 - recordatorios automaticos,
 - integracion oficial con SES,
-- XML de reserva de hospedaje,
+- XML de `reserva de hospedaje`,
 - enlace individual por huesped,
 - uso unico o autocierre del enlace,
 - notificaciones o envio automatico del enlace,
@@ -66,9 +73,9 @@ La vision completa cubre estas areas:
 - integraciones con Airbnb o PMS,
 - firma digital o check-in remoto.
 
-## Regla de alcance para fases
+## Regla de alcance para futuras fases
 
-Cada fase futura debe cumplir:
+Cada fase debe cumplir:
 
 - cambio pequeno,
 - alcance bien cerrado,
@@ -77,9 +84,9 @@ Cada fase futura debe cumplir:
 
 ## Criterio MVP-first
 
-Cuando haya varias opciones de implementacion, elegir la que:
+Cuando haya varias opciones, elegir la que:
 
 - entregue utilidad antes,
-- reduzca pasos para el usuario,
+- reduzca pasos al usuario,
 - minimice riesgo tecnico,
 - mantenga abierta una evolucion razonable.

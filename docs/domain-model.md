@@ -6,85 +6,129 @@
 
 Representa una vivienda turistica.
 
-Responsabilidades esperadas:
+Responsabilidades:
 
 - identificar la vivienda,
-- guardar datos basicos,
-- guardar datos del titular o responsable,
-- servir como contenedor de estancias.
+- guardar datos basicos y del titular,
+- actuar como contenedor de estancias.
 
-## Booking o Reservation
+### Booking
 
 Representa una estancia o contrato interno.
 
-Responsabilidades esperadas:
+Responsabilidades:
 
 - asociarse a una vivienda,
-- guardar identificador de contrato o referencia interna,
-- guardar canal de origen,
-- guardar fechas de entrada y salida,
+- guardar referencia interna o del canal,
+- guardar fechas de reserva, entrada y salida,
 - reflejar estado operativo,
-- mantener, cuando exista, un enlace publico temporal para captura de huespedes.
+- mantener, cuando exista, un acceso publico temporal para el autoservicio de huespedes.
 
-## Guest
+### Guest
 
 Representa un huesped asociado a una estancia.
 
-Responsabilidades esperadas:
+Responsabilidades:
 
 - guardar los datos necesarios para el parte de viajeros,
-- permitir validacion de completitud,
-- permitir edicion sencilla,
-- reflejar si se cargo manualmente o desde enlace,
-- reflejar si requiere revision interna.
+- reflejar origen de captura,
+- reflejar estado de revision,
+- permitir alta y edicion,
+- apuntar a una direccion habitual,
+- participar en la evaluacion de completitud de la estancia.
 
-## GeneratedCommunication o Submission
+### Address
 
-Representa una comunicacion generada.
+Representa la direccion habitual de residencia de una persona.
 
-Responsabilidades esperadas:
+Responsabilidades:
+
+- desacoplar la direccion del resto del formulario de huesped,
+- permitir reutilizacion dentro de una misma estancia,
+- guardar informacion necesaria para municipio, codigo postal y pais,
+- mantener datos de resolucion automatica o manual de municipio.
+
+### GeneratedCommunication
+
+Representa una comunicacion generada en XML.
+
+Responsabilidades:
 
 - asociarse a una estancia,
 - guardar momento de generacion,
-- guardar contenido XML o una referencia estable,
 - guardar version por estancia,
-- registrar descargas realizadas.
+- registrar descargas realizadas,
+- mantener trazabilidad del fichero generado.
+
+### SelfServiceAccess
+
+Representa el acceso publico por token a una estancia.
+
+Responsabilidades:
+
+- exponer un token publico por estancia,
+- controlar caducidad,
+- permitir regeneracion o revocacion,
+- separar el flujo publico del area interna.
+
+### MunicipalityResolutionIssue
+
+Representa una incidencia de resolucion de municipio que requiere seguimiento.
+
+Responsabilidades:
+
+- registrar una asignacion automatica que necesita revision,
+- dejar trazabilidad del texto original y del municipio asignado,
+- permitir correccion desde administracion.
+
+### MunicipalityResolutionRule
+
+Representa una regla aprendida por correccion manual.
+
+Responsabilidades:
+
+- recordar correcciones ya aceptadas,
+- reutilizar esas correcciones en futuras resoluciones similares,
+- reducir trabajo manual repetido.
 
 ## Relaciones conceptuales
 
 - Una `Accommodation` puede tener muchas `Booking`.
 - Una `Booking` pertenece a una `Accommodation`.
-- Una `Booking` puede tener muchos `Guest`.
+- Una `Booking` puede tener muchas `Guest`.
+- Una `Booking` puede tener muchas `Address`.
+- Un `Guest` pertenece a una `Booking`.
+- Un `Guest` referencia una `Address`.
 - Un `GeneratedCommunication` pertenece a una `Booking`.
+- Un `SelfServiceAccess` pertenece a una `Booking`.
+- Una `MunicipalityResolutionIssue` pertenece a un `Guest`.
 
 ## Vocabularios controlados
 
-Es razonable prever enums para:
+El sistema ya trabaja con enums y estados operativos como:
 
-- `BookingChannel`: `AIRBNB`, `BOOKING`, `DIRECT`, `OTHER`.
-- `DocumentType`: segun necesidad real y datos confirmados.
-- `BookingOperationalStatus`: `WAITING_GUESTS`, `REVIEW_PENDING`, `INCOMPLETE`, `READY_FOR_XML`, `XML_GENERATED`.
-- `GuestSubmissionSource`: `MANUAL`, `SELF_SERVICE`.
-- `GuestReviewStatus`: `PENDING_REVIEW`, `REVIEWED`.
-
-Estos vocabularios ya existen porque el sistema los usa en la operativa actual.
+- `BookingChannel`
+- `BookingOperationalStatus`
+- `DocumentType`
+- `GuestSubmissionSource`
+- `GuestReviewStatus`
+- `GuestSex`
+- `MunicipalityResolutionStatus`
+- `MunicipalityIssueStatus`
 
 ## Reglas de modelado
 
-- Nombres del dominio claros y consistentes.
+- Nombres de dominio claros y consistentes.
 - No introducir entidades futuras aun no usadas.
-- Evitar value objects si no clarifican realmente.
-- Mantener las validaciones esenciales cerca del dominio o del caso de uso.
+- Mantener validaciones esenciales cerca del dominio o del caso de uso.
+- Evitar modelar como definitivo lo que dependa de reglas SES no confirmadas.
 
 ## Regla critica sobre datos SES
 
-El modelo debe prepararse para alimentar un generador XML, pero no debe asumir campos o estructuras que no hayan sido confirmados para el formato oficial.
+El modelo debe servir para alimentar un generador XML, pero no debe inventar estructuras no verificadas.
 
-En este proyecto, el formato confirmado a implementar es el de `parte de viajeros`.
-La estructura de `reserva de hospedaje` no forma parte del alcance.
+En este proyecto:
 
-Si una fase requiere un modelo provisional:
-
-- marcarlo de forma explicita,
-- aislarlo de la implementacion definitiva,
-- no presentarlo como version oficial.
+- la modalidad implementada es `parte de viajeros`,
+- `reserva de hospedaje` sigue fuera de alcance,
+- cualquier ampliacion de modelo debe hacerse sin presentar como oficial un formato no confirmado.
