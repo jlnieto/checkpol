@@ -37,12 +37,6 @@ Construir el producto por incrementos pequenos, dejando siempre algo usable y si
 - seleccion o creacion de direccion sin perder el contexto,
 - revision interna final antes del XML.
 
-### Admin de municipios
-
-- dashboard inicial de incidencias de resolucion,
-- correccion manual,
-- aprendizaje de reglas para futuras coincidencias.
-
 ## Fases razonables siguientes
 
 ### 1. Cierre visual del frontend compartido
@@ -65,8 +59,15 @@ Construir el producto por incrementos pequenos, dejando siempre algo usable y si
 ### 4. Capas de ayuda al gestor
 
 - mejoras en revision interna,
-- mejoras en resolucion de municipios,
+- mejoras en validacion y cobertura del catálogo nacional de municipios,
 - mejor soporte a datos dudosos o incompletos.
+
+### 5. Endurecimiento del area administrativa
+
+- gestion de contraseñas y estado de usuarios,
+- trazabilidad de operaciones administrativas,
+- consolidar el módulo administrativo de `municipalities`,
+- vigilar y endurecer la compatibilidad con futuras publicaciones oficiales del callejero del INE.
 
 ## Fuera del roadmap inmediato
 
@@ -75,7 +76,6 @@ Construir el producto por incrementos pequenos, dejando siempre algo usable y si
 - OCR de documentos,
 - recordatorios automaticos,
 - integraciones con PMS,
-- multiusuario,
 - SaaS multi-tenant.
 
 ## Regla del roadmap

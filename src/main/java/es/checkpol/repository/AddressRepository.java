@@ -10,5 +10,9 @@ public interface AddressRepository extends JpaRepository<Address, Long> {
 
     List<Address> findAllByBookingIdOrderByIdAsc(Long bookingId);
 
+    List<Address> findAllByBookingIdAndBookingOwnerIdOrderByIdAsc(Long bookingId, Long ownerId);
+
     Optional<Address> findByIdAndBookingId(Long id, Long bookingId);
+
+    Optional<Address> findByIdAndBookingIdAndBookingOwnerId(Long id, Long bookingId, Long ownerId);
 }

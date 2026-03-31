@@ -24,6 +24,10 @@ public class Booking {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "owner_user_id", nullable = false)
+    private AppUser owner;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "accommodation_id", nullable = false)
     private Accommodation accommodation;
 
@@ -85,6 +89,39 @@ public class Booking {
         String paymentHolder,
         String cardExpiry
     ) {
+        this(
+            null,
+            accommodation,
+            referenceCode,
+            personCount,
+            contractDate,
+            channel,
+            checkInDate,
+            checkOutDate,
+            paymentType,
+            paymentDate,
+            paymentMethod,
+            paymentHolder,
+            cardExpiry
+        );
+    }
+
+    public Booking(
+        AppUser owner,
+        Accommodation accommodation,
+        String referenceCode,
+        Integer personCount,
+        LocalDate contractDate,
+        BookingChannel channel,
+        LocalDate checkInDate,
+        LocalDate checkOutDate,
+        PaymentType paymentType,
+        LocalDate paymentDate,
+        String paymentMethod,
+        String paymentHolder,
+        String cardExpiry
+    ) {
+        this.owner = owner;
         this.accommodation = accommodation;
         this.referenceCode = referenceCode;
         this.personCount = personCount;
@@ -101,6 +138,10 @@ public class Booking {
 
     public Long getId() {
         return id;
+    }
+
+    public AppUser getOwner() {
+        return owner;
     }
 
     public Accommodation getAccommodation() {

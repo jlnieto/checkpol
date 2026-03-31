@@ -4,7 +4,6 @@ import es.checkpol.domain.Accommodation;
 import es.checkpol.domain.Address;
 import es.checkpol.domain.Booking;
 import es.checkpol.domain.BookingChannel;
-import es.checkpol.domain.MunicipalityResolutionStatus;
 import es.checkpol.domain.PaymentType;
 import es.checkpol.config.SecurityConfig;
 import es.checkpol.service.GuestSelfServiceDetails;
@@ -283,9 +282,6 @@ class GuestSelfServiceControllerTest {
             null,
             "28079",
             "Madrid",
-            "Madrid",
-            MunicipalityResolutionStatus.EXACT,
-            "Municipio resuelto automaticamente.",
             "28001",
             "ESP"
         );

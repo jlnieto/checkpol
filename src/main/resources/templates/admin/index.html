@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Administración | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
+<main class="owner-shell">
+    <section class="owner-page">
+        <header class="owner-header">
+            <div>
+                <p class="owner-kicker">Administración</p>
+                <h1 class="owner-title">Panel del sistema</h1>
+                <p class="owner-copy">Desde aquí podrás gestionar usuarios propietarios y el catálogo global de municipalities.</p>
+            </div>
+            <div class="owner-home-actions">
+                <a class="owner-button-secondary" th:href="@{/admin/municipalities}">Municipalities</a>
+                <a class="owner-button-primary" th:href="@{/admin/users/new}">Nuevo usuario</a>
+            </div>
+        </header>
+
+        <section class="owner-grid-main">
+            <div class="owner-stack">
+                <section class="owner-priority-card">
+                    <div class="owner-banner-row">
+                        <div>
+                            <p class="owner-priority-eyebrow">Siguiente paso</p>
+                            <h2 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Gestiona los accesos del sistema</h2>
+                            <p class="owner-copy">Ahora mismo hay <span th:text="${ownerCount}">0</span> usuarios propietarios dados de alta.</p>
+                        </div>
+                        <div class="owner-banner-actions">
+                            <a class="owner-button-primary" th:href="@{/admin/users}">Ver usuarios</a>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="owner-card-soft p-6">
+                    <div class="space-y-3">
+                        <p class="owner-priority-eyebrow">Catálogo global</p>
+                        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">Actualiza municipalities y códigos postales</h2>
+                        <p class="owner-copy">La descarga, validación e importación del catálogo oficial vive ya en un módulo separado del área de usuarios.</p>
+                        <div class="owner-home-actions">
+                            <a class="owner-button-secondary" th:href="@{/admin/municipalities}">Abrir municipalities</a>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+    </section>
+</main>
+</body>
+</html>

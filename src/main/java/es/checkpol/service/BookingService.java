@@ -8,7 +8,6 @@ import es.checkpol.domain.GeneratedCommunication;
 import es.checkpol.domain.Guest;
 import es.checkpol.domain.GuestRelationship;
 import es.checkpol.domain.GuestReviewStatus;
-import es.checkpol.domain.MunicipalityResolutionStatus;
 import es.checkpol.domain.PaymentType;
 import es.checkpol.repository.AccommodationRepository;
 import es.checkpol.repository.BookingRepository;
@@ -34,25 +33,29 @@ public class BookingService {
     private final AccommodationRepository accommodationRepository;
     private final GuestRepository guestRepository;
     private final GeneratedCommunicationRepository generatedCommunicationRepository;
+    private final CurrentAppUserService currentAppUserService;
 
     public BookingService(
         BookingRepository bookingRepository,
         AccommodationRepository accommodationRepository,
         GuestRepository guestRepository,
-        GeneratedCommunicationRepository generatedCommunicationRepository
+        GeneratedCommunicationRepository generatedCommunicationRepository,
+        CurrentAppUserService currentAppUserService
     ) {
         this.bookingRepository = bookingRepository;
         this.accommodationRepository = accommodationRepository;
         this.guestRepository = guestRepository;
         this.generatedCommunicationRepository = generatedCommunicationRepository;
+        this.currentAppUserService = currentAppUserService;
     }
 
     @Transactional(readOnly = true)
     public List<BookingListItem> findAll() {
         List<BookingListItem> items = new ArrayList<>();
-        for (Booking booking : bookingRepository.findAllForList()) {
-            List<Guest> guests = guestRepository.findAllByBookingIdOrderByIdAsc(booking.getId());
-            int generatedCount = generatedCommunicationRepository.findAllByBookingIdOrderByGeneratedAtDesc(booking.getId()).size();
+        Long currentUserId = currentAppUserService.requireCurrentUserId();
+        for (Booking booking : bookingRepository.findAllForList(currentUserId)) {
+            List<Guest> guests = guestRepository.findAllByBookingIdAndBookingOwnerIdOrderByIdAsc(booking.getId(), currentUserId);
+            int generatedCount = generatedCommunicationRepository.findAllByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(booking.getId(), currentUserId).size();
             ReadinessAssessment assessment = assessReadiness(booking, guests);
             items.add(new BookingListItem(
                 booking,
@@ -79,10 +82,12 @@ public class BookingService {
     @Transactional
     public Booking create(BookingForm form) {
         validateDates(form);
-        Accommodation accommodation = accommodationRepository.findById(form.accommodationId())
+        var currentUser = currentAppUserService.requireCurrentUserEntity();
+        Accommodation accommodation = accommodationRepository.findByIdAndOwnerId(form.accommodationId(), currentUser.getId())
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa vivienda."));
 
         Booking booking = new Booking(
+            currentUser,
             accommodation,
             form.referenceCode().trim(),
             form.personCount(),
@@ -101,7 +106,7 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public BookingForm getForm(Long id) {
-        Booking booking = bookingRepository.findDetailById(id)
+        Booking booking = bookingRepository.findDetailById(id, currentAppUserService.requireCurrentUserId())
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa estancia."));
         return new BookingForm(
             booking.getAccommodation().getId(),
@@ -116,9 +121,10 @@ public class BookingService {
     @Transactional
     public Booking update(Long id, BookingForm form) {
         validateDates(form);
-        Booking booking = bookingRepository.findById(id)
+        Long currentUserId = currentAppUserService.requireCurrentUserId();
+        Booking booking = bookingRepository.findByIdAndOwnerId(id, currentUserId)
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa estancia."));
-        Accommodation accommodation = accommodationRepository.findById(form.accommodationId())
+        Accommodation accommodation = accommodationRepository.findByIdAndOwnerId(form.accommodationId(), currentUserId)
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa vivienda."));
         booking.update(
             accommodation,
@@ -139,10 +145,11 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public BookingDetails getDetails(Long id) {
-        Booking booking = bookingRepository.findDetailById(id)
+        Long currentUserId = currentAppUserService.requireCurrentUserId();
+        Booking booking = bookingRepository.findDetailById(id, currentUserId)
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa estancia."));
-        List<Guest> guests = guestRepository.findAllByBookingIdOrderByIdAsc(id);
-        List<GeneratedCommunication> communications = generatedCommunicationRepository.findAllByBookingIdOrderByGeneratedAtDesc(id);
+        List<Guest> guests = guestRepository.findAllByBookingIdAndBookingOwnerIdOrderByIdAsc(id, currentUserId);
+        List<GeneratedCommunication> communications = generatedCommunicationRepository.findAllByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(id, currentUserId);
         ReadinessAssessment assessment = assessReadiness(booking, guests);
         return new BookingDetails(
             booking,
@@ -345,7 +352,7 @@ public class BookingService {
         }
 
         if (blockedByAddressExport) {
-            reasons.add("Hay al menos una direccion en España sin un codigo de municipio exportable. Revisa la direccion o la resolucion del municipio antes de generar el archivo.");
+            reasons.add("Hay al menos una direccion en España sin un codigo de municipio exportable. Revisa la direccion y vuelve a seleccionar el municipio correcto antes de generar el archivo.");
         }
 
         if (blockedByGuestData) {
@@ -381,7 +388,7 @@ public class BookingService {
                 : pendingReviewGuestCount + " huespedes pendientes de revision";
         }
         if (blockedByAddressExport) {
-            return "Hay una direccion sin municipio exportable";
+            return "Hay una direccion sin codigo de municipio";
         }
         if (blockedByGuestData) {
             return "Faltan datos obligatorios de viajeros";
@@ -432,10 +439,7 @@ public class BookingService {
             return false;
         }
         if ("ESP".equalsIgnoreCase(guest.getCountry())) {
-            MunicipalityResolutionStatus status = guest.getMunicipalityResolutionStatus();
-            return !isBlank(guest.getMunicipalityCode())
-                && status != null
-                && !status.requiresReview();
+            return !isBlank(guest.getMunicipalityCode());
         }
         return !isBlank(guest.getMunicipalityName());
     }

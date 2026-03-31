@@ -1,10 +1,6 @@
 package es.checkpol.domain;
-
-import es.checkpol.service.MunicipalityResolution;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -37,16 +33,6 @@ public class Address {
     @Column(name = "municipality_name", length = 80)
     private String municipalityName;
 
-    @Column(name = "municipality_resolved_name", length = 80)
-    private String municipalityResolvedName;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "municipality_resolution_status", nullable = false, length = 30)
-    private MunicipalityResolutionStatus municipalityResolutionStatus;
-
-    @Column(name = "municipality_resolution_note", length = 255)
-    private String municipalityResolutionNote;
-
     @Column(name = "postal_code", nullable = false, length = 12)
     private String postalCode;
 
@@ -62,9 +48,6 @@ public class Address {
         String addressComplement,
         String municipalityCode,
         String municipalityName,
-        String municipalityResolvedName,
-        MunicipalityResolutionStatus municipalityResolutionStatus,
-        String municipalityResolutionNote,
         String postalCode,
         String country
     ) {
@@ -73,9 +56,6 @@ public class Address {
         this.addressComplement = addressComplement;
         this.municipalityCode = municipalityCode;
         this.municipalityName = municipalityName;
-        this.municipalityResolvedName = municipalityResolvedName;
-        this.municipalityResolutionStatus = municipalityResolutionStatus;
-        this.municipalityResolutionNote = municipalityResolutionNote;
         this.postalCode = postalCode;
         this.country = country;
     }
@@ -104,18 +84,6 @@ public class Address {
         return municipalityName;
     }
 
-    public String getMunicipalityResolvedName() {
-        return municipalityResolvedName;
-    }
-
-    public MunicipalityResolutionStatus getMunicipalityResolutionStatus() {
-        return municipalityResolutionStatus;
-    }
-
-    public String getMunicipalityResolutionNote() {
-        return municipalityResolutionNote;
-    }
-
     public String getPostalCode() {
         return postalCode;
     }
@@ -132,36 +100,6 @@ public class Address {
     }
 
     public String getDisplayLine2() {
-        String municipality = municipalityName != null && !municipalityName.isBlank()
-            ? municipalityName
-            : municipalityResolvedName;
-        return postalCode + " · " + municipality + " · " + country;
-    }
-
-    public MunicipalityResolution toMunicipalityResolution() {
-        return new MunicipalityResolution(
-            municipalityCode,
-            municipalityResolvedName,
-            municipalityResolutionStatus,
-            municipalityResolutionNote,
-            null,
-            municipalityName,
-            postalCode == null || postalCode.length() < 2 ? null : postalCode.substring(0, 2)
-        );
-    }
-
-    public void applyMunicipalityResolution(
-        String municipalityCode,
-        String municipalityResolvedName,
-        MunicipalityResolutionStatus municipalityResolutionStatus,
-        String municipalityResolutionNote
-    ) {
-        this.municipalityCode = municipalityCode;
-        if (this.municipalityName == null || this.municipalityName.isBlank()) {
-            this.municipalityName = municipalityResolvedName;
-        }
-        this.municipalityResolvedName = municipalityResolvedName;
-        this.municipalityResolutionStatus = municipalityResolutionStatus;
-        this.municipalityResolutionNote = municipalityResolutionNote;
+        return postalCode + " · " + municipalityName + " · " + country;
     }
 }

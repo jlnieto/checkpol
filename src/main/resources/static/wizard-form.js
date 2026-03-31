@@ -10,8 +10,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const progressBar = form.querySelector("[data-step-progress-bar]");
         const stepTitle = form.querySelector("[data-current-step-title]");
         const stepHelp = form.querySelector("[data-current-step-help]");
-        const stepNoteShell = document.querySelector("[data-step-note-shell]");
-        const stepNote = document.querySelector("[data-step-note-text]");
+        const wizardRoot = form.closest("[data-wizard-root]") || form.parentElement || form;
+        const stepNoteShell = wizardRoot.querySelector("[data-step-note-shell]");
+        const stepNote = wizardRoot.querySelector("[data-step-note-text]");
         if (panels.length === 0) {
             return;
         }
@@ -63,11 +64,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const findFirstErrorStep = () => {
             const stepWithError = panels.findIndex((panel) => {
-                if (panel.querySelector(".error:not(:empty)")) {
+                if (panel.querySelector("[data-server-error]:not(:empty), [data-client-error-for]:not(:empty)")) {
                     return true;
                 }
 
-                return Array.from(panel.querySelectorAll(".error-box"))
+                return Array.from(panel.querySelectorAll("[data-panel-errors]"))
                     .some((box) => !box.hidden && box.textContent.trim() !== "");
             });
 
@@ -379,7 +380,6 @@ function setupGuestFormEnhancements(form) {
 
     setupCountryAutocomplete(form);
     setupFieldNormalization(form);
-    setupPhoneFormatting(form);
     syncGuestFormState(form);
 }
 
@@ -476,13 +476,6 @@ function setupFieldNormalization(form) {
     });
 }
 
-function setupPhoneFormatting(form) {
-    const phoneField = form.querySelector("[name='phone']");
-    if (!phoneField) {
-        return;
-    }
-}
-
 function validateLiveField(form, field) {
     const panel = field.closest("[data-step-panel]");
     if (!panel || panel.hidden) {
@@ -546,7 +539,7 @@ function syncGuestFormState(form) {
 }
 
 function syncAddressSelectionState(form) {
-    form.querySelectorAll(".address-choice-card").forEach((card) => {
+    form.querySelectorAll("[data-address-choice-card]").forEach((card) => {
         const input = card.querySelector(".address-choice-input");
         card.classList.toggle("address-choice-card-selected", Boolean(input?.checked));
     });

@@ -232,8 +232,8 @@ class BookingControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
-    void deniesAdminAccessToOwnerArea() throws Exception {
+    @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
+    void blocksAdminAccessToOwnerArea() throws Exception {
         mockMvc.perform(get("/bookings"))
             .andExpect(status().isForbidden());
     }

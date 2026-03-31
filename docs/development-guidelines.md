@@ -50,6 +50,11 @@ Scripts:
 - `npm run build:css`
 - `npm run watch:css`
 
+Build:
+
+- Maven recompila la hoja compartida en `generate-resources`.
+- `./mvnw test` y `./mvnw clean package` deben seguir pasando con el CSS actualizado.
+
 ## JavaScript
 
 No introducir frameworks de frontend pesados para este MVP.

@@ -28,7 +28,7 @@ class HomeControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
+    @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
     void redirectsAdminToAdminArea() throws Exception {
         mockMvc.perform(get("/"))
             .andExpect(status().is3xxRedirection())

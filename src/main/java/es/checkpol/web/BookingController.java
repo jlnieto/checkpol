@@ -36,6 +36,9 @@ public class BookingController {
         List<es.checkpol.service.BookingListItem> readyItems = bookingService.findAll(BookingFilter.READY);
         List<es.checkpol.service.BookingListItem> todayItems = bookingService.findAll(BookingFilter.TODAY);
         List<es.checkpol.service.BookingListItem> upcomingItems = bookingService.findAll(BookingFilter.UPCOMING);
+        List<es.checkpol.service.BookingListItem> reviewQueue = incompleteItems.stream()
+            .limit(3)
+            .toList();
 
         model.addAttribute("bookings", switch (selectedFilter) {
             case ALL -> allItems;
@@ -44,6 +47,8 @@ public class BookingController {
             case TODAY -> todayItems;
             case UPCOMING -> upcomingItems;
         });
+        model.addAttribute("reviewQueue", reviewQueue);
+        model.addAttribute("nextBooking", incompleteItems.isEmpty() ? null : incompleteItems.getFirst());
         model.addAttribute("selectedFilter", selectedFilter.name());
         model.addAttribute("countAll", allItems.size());
         model.addAttribute("countIncomplete", incompleteItems.size());

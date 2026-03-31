@@ -1,10 +1,9 @@
 package es.checkpol.web;
 
 import es.checkpol.config.SecurityConfig;
-import es.checkpol.service.MunicipalityAdminDashboard;
-import es.checkpol.service.MunicipalityIssueSummary;
-import es.checkpol.service.MunicipalityReviewService;
-import es.checkpol.service.MunicipalityRuleSummary;
+import es.checkpol.domain.AppUserRole;
+import es.checkpol.service.AdminUserSummary;
+import es.checkpol.service.AppUserAdminService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -13,10 +12,8 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -34,58 +31,40 @@ class AdminControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private MunicipalityReviewService municipalityReviewService;
+    private AppUserAdminService appUserAdminService;
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
-    void showsMunicipalityDashboard() throws Exception {
-        when(municipalityReviewService.getDashboard()).thenReturn(sampleDashboard());
+    @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
+    void showsAdminDashboard() throws Exception {
+        when(appUserAdminService.countOwners()).thenReturn(2L);
+        when(appUserAdminService.findAllUsers()).thenReturn(List.of(
+            new AdminUserSummary(1L, "admin", "Administrador", AppUserRole.SUPER_ADMIN, true)
+        ));
 
-        mockMvc.perform(get("/admin/municipalities"))
+        mockMvc.perform(get("/admin"))
             .andExpect(status().isOk())
-            .andExpect(view().name("admin/municipalities"))
-            .andExpect(model().attributeExists("dashboard"))
-            .andExpect(model().attributeExists("issueCorrectionForm"));
+            .andExpect(view().name("admin/index"))
+            .andExpect(model().attributeExists("ownerCount"))
+            .andExpect(model().attributeExists("users"));
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
-    void storesManualCorrectionAndRedirects() throws Exception {
-        when(municipalityReviewService.getDashboard()).thenReturn(sampleDashboard());
-
-        mockMvc.perform(post("/admin/municipalities/issues/9")
+    @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
+    void createsOwnerUser() throws Exception {
+        mockMvc.perform(post("/admin/users")
                 .with(csrf())
-                .param("municipalityCode", "28079")
-                .param("municipalityName", "Madrid")
-                .param("resolutionNote", "Revisado manualmente"))
+                .param("username", "jose")
+                .param("displayName", "José")
+                .param("password", "secreta")
+                .param("active", "true"))
             .andExpect(status().is3xxRedirection())
-            .andExpect(redirectedUrl("/admin/municipalities"));
+            .andExpect(redirectedUrl("/admin/users"));
     }
 
     @Test
     @WithMockUser(username = "owner", roles = "OWNER")
-    void deniesOwnerAccessToAdminArea() throws Exception {
-        mockMvc.perform(get("/admin/municipalities"))
+    void blocksOwnerAccessToAdmin() throws Exception {
+        mockMvc.perform(get("/admin"))
             .andExpect(status().isForbidden());
-    }
-
-    private MunicipalityAdminDashboard sampleDashboard() {
-        return new MunicipalityAdminDashboard(
-            List.of(new MunicipalityIssueSummary(
-                9L,
-                1L,
-                "ABC123",
-                "Casa Olivo",
-                "Ana Lopez",
-                "28001",
-                "Madrd",
-                "28079",
-                "Madrid",
-                es.checkpol.domain.MunicipalityResolutionStatus.APPROXIMATED,
-                "Municipio aproximado automaticamente a partir del texto indicado.",
-                OffsetDateTime.now()
-            )),
-            List.of(new MunicipalityRuleSummary("ESP", "28", "Madrd", "28079", "Madrid", OffsetDateTime.now()))
-        );
     }
 }

@@ -12,19 +12,26 @@ import java.util.List;
 public class AccommodationService {
 
     private final AccommodationRepository accommodationRepository;
+    private final CurrentAppUserService currentAppUserService;
 
-    public AccommodationService(AccommodationRepository accommodationRepository) {
+    public AccommodationService(
+        AccommodationRepository accommodationRepository,
+        CurrentAppUserService currentAppUserService
+    ) {
         this.accommodationRepository = accommodationRepository;
+        this.currentAppUserService = currentAppUserService;
     }
 
     @Transactional(readOnly = true)
     public List<Accommodation> findAll() {
-        return accommodationRepository.findAll();
+        return accommodationRepository.findAllByOwnerIdOrderByNameAsc(currentAppUserService.requireCurrentUserId());
     }
 
     @Transactional
     public Accommodation create(AccommodationForm form) {
+        var currentUser = currentAppUserService.requireCurrentUserEntity();
         Accommodation accommodation = new Accommodation(
+            currentUser,
             form.name().trim(),
             form.sesEstablishmentCode().trim(),
             normalize(form.registrationNumber()),
@@ -35,7 +42,7 @@ public class AccommodationService {
 
     @Transactional(readOnly = true)
     public AccommodationForm getForm(Long id) {
-        Accommodation accommodation = accommodationRepository.findById(id)
+        Accommodation accommodation = accommodationRepository.findByIdAndOwnerId(id, currentAppUserService.requireCurrentUserId())
             .orElseThrow(() -> new IllegalArgumentException("La vivienda seleccionada no existe."));
         return new AccommodationForm(
             accommodation.getName(),
@@ -47,7 +54,7 @@ public class AccommodationService {
 
     @Transactional
     public Accommodation update(Long id, AccommodationForm form) {
-        Accommodation accommodation = accommodationRepository.findById(id)
+        Accommodation accommodation = accommodationRepository.findByIdAndOwnerId(id, currentAppUserService.requireCurrentUserId())
             .orElseThrow(() -> new IllegalArgumentException("La vivienda seleccionada no existe."));
         accommodation.update(
             form.name().trim(),

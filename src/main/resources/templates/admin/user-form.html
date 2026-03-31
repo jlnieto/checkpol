@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${formTitle + ' | Checkpol'}">Usuario | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
+<main class="owner-shell-narrow">
+    <section class="owner-page">
+        <header class="owner-header">
+            <div>
+                <p class="owner-kicker">Administración</p>
+                <h1 class="owner-title" th:text="${formTitle}">Nuevo usuario</h1>
+                <p class="owner-copy">Gestiona accesos de propietarios desde el panel administrativo.</p>
+            </div>
+        </header>
+
+        <section class="owner-form-shell">
+            <form th:action="@{${formAction}}" th:object="${adminUserForm}" method="post" class="space-y-4" novalidate>
+                <div class="owner-error-box error-box" th:if="${#fields.hasGlobalErrors()}">
+                    <p th:each="error : ${#fields.globalErrors()}" th:text="${error}">Error</p>
+                </div>
+
+                <label class="owner-label">
+                    <span>Usuario</span>
+                    <input class="owner-input" th:field="*{username}" type="text" autocomplete="username">
+                    <small class="owner-error error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></small>
+                </label>
+
+                <label class="owner-label">
+                    <span>Nombre visible</span>
+                    <input class="owner-input" th:field="*{displayName}" type="text" autocomplete="name">
+                    <small class="owner-error error" th:if="${#fields.hasErrors('displayName')}" th:errors="*{displayName}"></small>
+                </label>
+
+                <label class="owner-label">
+                    <span>Contraseña</span>
+                    <input class="owner-input" th:field="*{password}" type="password" autocomplete="new-password" placeholder="Solo rellena si quieres definir o cambiar la contraseña">
+                    <small class="owner-error error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></small>
+                </label>
+
+                <label class="inline-flex items-center gap-3 text-sm font-medium text-slate-700">
+                    <input th:field="*{active}" type="checkbox">
+                    <span>Usuario activo</span>
+                </label>
+
+                <div class="owner-form-actions">
+                    <a class="owner-button-secondary" th:href="@{/admin/users}">Cancelar</a>
+                    <button class="owner-button-primary" type="submit" th:text="${submitLabel}">Guardar</button>
+                </div>
+            </form>
+        </section>
+    </section>
+</main>
+</body>
+</html>

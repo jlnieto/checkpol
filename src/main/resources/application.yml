@@ -12,11 +12,18 @@ server:
 
 checkpol:
   security:
-    owner:
-      username: ${CHECKPOL_SECURITY_OWNER_USERNAME:owner}
-      password: ${CHECKPOL_SECURITY_OWNER_PASSWORD:1234}
-    admin:
+    bootstrap-admin:
       username: ${CHECKPOL_SECURITY_ADMIN_USERNAME:admin}
       password: ${CHECKPOL_SECURITY_ADMIN_PASSWORD:cambiar-clave-admin}
+      display-name: ${CHECKPOL_SECURITY_ADMIN_DISPLAY_NAME:Administrador}
   municipality:
-    cartociudad-base-url: ${CHECKPOL_MUNICIPALITY_CARTOCIUDAD_BASE_URL:https://www.cartociudad.es/geocoder/api/geocoder}
+    catalog:
+      import-on-startup: ${CHECKPOL_MUNICIPALITY_CATALOG_IMPORT_ON_STARTUP:false}
+      source: ${CHECKPOL_MUNICIPALITY_CATALOG_SOURCE:classpath-csv}
+      source-version: ${CHECKPOL_MUNICIPALITY_CATALOG_SOURCE_VERSION:example-v1}
+      municipalities-resource: ${CHECKPOL_MUNICIPALITY_CATALOG_MUNICIPALITIES_RESOURCE:classpath:municipality-catalog/spanish-municipalities.csv}
+      postal-mappings-resource: ${CHECKPOL_MUNICIPALITY_CATALOG_POSTAL_MAPPINGS_RESOURCE:classpath:municipality-catalog/spanish-postal-code-municipalities.csv}
+    admin:
+      default-source: ${CHECKPOL_MUNICIPALITY_ADMIN_DEFAULT_SOURCE:ine-open-data}
+      default-municipalities-url: ${CHECKPOL_MUNICIPALITY_ADMIN_DEFAULT_MUNICIPALITIES_URL:https://www.ine.es/daco/daco42/codmun/diccionario26.xlsx}
+      default-postal-mappings-url: ${CHECKPOL_MUNICIPALITY_ADMIN_DEFAULT_POSTAL_MAPPINGS_URL:https://www.ine.es/prodyser/callejero/caj_esp/caj_esp_072025.zip}

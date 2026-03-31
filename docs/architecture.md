@@ -75,9 +75,11 @@ Responsabilidades:
 - coordinar casos de uso,
 - aplicar reglas de aplicacion,
 - orquestar repositorios y adaptadores,
+- resolver autenticacion persistida y acceso al usuario actual,
 - gestionar el ciclo de vida operativo de estancias,
 - gestionar autoservicio publico y revision,
-- resolver y revisar municipios cuando haga falta.
+- validar direcciones españolas contra el catálogo local de municipios.
+- orquestar la descarga, previsualización e importación administrativa del catálogo global de municipalities.
 
 ### `domain`
 
@@ -86,9 +88,10 @@ Responsabilidades:
 - entidades,
 - enums,
 - reglas del dominio,
+- usuarios persistidos y roles de acceso,
 - trazabilidad de origen y revision de huespedes,
 - versionado de XML generado,
-- estado de resolucion de municipio en direcciones.
+- catalogo local de municipios y datos operativos de direccion.
 
 ### `repository`
 
@@ -96,7 +99,7 @@ Responsabilidades:
 
 - acceso a persistencia con Spring Data JPA,
 - consultas operativas por estado y revision,
-- soporte a incidencias y reglas aprendidas.
+- soporte a catálogo local de municipios y mappings por código postal.
 
 ### `infrastructure`
 
@@ -104,8 +107,7 @@ Responsabilidades:
 
 - generacion XML,
 - adaptadores tecnicos,
-- integraciones externas futuras,
-- lookup tecnico de municipios cuando aplique.
+- integraciones externas futuras.
 
 ## Frontend
 
@@ -113,7 +115,7 @@ El frontend vive dentro del mismo monolito.
 
 Estado actual:
 
-- `public` y `admin` usan la compilacion compartida de Tailwind,
+- `public` usa la compilacion compartida de Tailwind,
 - `owner` sigue parcialmente en CSS legacy,
 - existe una transicion controlada hacia una unica base visual.
 
@@ -131,13 +133,17 @@ La base de datos objetivo es PostgreSQL y se versiona con Flyway.
 
 La aplicacion ya persiste, entre otras cosas:
 
+- usuarios y roles,
 - viviendas,
 - estancias,
 - huespedes,
 - direcciones separadas de huespedes,
 - XML generados con versionado,
 - acceso publico por token,
-- incidencias y reglas de resolucion de municipios.
+- catalogo local de municipios y relacion codigo postal -> municipio.
+- histórico de importaciones administrativas del catálogo municipal.
+
+Los datos operativos internos se aislan por usuario propietario. No hay modelo multi-tenant; el aislamiento actual es por `AppUser`.
 
 En tests se usa una base embebida para arrancar el contexto sin depender del entorno local.
 
@@ -164,15 +170,24 @@ El flujo publico ya es una parte estructural del producto:
 - puede seleccionar una direccion existente o crear una nueva sin romper el wizard,
 - los datos enviados quedan sujetos a revision interna antes del XML.
 
-## Admin de municipios
+## Catálogo de municipios
 
-Existe un area admin inicial para resolver incidencias de municipio:
+Las direcciones de España se validan directamente contra una base local canónica:
 
-- lista de incidencias abiertas,
-- correccion manual de municipio,
-- aprendizaje de reglas futuras a partir de la correccion.
+- catálogo de municipios con código oficial,
+- relación código postal -> municipio,
+- selección guiada en formularios internos y públicos.
 
-No es un backoffice generalista; es una herramienta puntual para no bloquear el flujo.
+Para España el flujo operativo es único: código postal, selección de municipio del catálogo y almacenamiento directo del código oficial.
+
+La actualización del catálogo ya no depende solo de recursos empaquetados:
+
+- el `SUPER_ADMIN` dispone de `/admin/municipalities`,
+- la aplicación descarga el fichero oficial de municipios del INE por URL,
+- descarga el ZIP oficial del callejero por URL y deriva el mapping postal,
+- valida ambos datasets,
+- muestra una previsualización,
+- y solo después importa a base de datos con trazabilidad de la operación.
 
 ## Principios arquitectonicos
 
@@ -181,10 +196,11 @@ No es un backoffice generalista; es una herramienta puntual para no bloquear el 
 - No crear modulos o servicios separados sin necesidad.
 - Mantener aislada la generacion XML.
 - Mantener el MVP pequeno, usable y evolutivo.
+- Preferir aislamiento por usuario antes que introducir multi-tenant prematuro.
 
 ## Lo que no se debe hacer
 
 - No crear una API independiente y un frontend SPA por defecto.
 - No anadir microservicios, colas o eventos sin necesidad real.
 - No disenar ya para multi-tenant.
-- No meter seguridad avanzada antes de que una fase lo requiera.
+- No sobredisenar la seguridad mas alla del aislamiento por usuario y el `SUPER_ADMIN`.

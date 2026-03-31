@@ -5,67 +5,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Nueva direccion | Checkpol</title>
     <link rel="stylesheet" th:href="@{/app.css}">
-    <link rel="stylesheet" th:href="@{/css/base.css}">
-    <link rel="stylesheet" th:href="@{/css/components.css}">
-    <link rel="stylesheet" th:href="@{/css/owner.css}">
-    <link rel="stylesheet" th:href="@{/css/public.css}">
-    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <script th:src="@{/address-form.js}" defer></script>
 </head>
-<body>
-<main class="shell shell-narrow">
-    <header class="page-header page-header-compact">
-        <a class="back-link" th:href="${backUrl}">← Volver</a>
-        <h1 th:text="${pageTitle}">Nueva direccion</h1>
-        <p class="muted" th:text="${details.booking.accommodation.name + ' · ' + details.booking.referenceCode}">Casita · ABC123</p>
-    </header>
+<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
+<main class="owner-shell-narrow">
+    <section class="owner-page">
+        <header class="owner-header">
+            <a class="public-back-link" th:href="${backUrl}">
+                <span aria-hidden="true">←</span>
+                <span>Volver</span>
+            </a>
 
-    <section class="panel">
-        <form th:action="${formAction}" th:object="${addressForm}" method="post" class="form-grid">
-            <input th:if="${guestId != null}" type="hidden" name="guestId" th:value="${guestId}">
-
-            <div class="error-box" th:if="${#fields.hasGlobalErrors()}">
-                <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+            <div class="space-y-2">
+                <p class="owner-kicker">Direcciones</p>
+                <h1 class="owner-title" th:text="${pageTitle}">Nueva dirección</h1>
+                <p class="owner-copy" th:text="${details.booking.accommodation.name + ' · ' + details.booking.referenceCode}">Casita · ABC123</p>
             </div>
+        </header>
 
-            <label>
-                <span>Direccion</span>
-                <input th:field="*{addressLine}" type="text" autocomplete="street-address" placeholder="Calle, numero y piso">
-                <small class="error" th:if="${#fields.hasErrors('addressLine')}" th:errors="*{addressLine}"></small>
-            </label>
+        <section class="owner-form-shell">
+            <form th:action="${formAction}" th:object="${addressForm}" method="post" class="space-y-5" data-address-form>
+                <input th:if="${guestId != null}" type="hidden" name="guestId" th:value="${guestId}">
+                <input th:field="*{municipalityCode}" type="hidden" data-municipality-code-field>
 
-            <label>
-                <span>Complemento</span>
-                <input th:field="*{addressComplement}" type="text" autocomplete="address-line2" placeholder="Piso, puerta, escalera...">
-                <small class="error" th:if="${#fields.hasErrors('addressComplement')}" th:errors="*{addressComplement}"></small>
-            </label>
+                <div class="owner-error-box error-box" th:if="${#fields.hasGlobalErrors()}">
+                    <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+                </div>
 
-            <div class="grid-2">
-                <label>
-                    <span>Codigo postal</span>
-                    <input th:field="*{postalCode}" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="28001">
-                    <small class="error" th:if="${#fields.hasErrors('postalCode')}" th:errors="*{postalCode}"></small>
+                <label class="owner-label">
+                    <span>Dirección</span>
+                    <input class="owner-input" th:field="*{addressLine}" type="text" autocomplete="street-address" placeholder="Calle, número y piso">
+                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('addressLine')}" th:errors="*{addressLine}"></small>
                 </label>
-                <label>
+
+                <label class="owner-label">
+                    <span>Complemento</span>
+                    <input class="owner-input" th:field="*{addressComplement}" type="text" autocomplete="address-line2" placeholder="Piso, puerta, escalera...">
+                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('addressComplement')}" th:errors="*{addressComplement}"></small>
+                </label>
+
+                <label class="owner-label">
+                    <span>País</span>
+                    <select class="owner-select" th:field="*{country}" data-country-field>
+                        <option value="">Selecciona...</option>
+                        <option th:each="country : ${countries}" th:value="${country.code}" th:text="${country.label + ' (' + country.code + ')'}"></option>
+                    </select>
+                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('country')}" th:errors="*{country}"></small>
+                </label>
+
+                <label class="owner-label">
+                    <span>Código postal</span>
+                    <input class="owner-input" th:field="*{postalCode}" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="28001" data-postal-code-field>
+                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('postalCode')}" th:errors="*{postalCode}"></small>
+                </label>
+
+                <label class="owner-label" data-spanish-municipality-shell hidden>
                     <span>Municipio</span>
-                    <input th:field="*{municipalityName}" type="text" autocomplete="address-level2" placeholder="Madrid">
-                    <small class="error" th:if="${#fields.hasErrors('municipalityName')}" th:errors="*{municipalityName}"></small>
+                    <select class="owner-select" data-spanish-municipality-select>
+                        <option value="">Municipio</option>
+                    </select>
+                    <small class="public-hint field-hint" data-spanish-municipality-hint hidden></small>
                 </label>
-            </div>
 
-            <label>
-                <span>Pais</span>
-                <select th:field="*{country}">
-                    <option value="">Selecciona...</option>
-                    <option th:each="country : ${countries}" th:value="${country.code}" th:text="${country.label + ' (' + country.code + ')'}"></option>
-                </select>
-                <small class="error" th:if="${#fields.hasErrors('country')}" th:errors="*{country}"></small>
-            </label>
+                <label class="owner-label" data-municipality-text-shell>
+                    <span>Municipio</span>
+                    <input class="owner-input" th:field="*{municipalityName}" type="text" autocomplete="address-level2" placeholder="Madrid" data-municipality-name-field>
+                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('municipalityName')}" th:errors="*{municipalityName}"></small>
+                </label>
 
-            <div class="wizard-actions">
-                <a class="button-ghost" th:href="${backUrl}">Cancelar</a>
-                <button class="btn" type="submit">Guardar direccion</button>
-            </div>
-        </form>
+                <div class="owner-form-actions">
+                    <a class="owner-button-secondary" th:href="${backUrl}">Cancelar</a>
+                    <button class="owner-button-primary" type="submit">Guardar dirección</button>
+                </div>
+            </form>
+        </section>
     </section>
 </main>
 </body>

@@ -17,6 +17,9 @@ Aplicacion MVP para pequenos propietarios o gestores de viviendas turisticas que
 
 La aplicacion ya incluye:
 
+- login persistido con usuarios en base de datos,
+- área administrativa para gestionar usuarios propietarios,
+- área administrativa para gestionar el catálogo global de `municipalities`,
 - alta y edicion de viviendas,
 - alta y edicion de estancias,
 - alta y edicion de huespedes desde backoffice,
@@ -26,7 +29,7 @@ La aplicacion ya incluye:
 - enlace publico por estancia para que los huespedes completen sus datos,
 - flujo publico guiado en varios pasos con seleccion o creacion de direccion,
 - revision interna de huespedes enviados por enlace,
-- panel admin inicial para incidencias de resolucion de municipios.
+- catálogo local de municipios de España y relacion codigo postal -> municipio para validar direcciones españolas.
 
 Limitaciones importantes:
 
@@ -35,6 +38,8 @@ Limitaciones importantes:
 - solo se trabaja con la modalidad XML de `parte de viajeros`,
 - el enlace publico sigue siendo por estancia, no individual por huesped,
 - no hay notificaciones ni envio automatico del enlace,
+- los datos se aislan por usuario, pero no existe modelo multi-tenant ni gestion de equipos,
+- la carga administrativa del catálogo municipal depende de que las URLs oficiales sigan manteniendo el formato esperado,
 - la migracion visual a Tailwind aun no esta cerrada en todo `owner`.
 
 ## Restricciones clave
@@ -64,7 +69,6 @@ La interfaz se sirve desde el mismo monolito Spring Boot.
 Estado actual del frontend:
 
 - `public` usa la compilacion compartida de Tailwind,
-- `admin` usa la compilacion compartida de Tailwind,
 - `owner` sigue en transicion desde CSS legacy a la base visual nueva.
 
 Archivos principales de estilo:
@@ -80,6 +84,8 @@ npm install
 npm run build:css
 npm run watch:css
 ```
+
+El build Maven recompila `src/main/resources/static/app.css` automaticamente en la fase `generate-resources`, asi que `./mvnw test` y `./mvnw clean package` ya validan tambien la hoja compartida.
 
 ## Arranque local
 
@@ -110,6 +116,28 @@ Si necesitas compilar fuera de Docker:
 ```bash
 ./mvnw clean package
 ```
+
+Si vienes de una base local creada antes de la simplificación del subsistema de municipios o antes de introducir usuarios persistidos y ownership por usuario, recrea la base o limpia el historial de Flyway local antes de arrancar. Estos cambios reescriben parte de la historia de municipios y añaden `owner_user_id` obligatorio en viviendas y estancias.
+
+## Administración
+
+El `SUPER_ADMIN` tiene dos áreas principales:
+
+- `/admin/users` para crear y mantener usuarios `OWNER`,
+- `/admin/municipalities` para descargar, validar, previsualizar e importar el catálogo municipal global.
+
+El módulo de `municipalities` funciona así:
+
+1. descarga el fichero oficial de municipios del INE desde la URL indicada,
+2. transforma ese XLSX al CSV interno de la aplicación,
+3. descarga el ZIP oficial del callejero y deriva de ahí el mapping postal,
+4. valida ambos datasets,
+5. muestra una previsualización,
+6. y solo después importa a base de datos.
+
+Compatibilidad adicional:
+
+- si hace falta, el mapping postal remoto también puede venir ya como CSV `postalCode;municipalityCode` o como ZIP con un único CSV de ese formato.
 
 ## Estructura
 
@@ -157,6 +185,7 @@ Documentacion principal del proyecto:
 - `docs/mvp-scope.md`
 - `docs/development-guidelines.md`
 - `docs/roadmap.md`
+- `docs/municipality-catalog.md`
 - `docs/guest-self-service.md`
 - `docs/xml/README.md`
 - `docs/stitch-mcp-usage.md`

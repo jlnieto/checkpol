@@ -7,7 +7,7 @@
     <link rel="stylesheet" th:href="@{/app.css}">
 </head>
 <body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
-<main class="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-4 py-6 sm:px-6 sm:py-8">
+<main class="public-shell max-w-3xl">
     <header class="mb-6 space-y-3 md:mb-8">
         <div class="inline-flex items-center rounded-full border border-primary/15 bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary shadow-sm">
             Check-in de huespedes
@@ -25,7 +25,7 @@
 
     <section class="grid gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)] md:gap-5">
         <div class="space-y-4">
-            <div class="rounded-[28px] border border-primary/12 bg-white/92 p-5 shadow-[0_18px_48px_rgba(15,23,42,0.06)] ring-1 ring-white/70 backdrop-blur-sm">
+            <div class="public-progress-panel p-5">
                 <div class="flex items-start justify-between gap-4">
                     <div class="space-y-2">
                         <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Progreso</p>
@@ -54,7 +54,7 @@
                 </div>
             </div>
 
-            <section class="rounded-[28px] border border-slate-900/10 bg-slate-900 p-5 text-slate-50 shadow-[0_18px_38px_rgba(15,23,42,0.16)]"
+            <section class="public-panel-dark p-5"
                      th:if="${!allGuestsCompleted and nextActionCard != null}">
                 <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Siguiente paso</p>
                 <div class="mt-3 flex items-start justify-between gap-4">
@@ -63,14 +63,14 @@
                             th:text="${nextActionCard.title}">Huésped 2</h2>
                         <p class="mt-2 max-w-md text-sm leading-6 text-slate-300">Completa ahora esta ficha. Es la siguiente acción necesaria para cerrar el check-in.</p>
                     </div>
-                    <span class="shrink-0 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Faltan datos</span>
+                    <span class="public-pill-warning shrink-0">Faltan datos</span>
                 </div>
                 <a class="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm transition-colors duration-150 hover:bg-primary hover:text-white"
                    th:href="@{${nextActionCard.href}}"
                    th:text="${'Completar ahora ' + nextActionCard.title}">Completar ahora Huésped 2</a>
             </section>
 
-            <section class="rounded-[28px] border border-emerald-300/40 bg-emerald-50 p-5 text-center shadow-sm"
+            <section class="public-panel-success p-5 text-center"
                      th:if="${allGuestsCompleted}">
                 <p class="text-sm font-semibold text-emerald-700">Todo listo para enviar ✅</p>
                 <a class="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_26px_rgba(15,23,42,0.16)] transition-colors duration-150 hover:bg-primary"
@@ -85,7 +85,7 @@
                 </div>
 
                 <div class="grid gap-3" th:if="${!#lists.isEmpty(remainingPendingGuestCards)}">
-                    <a class="group block rounded-[28px] border border-primary/22 bg-linear-to-br from-white via-white to-sky-50 p-5 shadow-[0_20px_42px_rgba(19,127,236,0.10)] ring-1 ring-primary/10 transition-transform duration-150 hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-[0_24px_46px_rgba(19,127,236,0.14)] focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+                    <a class="public-guest-card"
                        th:each="card : ${remainingPendingGuestCards}"
                        th:href="@{${card.href}}"
                        >
@@ -94,17 +94,17 @@
                                 <h3 class="text-lg font-bold tracking-tight text-slate-900" th:text="${card.title}">Huésped 1</h3>
                                 <p class="mt-1 text-sm leading-6 text-slate-600">Es la siguiente acción necesaria para avanzar.</p>
                             </div>
-                            <span class="shrink-0 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700"
+                            <span class="public-pill-warning shrink-0"
                                   th:text="${card.statusLabel}">Faltan datos</span>
                         </div>
                         <div class="mt-4 flex items-center justify-between gap-3 border-t border-primary/10 pt-3">
                             <p class="text-sm font-semibold text-primary" th:text="${card.actionLabel}">Completar datos</p>
-                            <span class="inline-flex size-9 items-center justify-center rounded-full bg-primary/8 text-lg text-primary transition-colors duration-150 group-hover:bg-primary group-hover:text-white" aria-hidden="true">›</span>
+                            <span class="public-guest-card-action" aria-hidden="true">›</span>
                         </div>
                     </a>
                 </div>
 
-                <div class="rounded-[22px] border border-slate-200/80 bg-white/82 px-4 py-3 shadow-[0_10px_26px_rgba(15,23,42,0.03)] ring-1 ring-white/60"
+                <div class="public-inline-note"
                      th:if="${!allGuestsCompleted and #lists.isEmpty(remainingPendingGuestCards) and !#lists.isEmpty(completedGuestCards)}">
                     <p class="text-sm leading-6 text-slate-600">Después de completar el paso de arriba, solo te quedará revisar o corregir si algo no encaja.</p>
                 </div>
@@ -114,7 +114,7 @@
                         <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Ya completados</p>
                     </div>
                     <div class="grid gap-3">
-                        <a class="group block rounded-[24px] border border-slate-200/70 bg-white/88 p-4 opacity-90 shadow-[0_10px_26px_rgba(15,23,42,0.04)] ring-1 ring-white/60 transition duration-150 hover:border-slate-300 hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-primary/15"
+                        <a class="public-guest-card-done"
                            th:each="card : ${completedGuestCards}"
                            th:href="@{${card.href}}">
                             <div class="flex items-start justify-between gap-3">
@@ -122,21 +122,21 @@
                                     <h3 class="text-lg font-bold tracking-tight text-slate-900" th:text="${card.title}">Huésped 1</h3>
                                     <p class="mt-1 text-sm leading-6 text-slate-500">Puedes entrar solo si necesitas corregir algo.</p>
                                 </div>
-                                <span class="shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700"
+                                <span class="public-pill-success shrink-0"
                                       th:text="${card.statusLabel}">Completado</span>
                             </div>
                             <div class="mt-4 flex items-center justify-between gap-3 border-t border-slate-200/70 pt-3">
                                 <p class="text-sm font-semibold text-primary" th:text="${card.actionLabel}">Editar datos</p>
-                                <span class="inline-flex size-9 items-center justify-center rounded-full bg-primary/8 text-lg text-primary transition-colors duration-150 group-hover:bg-primary group-hover:text-white" aria-hidden="true">›</span>
+                                <span class="public-guest-card-action" aria-hidden="true">›</span>
                             </div>
                         </a>
                     </div>
                 </div>
 
-                <a class="group inline-flex items-center gap-3 rounded-full border border-slate-300/90 bg-white/88 px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_8px_20px_rgba(15,23,42,0.03)] ring-1 ring-white/60 transition duration-150 hover:border-primary/30 hover:bg-slate-50 hover:text-primary focus:outline-hidden focus:ring-2 focus:ring-primary/15"
+                <a class="public-cta-chip"
                    th:if="${extraGuestCard != null}"
                    th:href="@{${extraGuestCard.href}}">
-                    <span class="inline-flex size-7 items-center justify-center rounded-full bg-primary/8 text-base text-primary transition-colors duration-150 group-hover:bg-primary group-hover:text-white" aria-hidden="true">+</span>
+                    <span class="public-cta-chip-icon" aria-hidden="true">+</span>
                     <span th:text="${extraGuestCard.title}">Añadir otro huésped</span>
                     <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Opcional</span>
                 </a>
@@ -144,7 +144,7 @@
         </div>
 
         <aside class="space-y-4 md:sticky md:top-6 md:self-start">
-            <div class="rounded-[24px] border border-slate-200/80 bg-white/92 p-5 shadow-[0_12px_32px_rgba(15,23,42,0.05)] ring-1 ring-white/60 backdrop-blur-sm">
+            <div class="public-panel-soft p-5">
                 <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Tu estancia</p>
                 <strong class="mt-2 block text-xl font-bold tracking-tight text-slate-900"
                         th:text="${access.booking.accommodation.name}">Casita</strong>
@@ -152,7 +152,7 @@
                    th:text="${'Código de acceso: ' + access.booking.referenceCode}">Código de acceso: HMYECBTMZM</p>
             </div>
 
-            <div class="rounded-[28px] border border-primary/12 bg-linear-to-br from-white via-white to-sky-50 p-5 shadow-[0_18px_44px_rgba(15,23,42,0.06)] ring-1 ring-white/70">
+            <div class="public-summary-card">
                 <div class="flex items-start justify-between gap-3">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Resumen y cierre</p>
@@ -160,11 +160,11 @@
                     </div>
                 </div>
                 <div class="mt-4 grid grid-cols-2 gap-3">
-                    <div class="rounded-2xl bg-slate-50 px-4 py-3">
+                    <div class="public-metric-card">
                         <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Completados</p>
                         <p class="mt-1 text-2xl font-extrabold tracking-tight text-slate-900" th:text="${completedGuestCount}">1</p>
                     </div>
-                    <div class="rounded-2xl bg-slate-50 px-4 py-3">
+                    <div class="public-metric-card">
                         <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Pendientes</p>
                         <p class="mt-1 text-2xl font-extrabold tracking-tight text-slate-900"
                            th:text="${access.expectedGuestCount - completedGuestCount > 0 ? access.expectedGuestCount - completedGuestCount : 0}">1</p>

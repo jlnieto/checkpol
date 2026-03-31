@@ -8,9 +8,9 @@
     <script th:src="@{/wizard-form.js}" defer></script>
 </head>
 <body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
-<main class="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-6 sm:px-6 sm:py-8">
+<main class="public-shell public-shell-xl">
     <header class="mb-5 space-y-3 md:mb-6">
-        <a class="inline-flex items-center gap-2 self-start rounded-full border border-slate-200/80 bg-white/85 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 shadow-sm transition duration-150 hover:border-primary/20 hover:text-primary"
+        <a class="public-back-link"
            th:href="@{|/guest-access/${access.booking.selfServiceToken}|}">
             <span aria-hidden="true">←</span>
             <span>Volver al resumen</span>
@@ -24,7 +24,7 @@
 
     <div class="mb-4 public-error-box shadow-sm" th:if="${flashMessage}" th:text="${flashMessage}"></div>
 
-    <section class="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)]">
+    <section class="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)]" data-wizard-root>
         <form th:action="${publicEditGuestId != null} ? @{|/guest-access/${access.booking.selfServiceToken}/guests/${publicEditGuestId}|} : @{|/guest-access/${access.booking.selfServiceToken}/guests|}"
               th:object="${guestForm}"
               method="post"
@@ -73,14 +73,14 @@
                                 <input class="public-input" th:field="*{firstName}" type="text" autocomplete="given-name"
                                        placeholder="Nombre como en el documento" data-auto-capitalize data-next-field="lastName1">
                                 <small class="public-error error" data-client-error-for="firstName"></small>
-                                <small class="public-error error" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></small>
+                                <small class="public-error error" data-server-error th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></small>
                             </label>
                             <label class="public-label">
                                 <span>Primer apellido</span>
                                 <input class="public-input" th:field="*{lastName1}" type="text" autocomplete="family-name"
                                        placeholder="Primer apellido" data-auto-capitalize data-next-field="lastName2">
                                 <small class="public-error error" data-client-error-for="lastName1"></small>
-                                <small class="public-error error" th:if="${#fields.hasErrors('lastName1')}" th:errors="*{lastName1}"></small>
+                                <small class="public-error error" data-server-error th:if="${#fields.hasErrors('lastName1')}" th:errors="*{lastName1}"></small>
                             </label>
                         </div>
 
@@ -89,7 +89,7 @@
                             <input class="public-input" th:field="*{lastName2}" type="text" autocomplete="additional-name"
                                    placeholder="Segundo apellido" data-auto-capitalize data-next-field="birthDate">
                             <small class="public-error error" data-client-error-for="lastName2"></small>
-                            <small class="public-error error" th:if="${#fields.hasErrors('lastName2')}" th:errors="*{lastName2}"></small>
+                            <small class="public-error error" data-server-error th:if="${#fields.hasErrors('lastName2')}" th:errors="*{lastName2}"></small>
                         </label>
 
                         <div class="grid gap-4 md:grid-cols-2">
@@ -97,7 +97,7 @@
                                 <span>Fecha de nacimiento</span>
                                 <input class="public-input" th:field="*{birthDate}" type="date" autocomplete="bday" data-birth-date-field data-next-field="nationalityDisplay">
                                 <small class="public-error error" data-client-error-for="birthDate"></small>
-                                <small class="public-error error" th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></small>
+                                <small class="public-error error" data-server-error th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></small>
                             </label>
                             <label class="public-label">
                                 <span>Nacionalidad</span>
@@ -108,7 +108,7 @@
                                     <option th:each="country : ${countries}" th:value="${country.label + ' (' + country.code + ')'}"></option>
                                 </datalist>
                                 <small class="public-error error" data-client-error-for="nationality"></small>
-                                <small class="public-error error" th:if="${#fields.hasErrors('nationality')}" th:errors="*{nationality}"></small>
+                                <small class="public-error error" data-server-error th:if="${#fields.hasErrors('nationality')}" th:errors="*{nationality}"></small>
                             </label>
                         </div>
 
@@ -139,7 +139,7 @@
                                        placeholder="12345678Z" data-document-number-field data-next-field="documentSupport">
                                 <small class="public-hint field-hint" data-document-number-hint>Sin espacios ni guiones</small>
                                 <small class="public-error error" data-client-error-for="documentNumber"></small>
-                                <small class="public-error error" th:if="${#fields.hasErrors('documentNumber')}" th:errors="*{documentNumber}"></small>
+                                <small class="public-error error" data-server-error th:if="${#fields.hasErrors('documentNumber')}" th:errors="*{documentNumber}"></small>
                             </label>
                         </div>
 
@@ -149,7 +149,7 @@
                                 <input class="public-input" th:field="*{documentSupport}" type="text" autocomplete="off" data-document-support-field>
                                 <small class="public-hint field-hint" data-document-support-help>Numero del documento</small>
                                 <small class="public-error error" data-client-error-for="documentSupport"></small>
-                                <small class="public-error error" th:if="${#fields.hasErrors('documentSupport')}" th:errors="*{documentSupport}"></small>
+                                <small class="public-error error" data-server-error th:if="${#fields.hasErrors('documentSupport')}" th:errors="*{documentSupport}"></small>
                             </label>
                             <label class="public-label">
                                 <span>Sexo</span>
@@ -158,7 +158,7 @@
                                     <option th:each="sex : ${sexes}" th:value="${sex}" th:text="${sex.label}"></option>
                                 </select>
                                 <small class="public-error error" data-client-error-for="sex"></small>
-                                <small class="public-error error" th:if="${#fields.hasErrors('sex')}" th:errors="*{sex}"></small>
+                                <small class="public-error error" data-server-error th:if="${#fields.hasErrors('sex')}" th:errors="*{sex}"></small>
                             </label>
                         </div>
 
@@ -170,7 +170,7 @@
                             </select>
                             <small class="public-hint">Solo se pide si la persona sera menor de edad el dia de entrada.</small>
                             <small class="public-error error" data-client-error-for="relationship"></small>
-                            <small class="public-error error" th:if="${#fields.hasErrors('relationship')}" th:errors="*{relationship}"></small>
+                            <small class="public-error error" data-server-error th:if="${#fields.hasErrors('relationship')}" th:errors="*{relationship}"></small>
                         </label>
 
                         <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
@@ -188,7 +188,8 @@
 
                         <div class="space-y-4" data-address-choice-shell>
                             <div class="grid gap-3">
-                                <label class="public-panel cursor-pointer p-4 transition duration-150 hover:border-primary/20 hover:shadow-[0_16px_36px_rgba(19,127,236,0.10)] address-choice-card"
+                                <label class="public-choice-card address-choice-card"
+                                       data-address-choice-card
                                        th:each="address : ${addresses}">
                                     <input class="address-choice-input sr-only" th:field="*{addressId}" type="radio" th:value="${address.id}">
                                     <span class="flex items-start justify-between gap-3">
@@ -196,12 +197,13 @@
                                             <span class="block text-base font-semibold text-slate-900" th:text="${address.displayLine1}">Calle Mayor 1</span>
                                             <span class="mt-1 block text-sm leading-6 text-slate-500" th:text="${address.displayLine2}">28001 · Madrid · ESP</span>
                                         </span>
-                                        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 address-choice-tag">Usar esta direccion</span>
+                                        <span class="public-pill-muted address-choice-tag">Usar esta direccion</span>
                                     </span>
                                 </label>
 
                                 <button type="submit"
-                                        class="public-panel flex cursor-pointer items-center justify-between gap-3 p-4 text-left transition duration-150 hover:border-primary/20 hover:shadow-[0_16px_36px_rgba(19,127,236,0.10)] address-choice-card address-choice-card-secondary address-choice-card-link"
+                                        class="public-choice-card public-choice-card-link address-choice-card address-choice-card-secondary address-choice-card-link"
+                                        data-address-choice-card
                                         th:formaction="${saveAddressDraftAction}"
                                         formmethod="post"
                                         data-skip-panel-validation>
@@ -209,12 +211,12 @@
                                         <span class="block text-base font-semibold text-slate-900">Introducir nueva direccion</span>
                                         <span class="mt-1 block text-sm leading-6 text-slate-500">Se guardará y volverás al flujo del huésped.</span>
                                     </span>
-                                    <span class="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary address-choice-tag">Crear</span>
+                                    <span class="public-pill-primary address-choice-tag">Crear</span>
                                 </button>
                             </div>
 
                             <small class="public-error error" data-client-error-for="addressId"></small>
-                            <small class="public-error error" th:if="${#fields.hasErrors('addressId')}" th:errors="*{addressId}"></small>
+                            <small class="public-error error" data-server-error th:if="${#fields.hasErrors('addressId')}" th:errors="*{addressId}"></small>
                         </div>
 
                         <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
@@ -235,13 +237,13 @@
                                 <span>Telefono</span>
                                 <input class="public-input" th:field="*{phone}" type="tel" autocomplete="tel" inputmode="tel" placeholder="+34 600 123 123" data-phone-primary>
                                 <small class="public-error error" data-client-error-for="phone"></small>
-                                <small class="public-error error" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></small>
+                                <small class="public-error error" data-server-error th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></small>
                             </label>
                             <label class="public-label">
                                 <span>Otro telefono</span>
                                 <input class="public-input" th:field="*{phone2}" type="tel" autocomplete="tel-national" inputmode="tel" placeholder="+34 600 123 123">
                                 <small class="public-error error" data-client-error-for="phone2"></small>
-                                <small class="public-error error" th:if="${#fields.hasErrors('phone2')}" th:errors="*{phone2}"></small>
+                                <small class="public-error error" data-server-error th:if="${#fields.hasErrors('phone2')}" th:errors="*{phone2}"></small>
                             </label>
                         </div>
 
@@ -249,7 +251,7 @@
                             <span>Correo</span>
                             <input class="public-input" th:field="*{email}" type="email" placeholder="nombre@correo.com">
                             <small class="public-error error" data-client-error-for="email"></small>
-                            <small class="public-error error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></small>
+                            <small class="public-error error" data-server-error th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></small>
                         </label>
 
                         <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
@@ -262,7 +264,7 @@
         </form>
 
         <aside class="space-y-4 lg:sticky lg:top-6 lg:self-start">
-            <div class="public-panel bg-linear-to-br from-white via-white to-sky-50 p-5" data-step-note-shell hidden>
+            <div class="public-panel-gradient p-5" data-step-note-shell hidden>
                 <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Recuerda</p>
                 <p class="mt-4 text-sm leading-6 text-slate-600" data-step-note-text></p>
             </div>

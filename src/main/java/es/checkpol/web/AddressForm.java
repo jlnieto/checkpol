@@ -4,6 +4,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record AddressForm(
+    @Size(max = 5, message = "El código de municipio no puede superar los 5 caracteres.")
+    String municipalityCode,
+
     @NotBlank(message = "Indica la direccion.")
     @Size(max = 120, message = "La direccion no puede superar los 120 caracteres.")
     String addressLine,
@@ -15,7 +18,6 @@ public record AddressForm(
     @Size(max = 12, message = "El codigo postal no puede superar los 12 caracteres.")
     String postalCode,
 
-    @NotBlank(message = "Indica el municipio o ciudad.")
     @Size(max = 80, message = "El municipio no puede superar los 80 caracteres.")
     String municipalityName,
 
@@ -25,6 +27,6 @@ public record AddressForm(
 ) {
 
     public AddressForm() {
-        this("", "", "", "", "ESP");
+        this("", "", "", "", "", "ESP");
     }
 }

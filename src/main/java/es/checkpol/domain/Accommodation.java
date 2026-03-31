@@ -5,6 +5,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -14,6 +16,10 @@ public class Accommodation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "owner_user_id", nullable = false)
+    private AppUser owner;
 
     @Column(nullable = false, length = 120)
     private String name;
@@ -30,19 +36,32 @@ public class Accommodation {
     protected Accommodation() {
     }
 
-    public Accommodation(String name, String sesEstablishmentCode, String registrationNumber) {
-        this(name, sesEstablishmentCode, registrationNumber, null);
+    public Accommodation(AppUser owner, String name, String sesEstablishmentCode, String registrationNumber) {
+        this(owner, name, sesEstablishmentCode, registrationNumber, null);
     }
 
-    public Accommodation(String name, String sesEstablishmentCode, String registrationNumber, Integer roomCount) {
+    public Accommodation(AppUser owner, String name, String sesEstablishmentCode, String registrationNumber, Integer roomCount) {
+        this.owner = owner;
         this.name = name;
         this.sesEstablishmentCode = sesEstablishmentCode;
         this.registrationNumber = registrationNumber;
         this.roomCount = roomCount;
     }
 
+    public Accommodation(String name, String sesEstablishmentCode, String registrationNumber) {
+        this(null, name, sesEstablishmentCode, registrationNumber, null);
+    }
+
+    public Accommodation(String name, String sesEstablishmentCode, String registrationNumber, Integer roomCount) {
+        this(null, name, sesEstablishmentCode, registrationNumber, roomCount);
+    }
+
     public Long getId() {
         return id;
+    }
+
+    public AppUser getOwner() {
+        return owner;
     }
 
     public String getName() {

@@ -5,16 +5,25 @@
 ### A. Gestion de viviendas
 
 - alta y edicion de vivienda turistica,
+- aislamiento de viviendas por usuario propietario,
 - datos basicos de la vivienda,
 - datos del titular o responsable.
 
 ### B. Gestion de estancias
 
 - crear una estancia manualmente,
+- aislarla por usuario propietario,
 - asociarla a una vivienda,
 - guardar referencia interna o del canal,
 - guardar fechas operativas,
 - calcular estado operativo.
+
+### B2. Acceso y administracion
+
+- login persistido con usuarios en base de datos,
+- rol `SUPER_ADMIN` para administración global,
+- rol `OWNER` para operativa diaria,
+- área administrativa para crear y mantener usuarios propietarios.
 
 ### C. Gestion de huespedes
 
@@ -52,12 +61,7 @@
 - alta y edicion publica de huespedes,
 - creacion de direccion dentro del flujo,
 - revision interna antes del XML.
-
-### H. Admin de municipios
-
-- listado de incidencias abiertas,
-- correccion manual,
-- aprendizaje de reglas de resolucion.
+- validacion de direcciones españolas con catálogo local de municipios.
 
 ## Fuera del alcance actual
 
@@ -68,7 +72,6 @@
 - enlace individual por huesped,
 - uso unico o autocierre del enlace,
 - notificaciones o envio automatico del enlace,
-- multiusuario,
 - SaaS multi-tenant,
 - integraciones con Airbnb o PMS,
 - firma digital o check-in remoto.

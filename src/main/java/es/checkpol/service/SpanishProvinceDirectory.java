@@ -76,6 +76,13 @@ final class SpanishProvinceDirectory {
         return PROVINCES.get(postalCodePrefix);
     }
 
+    static ProvinceInfo findByCode(String provinceCode) {
+        if (provinceCode == null || provinceCode.length() != 2) {
+            return null;
+        }
+        return PROVINCES.get(provinceCode);
+    }
+
     record ProvinceInfo(String code, String queryName) {
     }
 }

@@ -2,7 +2,7 @@ package es.checkpol.service;
 
 import es.checkpol.domain.Address;
 import es.checkpol.domain.Booking;
-import es.checkpol.domain.MunicipalityResolutionStatus;
+import es.checkpol.domain.MunicipalityCatalogEntry;
 import es.checkpol.repository.AddressRepository;
 import es.checkpol.repository.BookingRepository;
 import es.checkpol.web.AddressForm;
@@ -20,53 +20,60 @@ public class AddressService {
 
     private final AddressRepository addressRepository;
     private final BookingRepository bookingRepository;
-    private final MunicipalityResolverService municipalityResolverService;
+    private final MunicipalityCatalogService municipalityCatalogService;
+    private final CurrentAppUserService currentAppUserService;
 
     public AddressService(
         AddressRepository addressRepository,
         BookingRepository bookingRepository,
-        MunicipalityResolverService municipalityResolverService
+        MunicipalityCatalogService municipalityCatalogService,
+        CurrentAppUserService currentAppUserService
     ) {
         this.addressRepository = addressRepository;
         this.bookingRepository = bookingRepository;
-        this.municipalityResolverService = municipalityResolverService;
+        this.municipalityCatalogService = municipalityCatalogService;
+        this.currentAppUserService = currentAppUserService;
     }
 
     @Transactional(readOnly = true)
     public List<Address> findByBookingId(Long bookingId) {
-        return addressRepository.findAllByBookingIdOrderByIdAsc(bookingId);
+        return addressRepository.findAllByBookingIdAndBookingOwnerIdOrderByIdAsc(bookingId, currentAppUserService.requireCurrentUserId());
     }
 
     @Transactional(readOnly = true)
     public Address getByIdAndBookingId(Long addressId, Long bookingId) {
-        return addressRepository.findByIdAndBookingId(addressId, bookingId)
+        return addressRepository.findByIdAndBookingIdAndBookingOwnerId(addressId, bookingId, currentAppUserService.requireCurrentUserId())
             .orElseThrow(() -> new IllegalArgumentException("La direccion seleccionada no pertenece a esta estancia."));
     }
 
     @Transactional
     public Address create(Long bookingId, AddressForm form) {
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdAndOwnerId(bookingId, currentAppUserService.requireCurrentUserId())
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa estancia."));
 
         validate(form);
-        MunicipalityResolution municipalityResolution = municipalityResolverService.resolve(
-            form.country(),
-            form.postalCode(),
-            null,
-            form.municipalityName()
-        );
+        String normalizedCountry = form.country().trim().toUpperCase();
+        String municipalityCode = null;
+        String municipalityName;
+
+        if ("ESP".equals(normalizedCountry)) {
+            MunicipalityCatalogEntry municipality = municipalityCatalogService
+                .findSpanishMunicipalityByPostalCodeAndCode(form.postalCode().trim(), normalizeMunicipalityCode(form.municipalityCode()))
+                .orElseThrow(() -> new IllegalArgumentException("El municipio seleccionado no corresponde a ese código postal."));
+            municipalityCode = municipality.getMunicipalityCode();
+            municipalityName = municipality.getMunicipalityName();
+        } else {
+            municipalityName = form.municipalityName().trim();
+        }
 
         Address address = new Address(
             booking,
             form.addressLine().trim(),
             normalize(form.addressComplement()),
-            municipalityResolution.municipalityCode(),
-            form.municipalityName().trim(),
-            municipalityResolution.municipalityResolvedName(),
-            municipalityResolution.status() == null ? MunicipalityResolutionStatus.EXACT : municipalityResolution.status(),
-            municipalityResolution.note(),
+            municipalityCode,
+            municipalityName,
             form.postalCode().trim(),
-            form.country().trim().toUpperCase()
+            normalizedCountry
         );
         return addressRepository.save(address);
     }
@@ -75,12 +82,34 @@ public class AddressService {
         if (!ISO3_PATTERN.matcher(form.country().trim()).matches()) {
             throw new IllegalArgumentException("El pais debe escribirse con 3 letras, por ejemplo ESP.");
         }
-        if (form.municipalityName() == null || form.municipalityName().isBlank()) {
-            throw new IllegalArgumentException("Escribe la ciudad o municipio.");
-        }
         if ("ESP".equalsIgnoreCase(form.country()) && !SPANISH_POSTAL_CODE_PATTERN.matcher(form.postalCode().trim()).matches()) {
             throw new IllegalArgumentException("Si el pais es ESP, el codigo postal debe tener 5 numeros.");
         }
+        if ("ESP".equalsIgnoreCase(form.country())) {
+            if (!municipalityCatalogService.hasSpanishCatalogData()) {
+                throw new IllegalArgumentException("El catálogo de municipios de España no está cargado.");
+            }
+            if (form.municipalityCode() == null || form.municipalityCode().isBlank()) {
+                throw new IllegalArgumentException("Selecciona un municipio para ese código postal.");
+            }
+            if (form.municipalityCode() != null && !form.municipalityCode().isBlank() && !form.municipalityCode().trim().matches("\\d{5}")) {
+                throw new IllegalArgumentException("El codigo de municipio debe tener 5 numeros.");
+            }
+            if (municipalityCatalogService.findSpanishMunicipalityByPostalCodeAndCode(form.postalCode().trim(), form.municipalityCode().trim()).isEmpty()) {
+                throw new IllegalArgumentException("El municipio seleccionado no corresponde a ese código postal.");
+            }
+            return;
+        }
+        if (form.municipalityName() == null || form.municipalityName().isBlank()) {
+            throw new IllegalArgumentException("Escribe la ciudad o municipio.");
+        }
+    }
+
+    private String normalizeMunicipalityCode(String municipalityCode) {
+        if (municipalityCode == null || municipalityCode.isBlank()) {
+            return null;
+        }
+        return municipalityCode.trim();
     }
 
     private String normalize(String value) {

@@ -194,18 +194,6 @@ public class Guest {
         return address == null ? null : address.getMunicipalityName();
     }
 
-    public String getMunicipalityResolvedName() {
-        return address == null ? null : address.getMunicipalityResolvedName();
-    }
-
-    public MunicipalityResolutionStatus getMunicipalityResolutionStatus() {
-        return address == null ? null : address.getMunicipalityResolutionStatus();
-    }
-
-    public String getMunicipalityResolutionNote() {
-        return address == null ? null : address.getMunicipalityResolutionNote();
-    }
-
     public String getPostalCode() {
         return address == null ? null : address.getPostalCode();
     }
@@ -304,19 +292,4 @@ public class Guest {
         this.reviewStatus = GuestReviewStatus.REVIEWED;
     }
 
-    public void applyMunicipalityResolution(
-        String municipalityCode,
-        String municipalityResolvedName,
-        MunicipalityResolutionStatus municipalityResolutionStatus,
-        String municipalityResolutionNote
-    ) {
-        if (this.address != null) {
-            this.address.applyMunicipalityResolution(
-                municipalityCode,
-                municipalityResolvedName,
-                municipalityResolutionStatus,
-                municipalityResolutionNote
-            );
-        }
-    }
 }

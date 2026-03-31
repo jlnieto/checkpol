@@ -5,9 +5,6 @@ create table addresses (
     address_complement varchar(120),
     municipality_code varchar(5),
     municipality_name varchar(80),
-    municipality_resolved_name varchar(80),
-    municipality_resolution_status varchar(30) not null,
-    municipality_resolution_note varchar(255),
     postal_code varchar(12) not null,
     country varchar(3) not null
 );
@@ -20,9 +17,6 @@ insert into addresses (
     address_complement,
     municipality_code,
     municipality_name,
-    municipality_resolved_name,
-    municipality_resolution_status,
-    municipality_resolution_note,
     postal_code,
     country
 )
@@ -32,9 +26,6 @@ select distinct
     address_complement,
     municipality_code,
     municipality_name,
-    municipality_resolved_name,
-    municipality_resolution_status,
-    municipality_resolution_note,
     postal_code,
     country
 from guests;
@@ -50,9 +41,6 @@ set address_id = (
       and a.address_complement is not distinct from g.address_complement
       and a.municipality_code is not distinct from g.municipality_code
       and a.municipality_name is not distinct from g.municipality_name
-      and a.municipality_resolved_name is not distinct from g.municipality_resolved_name
-      and a.municipality_resolution_status = g.municipality_resolution_status
-      and a.municipality_resolution_note is not distinct from g.municipality_resolution_note
       and a.postal_code = g.postal_code
       and a.country = g.country
     fetch first 1 row only
@@ -66,8 +54,5 @@ alter table guests drop column address_line;
 alter table guests drop column address_complement;
 alter table guests drop column municipality_code;
 alter table guests drop column municipality_name;
-alter table guests drop column municipality_resolved_name;
-alter table guests drop column municipality_resolution_status;
-alter table guests drop column municipality_resolution_note;
 alter table guests drop column postal_code;
 alter table guests drop column country;

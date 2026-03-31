@@ -5,231 +5,246 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Nuevo huesped | Checkpol</title>
     <link rel="stylesheet" th:href="@{/app.css}">
-    <link rel="stylesheet" th:href="@{/css/base.css}">
-    <link rel="stylesheet" th:href="@{/css/components.css}">
-    <link rel="stylesheet" th:href="@{/css/owner.css}">
-    <link rel="stylesheet" th:href="@{/css/public.css}">
-    <link rel="stylesheet" th:href="@{/css/admin.css}">
     <script th:src="@{/wizard-form.js}" defer></script>
 </head>
-<body>
-<main class="shell shell-narrow">
-    <header class="page-header page-header-compact">
-        <a class="back-link" th:href="@{|/bookings/${details.booking.id}|}">← Volver</a>
-        <h1 th:text="${formTitle}">Nuevo huesped</h1>
-        <p class="muted" th:text="${details.booking.accommodation.name + ' · ' + details.booking.referenceCode}">Casita · ABC123</p>
-    </header>
-
-    <section class="panel">
-        <form th:action="${formAction}" th:object="${guestForm}" method="post" class="form-grid" data-wizard-form data-guest-form novalidate
-              th:attr="data-check-in-date=${#temporals.format(details.booking.checkInDate, 'yyyy-MM-dd')},data-initial-step=${initialStep}">
-            <div class="error-box" th:if="${#fields.hasGlobalErrors()}">
-                <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
+<main class="owner-shell">
+    <section class="owner-page">
+        <header class="owner-header">
+            <a class="public-back-link" th:href="${bookingUrl}">
+                <span aria-hidden="true">←</span>
+                <span>Volver</span>
+            </a>
+            <div class="space-y-2">
+                <p class="owner-kicker">Huéspedes</p>
+                <h1 class="owner-title" th:text="${formTitle}">Nuevo huésped</h1>
+                <p class="owner-copy" th:text="${details.booking.accommodation.name + ' · ' + details.booking.referenceCode}">Casita · ABC123</p>
             </div>
+        </header>
 
-            <div class="wizard-shell wizard-shell-minimal">
-                <div class="wizard-header">
-                    <div class="wizard-progress-bar" aria-hidden="true">
-                        <span data-step-progress-bar></span>
-                    </div>
-                    <p class="wizard-progress-line" data-current-step-title>Paso 1 de 4 · Datos personales</p>
-                    <p class="muted" data-current-step-help hidden></p>
+        <section class="owner-grid-main-compact" data-wizard-root>
+            <form th:action="${formAction}" th:object="${guestForm}" method="post" class="space-y-5" data-wizard-form data-guest-form novalidate
+                  th:attr="data-check-in-date=${#temporals.format(details.booking.checkInDate, 'yyyy-MM-dd')},data-initial-step=${initialStep}">
+                <div class="owner-error-box error-box" th:if="${#fields.hasGlobalErrors()}">
+                    <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
                 </div>
 
-                <section class="wizard-panel" data-step-panel
-                         data-step-title="Datos personales"
-                         data-step-count="Paso 1 de 4"
-                         data-step-help="">
-                    <div class="error-box" data-panel-errors hidden></div>
-
-                    <div class="grid-2">
-                        <label>
-                            <span>Nombre</span>
-                            <input th:field="*{firstName}" type="text" autocomplete="given-name"
-                                   placeholder="Nombre como en el documento" data-auto-capitalize data-next-field="lastName1">
-                            <small class="error" data-client-error-for="firstName"></small>
-                            <small class="error" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></small>
-                        </label>
-                        <label>
-                            <span>Primer apellido</span>
-                            <input th:field="*{lastName1}" type="text" autocomplete="family-name"
-                                   placeholder="Primer apellido" data-auto-capitalize data-next-field="lastName2">
-                            <small class="error" data-client-error-for="lastName1"></small>
-                            <small class="error" th:if="${#fields.hasErrors('lastName1')}" th:errors="*{lastName1}"></small>
-                        </label>
-                    </div>
-
-                    <label>
-                        <span>Segundo apellido</span>
-                        <input th:field="*{lastName2}" type="text" autocomplete="additional-name"
-                               placeholder="Segundo apellido" data-auto-capitalize data-next-field="birthDate">
-                        <small class="error" data-client-error-for="lastName2"></small>
-                        <small class="error" th:if="${#fields.hasErrors('lastName2')}" th:errors="*{lastName2}"></small>
-                    </label>
-
-                    <div class="grid-2">
-                        <label>
-                            <span>Fecha de nacimiento</span>
-                            <input th:field="*{birthDate}" type="date" autocomplete="bday" data-birth-date-field data-next-field="nationalityDisplay">
-                            <small class="error" data-client-error-for="birthDate"></small>
-                            <small class="error" th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></small>
-                        </label>
-                        <label>
-                            <span>Nacionalidad</span>
-                            <input type="hidden" th:field="*{nationality}">
-                            <input type="text" list="nationality-options-admin" data-country-display="nationality"
-                                   name="nationalityDisplay" placeholder="Espana (ESP)" autocomplete="country-name">
-                            <datalist id="nationality-options-admin">
-                                <option th:each="country : ${countries}" th:value="${country.label + ' (' + country.code + ')'}"></option>
-                            </datalist>
-                            <small class="error" data-client-error-for="nationality"></small>
-                            <small class="error" th:if="${#fields.hasErrors('nationality')}" th:errors="*{nationality}"></small>
-                        </label>
-                    </div>
-
-                    <div class="wizard-actions">
-                        <a class="button-ghost" th:href="@{|/bookings/${details.booking.id}|}">Volver</a>
-                        <button class="btn" type="button" data-step-next>Continuar</button>
-                    </div>
-                </section>
-
-                <section class="wizard-panel" data-step-panel hidden
-                         data-step-title="Documento"
-                         data-step-count="Paso 2 de 4"
-                         data-step-help="">
-                    <div class="error-box" data-panel-errors hidden></div>
-
-                    <div class="grid-2">
-                        <label>
-                            <span>Tipo de documento</span>
-                            <select th:field="*{documentType}">
-                                <option value="">Selecciona...</option>
-                                <option th:each="documentType : ${documentTypes}" th:value="${documentType}" th:text="${documentType.label}"></option>
-                            </select>
-                            <small class="error" data-client-error-for="documentType"></small>
-                        </label>
-                        <label>
-                            <span>Numero de documento</span>
-                            <input th:field="*{documentNumber}" type="text" autocomplete="off"
-                                   placeholder="12345678Z" data-document-number-field data-next-field="documentSupport">
-                            <small class="field-hint" data-document-number-hint>Sin espacios ni guiones</small>
-                            <small class="error" data-client-error-for="documentNumber"></small>
-                            <small class="error" th:if="${#fields.hasErrors('documentNumber')}" th:errors="*{documentNumber}"></small>
-                        </label>
-                    </div>
-
-                    <div class="grid-2">
-                        <label data-document-support-group hidden>
-                            <span>Soporte del documento</span>
-                            <input th:field="*{documentSupport}" type="text" autocomplete="off" data-document-support-field>
-                            <small class="field-hint" data-document-support-help>Numero del documento</small>
-                            <small class="error" data-client-error-for="documentSupport"></small>
-                            <small class="error" th:if="${#fields.hasErrors('documentSupport')}" th:errors="*{documentSupport}"></small>
-                        </label>
-                        <label>
-                            <span>Sexo</span>
-                            <select th:field="*{sex}">
-                                <option value="">Selecciona...</option>
-                                <option th:each="sex : ${sexes}" th:value="${sex}" th:text="${sex.label}"></option>
-                            </select>
-                            <small class="error" data-client-error-for="sex"></small>
-                            <small class="error" th:if="${#fields.hasErrors('sex')}" th:errors="*{sex}"></small>
-                        </label>
-                    </div>
-
-                    <label data-relationship-field hidden>
-                        <span>Parentesco con la persona adulta que hace la reserva</span>
-                        <select th:field="*{relationship}">
-                            <option value="">Selecciona...</option>
-                            <option th:each="relationship : ${relationships}" th:value="${relationship}" th:text="${relationship.label}"></option>
-                        </select>
-                        <small>Solo se pide si la persona sera menor de edad el dia de entrada.</small>
-                        <small class="error" data-client-error-for="relationship"></small>
-                        <small class="error" th:if="${#fields.hasErrors('relationship')}" th:errors="*{relationship}"></small>
-                    </label>
-
-                    <div class="wizard-actions">
-                        <button type="button" class="button-ghost" data-step-prev>Volver</button>
-                        <button class="btn" type="button" data-step-next>Continuar</button>
-                    </div>
-                </section>
-
-                <section class="wizard-panel" data-step-panel hidden
-                         data-step-title="Direccion habitual"
-                         data-step-count="Paso 3 de 4"
-                         data-step-help="">
-                    <div class="error-box" data-panel-errors hidden></div>
-
-                    <div class="address-choice-shell" data-address-choice-shell>
-                        <h3>¿Cuál es tu dirección habitual?</h3>
-
-                        <div class="address-choice-list">
-                            <label class="address-choice-card" th:each="address : ${addresses}">
-                                <input class="address-choice-input" th:field="*{addressId}" type="radio" th:value="${address.id}">
-                                <span class="address-choice-copy">
-                                    <span th:text="${address.displayLine1}">Calle Mayor 1</span>
-                                    <span th:text="${address.displayLine2}">28001 · Madrid · ESP</span>
-                                </span>
-                                <span class="address-choice-tag">Usar esta direccion</span>
-                            </label>
-
-                            <button type="submit"
-                                    class="btn btn--secondary address-choice-card address-choice-card-secondary address-choice-card-link"
-                                    th:formaction="${saveAddressDraftAction}"
-                                    formmethod="post"
-                                    data-skip-panel-validation>
-                                <span class="address-choice-copy">
-                                    <span>Introducir nueva direccion</span>
-                                </span>
-                                <span class="address-choice-tag">Crear</span>
-                            </button>
+                <section class="public-panel overflow-hidden p-5 sm:p-6">
+                    <div class="flex flex-col gap-4 border-b border-slate-200/80 pb-5">
+                        <div class="space-y-2">
+                            <p class="owner-kicker"><span data-step-progress>Paso 1 de 4</span></p>
+                            <h2 class="text-2xl font-extrabold tracking-tight text-slate-900" data-current-step-title>Datos personales</h2>
+                            <p class="owner-copy" data-current-step-help hidden></p>
                         </div>
 
-                        <small class="error" data-client-error-for="addressId"></small>
-                        <small class="error" th:if="${#fields.hasErrors('addressId')}" th:errors="*{addressId}"></small>
+                        <div class="h-2 overflow-hidden rounded-full bg-primary/10" aria-hidden="true">
+                            <span class="block h-full w-1/4 rounded-full bg-linear-to-r from-primary to-sky-400 transition-[width] duration-200" data-step-progress-bar></span>
+                        </div>
                     </div>
 
-                    <div class="wizard-actions">
-                        <button type="button" class="button-ghost" data-step-prev>Volver</button>
-                        <button class="btn" type="button" data-step-next>Continuar</button>
+                    <div class="pt-5 sm:pt-6">
+                        <section class="space-y-5" data-step-panel data-step-title="Datos personales" data-step-count="Paso 1 de 4" data-step-help="">
+                            <div class="owner-error-box error-box" data-panel-errors hidden></div>
+
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <label class="owner-label">
+                                    <span>Nombre</span>
+                                    <input class="owner-input" th:field="*{firstName}" type="text" autocomplete="given-name" placeholder="Nombre como en el documento" data-auto-capitalize data-next-field="lastName1">
+                                    <small class="owner-error error" data-client-error-for="firstName"></small>
+                                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></small>
+                                </label>
+                                <label class="owner-label">
+                                    <span>Primer apellido</span>
+                                    <input class="owner-input" th:field="*{lastName1}" type="text" autocomplete="family-name" placeholder="Primer apellido" data-auto-capitalize data-next-field="lastName2">
+                                    <small class="owner-error error" data-client-error-for="lastName1"></small>
+                                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('lastName1')}" th:errors="*{lastName1}"></small>
+                                </label>
+                            </div>
+
+                            <label class="owner-label">
+                                <span>Segundo apellido</span>
+                                <input class="owner-input" th:field="*{lastName2}" type="text" autocomplete="additional-name" placeholder="Segundo apellido" data-auto-capitalize data-next-field="birthDate">
+                                <small class="owner-error error" data-client-error-for="lastName2"></small>
+                                <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('lastName2')}" th:errors="*{lastName2}"></small>
+                            </label>
+
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <label class="owner-label">
+                                    <span>Fecha de nacimiento</span>
+                                    <input class="owner-input" th:field="*{birthDate}" type="date" autocomplete="bday" data-birth-date-field data-next-field="nationalityDisplay">
+                                    <small class="owner-error error" data-client-error-for="birthDate"></small>
+                                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></small>
+                                </label>
+                                <label class="owner-label">
+                                    <span>Nacionalidad</span>
+                                    <input type="hidden" th:field="*{nationality}">
+                                    <input class="owner-input" type="text" list="nationality-options-admin" data-country-display="nationality" name="nationalityDisplay" placeholder="España (ESP)" autocomplete="country-name">
+                                    <datalist id="nationality-options-admin">
+                                        <option th:each="country : ${countries}" th:value="${country.label + ' (' + country.code + ')'}"></option>
+                                    </datalist>
+                                    <small class="owner-error error" data-client-error-for="nationality"></small>
+                                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('nationality')}" th:errors="*{nationality}"></small>
+                                </label>
+                            </div>
+
+                            <div class="owner-form-actions">
+                                <a class="owner-button-secondary button-ghost" th:href="${bookingUrl}">Volver</a>
+                                <button class="owner-button-primary btn" type="button" data-step-next>Continuar</button>
+                            </div>
+                        </section>
+
+                        <section class="space-y-5" data-step-panel hidden data-step-title="Documento" data-step-count="Paso 2 de 4" data-step-help="">
+                            <div class="owner-error-box error-box" data-panel-errors hidden></div>
+
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <label class="owner-label">
+                                    <span>Tipo de documento</span>
+                                    <select class="owner-select" th:field="*{documentType}">
+                                        <option value="">Selecciona...</option>
+                                        <option th:each="documentType : ${documentTypes}" th:value="${documentType}" th:text="${documentType.label}"></option>
+                                    </select>
+                                    <small class="owner-error error" data-client-error-for="documentType"></small>
+                                </label>
+                                <label class="owner-label">
+                                    <span>Número de documento</span>
+                                    <input class="owner-input" th:field="*{documentNumber}" type="text" autocomplete="off" placeholder="12345678Z" data-document-number-field data-next-field="documentSupport">
+                                    <small class="public-hint field-hint" data-document-number-hint>Sin espacios ni guiones</small>
+                                    <small class="owner-error error" data-client-error-for="documentNumber"></small>
+                                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('documentNumber')}" th:errors="*{documentNumber}"></small>
+                                </label>
+                            </div>
+
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <label class="owner-label" data-document-support-group hidden>
+                                    <span>Soporte del documento</span>
+                                    <input class="owner-input" th:field="*{documentSupport}" type="text" autocomplete="off" data-document-support-field>
+                                    <small class="public-hint field-hint" data-document-support-help>Número del documento</small>
+                                    <small class="owner-error error" data-client-error-for="documentSupport"></small>
+                                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('documentSupport')}" th:errors="*{documentSupport}"></small>
+                                </label>
+                                <label class="owner-label">
+                                    <span>Sexo</span>
+                                    <select class="owner-select" th:field="*{sex}">
+                                        <option value="">Selecciona...</option>
+                                        <option th:each="sex : ${sexes}" th:value="${sex}" th:text="${sex.label}"></option>
+                                    </select>
+                                    <small class="owner-error error" data-client-error-for="sex"></small>
+                                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('sex')}" th:errors="*{sex}"></small>
+                                </label>
+                            </div>
+
+                            <label class="owner-label" data-relationship-field hidden>
+                                <span>Parentesco con la persona adulta que hace la reserva</span>
+                                <select class="owner-select" th:field="*{relationship}">
+                                    <option value="">Selecciona...</option>
+                                    <option th:each="relationship : ${relationships}" th:value="${relationship}" th:text="${relationship.label}"></option>
+                                </select>
+                                <small class="public-hint">Solo se pide si la persona será menor de edad el día de entrada.</small>
+                                <small class="owner-error error" data-client-error-for="relationship"></small>
+                                <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('relationship')}" th:errors="*{relationship}"></small>
+                            </label>
+
+                            <div class="owner-form-actions">
+                                <button type="button" class="owner-button-secondary button-ghost" data-step-prev>Volver</button>
+                                <button class="owner-button-primary btn" type="button" data-step-next>Continuar</button>
+                            </div>
+                        </section>
+
+                        <section class="space-y-5" data-step-panel hidden data-step-title="Direccion habitual" data-step-count="Paso 3 de 4" data-step-help="">
+                            <div class="owner-error-box error-box" data-panel-errors hidden></div>
+
+                            <div class="space-y-4" data-address-choice-shell>
+                                <div class="grid gap-3">
+                                    <label class="public-choice-card address-choice-card" data-address-choice-card th:each="address : ${addresses}">
+                                        <input class="address-choice-input sr-only" th:field="*{addressId}" type="radio" th:value="${address.id}">
+                                        <span class="flex items-start justify-between gap-3">
+                                            <span class="min-w-0">
+                                                <span class="block text-base font-semibold text-slate-900" th:text="${address.displayLine1}">Calle Mayor 1</span>
+                                                <span class="mt-1 block text-sm leading-6 text-slate-500" th:text="${address.displayLine2}">28001 · Madrid · ESP</span>
+                                            </span>
+                                            <span class="public-pill-muted address-choice-tag">Usar esta dirección</span>
+                                        </span>
+                                    </label>
+
+                                    <button type="submit"
+                                            class="public-choice-card public-choice-card-link address-choice-card address-choice-card-secondary address-choice-card-link"
+                                            data-address-choice-card
+                                            th:formaction="${saveAddressDraftAction}"
+                                            formmethod="post"
+                                            data-skip-panel-validation>
+                                        <span>
+                                            <span class="block text-base font-semibold text-slate-900">Introducir nueva dirección</span>
+                                            <span class="mt-1 block text-sm leading-6 text-slate-500">Se guardará y volverás a este huésped.</span>
+                                        </span>
+                                        <span class="public-pill-primary address-choice-tag">Crear</span>
+                                    </button>
+                                </div>
+
+                                <small class="owner-error error" data-client-error-for="addressId"></small>
+                                <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('addressId')}" th:errors="*{addressId}"></small>
+                            </div>
+
+                            <div class="owner-form-actions">
+                                <button type="button" class="owner-button-secondary button-ghost" data-step-prev>Volver</button>
+                                <button class="owner-button-primary btn" type="button" data-step-next>Continuar</button>
+                            </div>
+                        </section>
+
+                        <section class="space-y-5" data-step-panel hidden data-step-title="Contacto" data-step-count="Paso 4 de 4" data-step-help="">
+                            <div class="owner-error-box error-box" data-panel-errors hidden></div>
+
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <label class="owner-label">
+                                    <span>Teléfono</span>
+                                    <input class="owner-input" th:field="*{phone}" type="tel" autocomplete="tel" inputmode="tel" placeholder="+34 600 123 123" data-phone-primary>
+                                    <small class="owner-error error" data-client-error-for="phone"></small>
+                                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></small>
+                                </label>
+                                <label class="owner-label">
+                                    <span>Otro teléfono</span>
+                                    <input class="owner-input" th:field="*{phone2}" type="tel" autocomplete="tel-national" inputmode="tel" placeholder="+34 600 123 123">
+                                    <small class="owner-error error" data-client-error-for="phone2"></small>
+                                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('phone2')}" th:errors="*{phone2}"></small>
+                                </label>
+                            </div>
+
+                            <label class="owner-label">
+                                <span>Correo</span>
+                                <input class="owner-input" th:field="*{email}" type="email" autocomplete="off" placeholder="nombre@correo.com">
+                                <small class="owner-error error" data-client-error-for="email"></small>
+                                <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></small>
+                            </label>
+
+                            <div class="owner-form-actions">
+                                <button type="button" class="owner-button-secondary button-ghost" data-step-prev>Volver</button>
+                                <button class="owner-button-primary btn" type="submit">Guardar y finalizar</button>
+                            </div>
+                        </section>
+                    </div>
+                </section>
+            </form>
+
+            <aside class="owner-side-stack">
+                <section class="owner-banner-soft">
+                    <p class="owner-kicker">Guía rápida</p>
+                    <div class="mt-4 owner-helper-list">
+                        <div class="owner-helper-item">
+                            <strong>Hazlo en este orden</strong>
+                            <span>Primero datos personales, luego documento, dirección y por último contacto.</span>
+                        </div>
+                        <div class="owner-helper-item">
+                            <strong>Solo pide lo necesario</strong>
+                            <span>Si un dato ya está claro o reutilizable, no hace falta volver a pensarlo.</span>
+                        </div>
                     </div>
                 </section>
 
-                <section class="wizard-panel" data-step-panel hidden
-                         data-step-title="Contacto"
-                         data-step-count="Paso 4 de 4"
-                         data-step-help="">
-                    <div class="error-box" data-panel-errors hidden></div>
-
-                    <div class="grid-2">
-                        <label>
-                            <span>Telefono</span>
-                            <input th:field="*{phone}" type="tel" autocomplete="tel" inputmode="tel" placeholder="+34 600 123 123" data-phone-primary>
-                            <small class="error" data-client-error-for="phone"></small>
-                            <small class="error" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></small>
-                        </label>
-                        <label>
-                            <span>Otro telefono</span>
-                            <input th:field="*{phone2}" type="tel" autocomplete="tel-national" inputmode="tel" placeholder="+34 600 123 123">
-                            <small class="error" data-client-error-for="phone2"></small>
-                            <small class="error" th:if="${#fields.hasErrors('phone2')}" th:errors="*{phone2}"></small>
-                        </label>
-                    </div>
-
-                    <label>
-                        <span>Correo</span>
-                        <input th:field="*{email}" type="email" autocomplete="off">
-                        <small class="error" data-client-error-for="email"></small>
-                        <small class="error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></small>
-                    </label>
-
-                    <div class="wizard-actions">
-                        <button type="button" class="button-ghost" data-step-prev>Volver</button>
-                        <button class="btn" type="submit">Guardar y finalizar</button>
-                    </div>
+                <section class="owner-banner-soft" data-step-note-shell hidden>
+                    <p class="owner-kicker">Recuerda</p>
+                    <p class="mt-4 owner-copy" data-step-note-text></p>
                 </section>
-            </div>
-        </form>
+            </aside>
+        </section>
     </section>
 </main>
 </body>

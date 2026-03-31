@@ -12,9 +12,9 @@ public class HomeController {
         if (authentication == null) {
             return "redirect:/login";
         }
-
-        boolean admin = authentication.getAuthorities().stream()
-            .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
-        return admin ? "redirect:/admin" : "redirect:/bookings";
+        if (authentication.getAuthorities().stream().anyMatch(authority -> "ROLE_SUPER_ADMIN".equals(authority.getAuthority()))) {
+            return "redirect:/admin";
+        }
+        return "redirect:/bookings";
     }
 }

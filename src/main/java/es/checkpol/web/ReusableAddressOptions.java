@@ -38,14 +38,11 @@ public final class ReusableAddressOptions {
         return hasText(guest.getAddressLine())
             && hasText(guest.getPostalCode())
             && hasText(guest.getCountry())
-            && (hasText(guest.getMunicipalityName()) || hasText(guest.getMunicipalityResolvedName()));
+            && hasText(guest.getMunicipalityName());
     }
 
     private static String municipalityName(Guest guest) {
-        if (hasText(guest.getMunicipalityName())) {
-            return guest.getMunicipalityName().trim();
-        }
-        return guest.getMunicipalityResolvedName().trim();
+        return guest.getMunicipalityName().trim();
     }
 
     private static String key(ReusableAddressOption option) {

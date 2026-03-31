@@ -41,6 +41,8 @@ El producto no compite como PMS completo. Su valor esta en resolver bien un trab
 
 Hoy el MVP ya cubre:
 
+- acceso persistido con usuarios reales,
+- área administrativa básica para crear y mantener propietarios,
 - gestion de viviendas,
 - gestion de estancias,
 - gestion manual de huespedes,
@@ -51,7 +53,7 @@ Hoy el MVP ya cubre:
 - alta y edicion publica de huespedes,
 - creacion de direccion desde el flujo publico,
 - revision interna de huespedes enviados por enlace,
-- panel admin inicial para revisar incidencias de resolucion de municipios.
+- validacion de direcciones españolas contra un catálogo local de municipios y codigos postales.
 
 ## Alcance XML confirmado
 
@@ -87,5 +89,4 @@ Estas lineas pueden explorarse mas adelante, pero no deben condicionar el diseno
 - notificaciones,
 - check-in remoto,
 - integraciones con Airbnb o PMS,
-- multiusuario,
 - SaaS multi-tenant.

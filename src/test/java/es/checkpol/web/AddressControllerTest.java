@@ -78,7 +78,7 @@ class AddressControllerTest {
                 .param("addressLine", "Calle Mayor 1")
                 .param("addressComplement", "Piso 2B")
                 .param("postalCode", "28001")
-                .param("municipalityName", "Madrid")
+                .param("municipalityCode", "28079")
                 .param("country", "ESP"))
             .andExpect(status().is3xxRedirection())
             .andExpect(redirectedUrl("/bookings/1/guests/new?step=3&selectedAddressId=9"));
@@ -108,7 +108,7 @@ class AddressControllerTest {
                 .param("addressLine", "Calle Mayor 1")
                 .param("addressComplement", "Piso 2B")
                 .param("postalCode", "28001")
-                .param("municipalityName", "Madrid")
+                .param("municipalityCode", "28079")
                 .param("country", "ESP"))
             .andExpect(status().is3xxRedirection())
             .andExpect(redirectedUrl("/guest-access/abc/guests/new?step=3&selectedAddressId=12&slot=2"));
@@ -180,9 +180,6 @@ class AddressControllerTest {
             "Piso 2B",
             "28079",
             "Madrid",
-            "Madrid",
-            es.checkpol.domain.MunicipalityResolutionStatus.EXACT,
-            null,
             "28001",
             "ESP"
         );

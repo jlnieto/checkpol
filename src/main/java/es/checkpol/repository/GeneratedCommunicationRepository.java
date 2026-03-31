@@ -8,11 +8,11 @@ import java.util.Optional;
 
 public interface GeneratedCommunicationRepository extends JpaRepository<GeneratedCommunication, Long> {
 
-    List<GeneratedCommunication> findAllByBookingIdOrderByGeneratedAtDesc(Long bookingId);
+    List<GeneratedCommunication> findAllByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(Long bookingId, Long ownerId);
 
-    Optional<GeneratedCommunication> findFirstByBookingIdOrderByGeneratedAtDesc(Long bookingId);
+    Optional<GeneratedCommunication> findFirstByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(Long bookingId, Long ownerId);
 
-    Optional<GeneratedCommunication> findFirstByBookingIdOrderByVersionDesc(Long bookingId);
+    Optional<GeneratedCommunication> findFirstByBookingIdAndBookingOwnerIdOrderByVersionDesc(Long bookingId, Long ownerId);
 
-    Optional<GeneratedCommunication> findByIdAndBookingId(Long id, Long bookingId);
+    Optional<GeneratedCommunication> findByIdAndBookingIdAndBookingOwnerId(Long id, Long bookingId, Long ownerId);
 }

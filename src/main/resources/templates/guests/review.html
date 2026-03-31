@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Revisar huésped | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
+<main class="owner-shell">
+    <section class="owner-page">
+        <header class="owner-header">
+            <a class="public-back-link" th:href="${bookingUrl}">
+                <span aria-hidden="true">←</span>
+                <span>Volver a la estancia</span>
+            </a>
+            <div class="space-y-2">
+                <h1 class="owner-title" th:text="${guest.displayName}">Marco Rossi</h1>
+                <p class="owner-copy">
+                    <span th:text="${details.booking.referenceCode}">ABC123</span>
+                    <span aria-hidden="true"> · </span>
+                    <span th:text="${details.booking.accommodation.name}">Casita</span>
+                </p>
+            </div>
+        </header>
+
+        <section class="owner-grid-main-compact">
+            <div class="owner-stack">
+                <section class="owner-priority-card owner-review-focus">
+                    <div class="owner-booking-badge-row">
+                        <span class="owner-status-pending">Pendiente de revisión</span>
+                    </div>
+
+                    <div class="space-y-2">
+                        <p class="owner-review-focus-text" th:text="${reviewLeadIssue}">Conviene confirmar el municipio.</p>
+                    </div>
+                </section>
+
+                <section class="owner-card">
+                    <div class="space-y-1">
+                        <p class="owner-kicker">Datos recibidos</p>
+                        <h2 class="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">Comprueba solo si hay algo raro</h2>
+                    </div>
+
+                    <div class="mt-5 owner-review-panel">
+                        <section class="owner-review-group">
+                            <h3 class="owner-review-group-title">Identidad</h3>
+                            <div class="owner-review-list">
+                                <div class="owner-review-row">
+                                    <span class="owner-review-label">Documento</span>
+                                    <strong class="owner-review-value"
+                                            th:text="${guest.documentType != null && guest.documentNumber != null ? guest.documentType.label + ' · ' + guest.documentNumber : 'Sin documento'}">DNI · 12345678X</strong>
+                                </div>
+                                <div class="owner-review-row" th:if="${guest.documentSupport != null and !guest.documentSupport.isBlank()}">
+                                    <span class="owner-review-label">Soporte</span>
+                                    <strong class="owner-review-value" th:text="${guest.documentSupport}">ABC123456</strong>
+                                </div>
+                                <div class="owner-review-row">
+                                    <span class="owner-review-label">Nacimiento</span>
+                                    <strong class="owner-review-value" th:text="${guest.birthDate != null ? #temporals.format(guest.birthDate, 'dd/MM/yyyy') : 'Sin fecha'}">12/05/1980</strong>
+                                </div>
+                                <div class="owner-review-row" th:if="${guest.nationality != null and !guest.nationality.isBlank()}">
+                                    <span class="owner-review-label">Nacionalidad</span>
+                                    <strong class="owner-review-value" th:text="${guest.nationality}">ESP</strong>
+                                </div>
+                                <div class="owner-review-row" th:if="${guest.sex != null}">
+                                    <span class="owner-review-label">Sexo</span>
+                                    <strong class="owner-review-value" th:text="${guest.sex.label}">Masculino</strong>
+                                </div>
+                                <div class="owner-review-row" th:if="${showRelationship}">
+                                    <span class="owner-review-label">Parentesco</span>
+                                    <strong class="owner-review-value" th:text="${relationshipDisplay}">Hijo/a</strong>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="owner-review-group">
+                            <h3 class="owner-review-group-title">Contacto y dirección</h3>
+                            <div class="owner-review-list">
+                                <div class="owner-review-row">
+                                    <span class="owner-review-label">Contacto</span>
+                                    <strong class="owner-review-value"
+                                            th:text="${guest.phone != null && !guest.phone.isBlank() ? guest.phone : (guest.phone2 != null && !guest.phone2.isBlank() ? guest.phone2 : (guest.email != null && !guest.email.isBlank() ? guest.email : 'Sin contacto'))}">+34 600 000 000</strong>
+                                </div>
+                                <div class="owner-review-row" th:if="${guest.email != null and !guest.email.isBlank()}">
+                                    <span class="owner-review-label">Correo</span>
+                                    <strong class="owner-review-value" th:text="${guest.email}">cliente@correo.com</strong>
+                                </div>
+                                <div class="owner-review-row">
+                                    <span class="owner-review-label">Dirección</span>
+                                    <strong class="owner-review-value"
+                                            th:text="${guest.addressLine + (guest.addressComplement != null && !guest.addressComplement.isBlank() ? ', ' + guest.addressComplement : '')}">Calle Mayor 12</strong>
+                                </div>
+                                <div class="owner-review-row" th:if="${guest.postalCode != null and !guest.postalCode.isBlank()}">
+                                    <span class="owner-review-label">Código postal</span>
+                                    <strong class="owner-review-value" th:text="${guest.postalCode}">35626</strong>
+                                </div>
+                                <div class="owner-review-row">
+                                    <span class="owner-review-label">Municipio</span>
+                                    <strong class="owner-review-value" th:text="${municipalityNameDisplay}">Madrid</strong>
+                                </div>
+                                <div class="owner-review-row" th:if="${showMunicipalityCode}">
+                                    <span class="owner-review-label">Código de municipio</span>
+                                    <strong class="owner-review-value" th:text="${municipalityCodeDisplay}">28079</strong>
+                                </div>
+                                <div class="owner-review-row" th:if="${guest.country != null and !guest.country.isBlank()}">
+                                    <span class="owner-review-label">País</span>
+                                    <strong class="owner-review-value" th:text="${guest.country}">ESP</strong>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </section>
+
+                <div class="owner-review-actions">
+                    <form th:action="${reviewAction}" method="post">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button class="owner-button-primary" type="submit">Marcar como correcto</button>
+                    </form>
+                    <a class="owner-button-secondary" th:href="${editUrl}">Editar si ves algo raro</a>
+                </div>
+            </div>
+        </section>
+    </section>
+</main>
+</body>
+</html>

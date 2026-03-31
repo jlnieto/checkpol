@@ -1,12 +1,12 @@
 :root {
-    --bg: #f3f7fb;
-    --surface: #ffffff;
-    --surface-strong: #f8fbff;
-    --text: #1c2733;
-    --muted: #5a6b7c;
-    --line: #ced9e5;
-    --accent: #1d6fd1;
-    --accent-dark: #1655a0;
+    --bg: var(--color-background-light, #f3f7fb);
+    --surface: var(--color-brand-surface, #ffffff);
+    --surface-strong: var(--color-brand-surface-strong, #f8fbff);
+    --text: var(--color-brand-text, #1c2733);
+    --muted: var(--color-brand-muted, #5a6b7c);
+    --line: var(--color-brand-line, #ced9e5);
+    --accent: var(--color-primary, #137fec);
+    --accent-dark: var(--color-primary, #137fec);
     --danger: #b43a3a;
     --shadow: 0 18px 40px rgba(30, 55, 90, 0.08);
 }

@@ -1,6 +1,8 @@
 package es.checkpol.service;
 
 import es.checkpol.domain.Accommodation;
+import es.checkpol.domain.AppUser;
+import es.checkpol.domain.AppUserRole;
 import es.checkpol.domain.Booking;
 import es.checkpol.domain.BookingChannel;
 import es.checkpol.domain.GeneratedCommunication;
@@ -26,10 +28,12 @@ class TravelerPartServiceTest {
     private final BookingService bookingService = Mockito.mock(BookingService.class);
     private final TravelerPartXmlGenerator xmlGenerator = Mockito.mock(TravelerPartXmlGenerator.class);
     private final GeneratedCommunicationRepository generatedCommunicationRepository = Mockito.mock(GeneratedCommunicationRepository.class);
+    private final CurrentAppUserService currentAppUserService = Mockito.mock(CurrentAppUserService.class);
     private final TravelerPartService travelerPartService = new TravelerPartService(
         bookingService,
         xmlGenerator,
-        generatedCommunicationRepository
+        generatedCommunicationRepository,
+        currentAppUserService
     );
 
     @Test
@@ -37,7 +41,8 @@ class TravelerPartServiceTest {
         BookingDetails details = sampleDetails(true);
         Mockito.when(bookingService.getDetails(1L)).thenReturn(details);
         Mockito.when(xmlGenerator.generate(details)).thenReturn("<xml/>");
-        Mockito.when(generatedCommunicationRepository.findFirstByBookingIdOrderByVersionDesc(1L)).thenReturn(Optional.empty());
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(generatedCommunicationRepository.findFirstByBookingIdAndBookingOwnerIdOrderByVersionDesc(1L, 7L)).thenReturn(Optional.empty());
 
         travelerPartService.generateXml(1L);
 
@@ -58,7 +63,8 @@ class TravelerPartServiceTest {
     @Test
     void returnsStoredXmlForExistingCommunication() {
         GeneratedCommunication communication = new GeneratedCommunication(sampleDetails(true).booking(), 2, OffsetDateTime.now(), "<xml/>");
-        Mockito.when(generatedCommunicationRepository.findByIdAndBookingId(9L, 1L))
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(generatedCommunicationRepository.findByIdAndBookingIdAndBookingOwnerId(9L, 1L, 7L))
             .thenReturn(Optional.of(communication));
 
         String xml = travelerPartService.getGeneratedXml(1L, 9L);
@@ -68,8 +74,11 @@ class TravelerPartServiceTest {
     }
 
     private BookingDetails sampleDetails(boolean ready) {
-        Accommodation accommodation = new Accommodation("Casa Olivo", "H123456789", "VT-123");
+        AppUser owner = new AppUser("owner", "hash", "Owner", AppUserRole.OWNER, true, OffsetDateTime.now(), OffsetDateTime.now());
+        org.springframework.test.util.ReflectionTestUtils.setField(owner, "id", 7L);
+        Accommodation accommodation = new Accommodation(owner, "Casa Olivo", "H123456789", "VT-123");
         Booking booking = new Booking(
+            owner,
             accommodation,
             "ABC123",
             2,

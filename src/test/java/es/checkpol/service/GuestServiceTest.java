@@ -2,10 +2,11 @@ package es.checkpol.service;
 
 import es.checkpol.domain.Accommodation;
 import es.checkpol.domain.Address;
+import es.checkpol.domain.AppUser;
+import es.checkpol.domain.AppUserRole;
 import es.checkpol.domain.Booking;
 import es.checkpol.domain.BookingChannel;
 import es.checkpol.domain.GuestSex;
-import es.checkpol.domain.MunicipalityResolutionStatus;
 import es.checkpol.domain.PaymentType;
 import es.checkpol.repository.AddressRepository;
 import es.checkpol.repository.BookingRepository;
@@ -26,18 +27,19 @@ class GuestServiceTest {
     private final AddressRepository addressRepository = Mockito.mock(AddressRepository.class);
     private final GuestRepository guestRepository = Mockito.mock(GuestRepository.class);
     private final BookingRepository bookingRepository = Mockito.mock(BookingRepository.class);
-    private final MunicipalityReviewService municipalityReviewService = Mockito.mock(MunicipalityReviewService.class);
+    private final CurrentAppUserService currentAppUserService = Mockito.mock(CurrentAppUserService.class);
     private final GuestService guestService = new GuestService(
         addressRepository,
         guestRepository,
         bookingRepository,
-        municipalityReviewService
+        currentAppUserService
     );
 
     GuestServiceTest() {
         Booking booking = sampleBooking(LocalDate.now().plusDays(2));
-        Mockito.when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
-        Mockito.when(addressRepository.findByIdAndBookingId(1L, booking.getId())).thenReturn(Optional.of(sampleAddress(booking)));
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(bookingRepository.findByIdAndOwnerId(1L, 7L)).thenReturn(Optional.of(booking));
+        Mockito.when(addressRepository.findByIdAndBookingIdAndBookingOwnerId(1L, booking.getId(), 7L)).thenReturn(Optional.of(sampleAddress(booking)));
     }
 
     @Test
@@ -92,7 +94,7 @@ class GuestServiceTest {
 
     @Test
     void rejectsSpanishGuestOlderThan14WithoutDocument() {
-        Mockito.when(bookingRepository.findById(1L)).thenReturn(Optional.of(sampleBooking(LocalDate.of(2026, 4, 1))));
+        Mockito.when(bookingRepository.findByIdAndOwnerId(1L, 7L)).thenReturn(Optional.of(sampleBooking(LocalDate.of(2026, 4, 1))));
         GuestForm form = new GuestForm(
             "Ana", "Lopez", "Martin", null, "", "", LocalDate.of(2010, 3, 1),
             "ESP", GuestSex.M, 1L, "+34 600000000", "", "", "PM"
@@ -132,8 +134,11 @@ class GuestServiceTest {
     }
 
     private Booking sampleBooking(LocalDate checkInDate) {
+        AppUser owner = new AppUser("owner", "hash", "Owner", AppUserRole.OWNER, true, java.time.OffsetDateTime.now(), java.time.OffsetDateTime.now());
+        ReflectionTestUtils.setField(owner, "id", 7L);
         return new Booking(
-            new Accommodation("Casa Olivo", "H123456789", "VT-123"),
+            owner,
+            new Accommodation(owner, "Casa Olivo", "H123456789", "VT-123"),
             "ABC123",
             2,
             checkInDate.minusDays(3),
@@ -155,9 +160,6 @@ class GuestServiceTest {
             null,
             "28079",
             "Madrid",
-            "Madrid",
-            MunicipalityResolutionStatus.EXACT,
-            "Municipio resuelto automaticamente.",
             "28001",
             "ESP"
         );

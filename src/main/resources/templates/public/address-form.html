@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Nueva direccion | Checkpol</title>
     <link rel="stylesheet" th:href="@{/app.css}">
+    <script th:src="@{/address-form.js}" defer></script>
 </head>
 <body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
-<main class="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 py-6 sm:px-6 sm:py-8">
+<main class="public-shell public-shell-lg">
     <header class="mb-5 space-y-3 md:mb-6">
-        <a class="inline-flex items-center gap-2 self-start rounded-full border border-slate-200/80 bg-white/85 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 shadow-sm transition duration-150 hover:border-primary/20 hover:text-primary"
+        <a class="public-back-link"
            th:href="${backUrl}">
             <span aria-hidden="true">←</span>
             <span>Volver</span>
@@ -27,10 +28,11 @@
     </header>
 
     <section class="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
-        <form th:action="${formAction}" th:object="${addressForm}" method="post" class="space-y-4">
+        <form th:action="${formAction}" th:object="${addressForm}" method="post" class="space-y-4" data-address-form>
             <input th:if="${guestId != null}" type="hidden" name="guestId" th:value="${guestId}">
             <input th:if="${slot != null}" type="hidden" name="slot" th:value="${slot}">
             <input th:if="${extra}" type="hidden" name="extra" value="true">
+            <input th:field="*{municipalityCode}" type="hidden" data-municipality-code-field>
 
             <div class="public-error-box" th:if="${#fields.hasGlobalErrors()}">
                 <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
@@ -57,26 +59,33 @@
                         <small class="public-error" th:if="${#fields.hasErrors('addressComplement')}" th:errors="*{addressComplement}"></small>
                     </label>
 
-                    <div class="grid gap-4 md:grid-cols-2">
-                        <label class="public-label">
-                            <span>Codigo postal</span>
-                            <input class="public-input" th:field="*{postalCode}" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="28001">
-                            <small class="public-error" th:if="${#fields.hasErrors('postalCode')}" th:errors="*{postalCode}"></small>
-                        </label>
-                        <label class="public-label">
-                            <span>Municipio</span>
-                            <input class="public-input" th:field="*{municipalityName}" type="text" autocomplete="address-level2" placeholder="Madrid">
-                            <small class="public-error" th:if="${#fields.hasErrors('municipalityName')}" th:errors="*{municipalityName}"></small>
-                        </label>
-                    </div>
-
                     <label class="public-label">
                         <span>Pais</span>
-                        <select class="public-select" th:field="*{country}">
+                        <select class="public-select" th:field="*{country}" data-country-field>
                             <option value="">Selecciona...</option>
                             <option th:each="country : ${countries}" th:value="${country.code}" th:text="${country.label + ' (' + country.code + ')'}"></option>
                         </select>
                         <small class="public-error" th:if="${#fields.hasErrors('country')}" th:errors="*{country}"></small>
+                    </label>
+
+                    <label class="public-label">
+                        <span>Codigo postal</span>
+                        <input class="public-input" th:field="*{postalCode}" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="28001" data-postal-code-field>
+                        <small class="public-error" th:if="${#fields.hasErrors('postalCode')}" th:errors="*{postalCode}"></small>
+                    </label>
+
+                    <label class="public-label" data-spanish-municipality-shell hidden>
+                        <span>Municipio</span>
+                        <select class="public-select" data-spanish-municipality-select>
+                            <option value="">Municipio</option>
+                        </select>
+                        <small class="public-hint field-hint" data-spanish-municipality-hint hidden></small>
+                    </label>
+
+                    <label class="public-label" data-municipality-text-shell>
+                        <span>Municipio</span>
+                        <input class="public-input" th:field="*{municipalityName}" type="text" autocomplete="address-level2" placeholder="Madrid" data-municipality-name-field>
+                        <small class="public-error" th:if="${#fields.hasErrors('municipalityName')}" th:errors="*{municipalityName}"></small>
                     </label>
 
                     <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
@@ -88,7 +97,7 @@
         </form>
 
         <aside class="space-y-4 lg:sticky lg:top-6 lg:self-start">
-            <div class="public-panel bg-linear-to-br from-white via-white to-sky-50 p-5">
+            <div class="public-panel-gradient p-5">
                 <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Recuerda</p>
                 <p class="mt-3 text-sm leading-6 text-slate-600">Al guardar volverás al formulario del huésped y esta dirección ya quedará disponible para seleccionarla.</p>
             </div>

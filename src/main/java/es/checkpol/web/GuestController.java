@@ -1,6 +1,8 @@
 package es.checkpol.web;
 
 import es.checkpol.domain.DocumentType;
+import es.checkpol.domain.Guest;
+import es.checkpol.domain.GuestReviewStatus;
 import es.checkpol.domain.GuestRelationship;
 import es.checkpol.domain.GuestSex;
 import es.checkpol.service.AddressService;
@@ -23,13 +25,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.net.URLEncoder;
+import java.time.LocalDate;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 public class GuestController {
@@ -105,6 +108,7 @@ public class GuestController {
 
         guestWizardDraftStore.clearBookingDraft(session, bookingId, null);
         redirectAttributes.addFlashAttribute("flashMessage", "Datos del huesped guardados.");
+        redirectAttributes.addFlashAttribute("flashKind", "success");
         return "redirect:/bookings/" + bookingId;
     }
 
@@ -149,6 +153,27 @@ public class GuestController {
         );
     }
 
+    @GetMapping("/bookings/{bookingId}/guests/{guestId}/review")
+    public String reviewGuest(
+        @PathVariable Long bookingId,
+        @PathVariable Long guestId,
+        Model model
+    ) {
+        BookingDetails details = bookingService.getDetails(bookingId);
+        Guest guest = details.guests().stream()
+            .filter(item -> item.getId().equals(guestId))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa persona."));
+
+        return populateReviewForm(
+            model,
+            bookingId,
+            guestId,
+            details,
+            guest
+        );
+    }
+
     @PostMapping("/bookings/{bookingId}/guests/{guestId}")
     public String updateGuest(
         @PathVariable Long bookingId,
@@ -172,6 +197,30 @@ public class GuestController {
 
         guestWizardDraftStore.clearBookingDraft(session, bookingId, guestId);
         redirectAttributes.addFlashAttribute("flashMessage", "Datos del huesped actualizados.");
+        redirectAttributes.addFlashAttribute("flashKind", "success");
+        return "redirect:/bookings/" + bookingId;
+    }
+
+    @PostMapping("/bookings/{bookingId}/guests/{guestId}/review")
+    public String approveReviewedGuest(
+        @PathVariable Long bookingId,
+        @PathVariable Long guestId,
+        RedirectAttributes redirectAttributes
+    ) {
+        try {
+            guestService.markReviewed(guestId);
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("flashMessage", exception.getMessage());
+            return "redirect:/bookings/" + bookingId;
+        }
+
+        BookingDetails updatedDetails = bookingService.getDetails(bookingId);
+        if (updatedDetails.readyForTravelerPart()) {
+            redirectAttributes.addFlashAttribute("flashMessage", "Datos guardados. La estancia ya está lista para descargar el archivo para SES.");
+        } else {
+            redirectAttributes.addFlashAttribute("flashMessage", "Datos guardados.");
+        }
+        redirectAttributes.addFlashAttribute("flashKind", "success");
         return "redirect:/bookings/" + bookingId;
     }
 
@@ -222,6 +271,7 @@ public class GuestController {
     public String issueSelfServiceLink(@PathVariable Long bookingId, RedirectAttributes redirectAttributes) {
         guestSelfServiceService.issueAccess(bookingId);
         redirectAttributes.addFlashAttribute("flashMessage", "Enlace para rellenar datos preparado.");
+        redirectAttributes.addFlashAttribute("flashKind", "success");
         return "redirect:/bookings/" + bookingId;
     }
 
@@ -255,47 +305,8 @@ public class GuestController {
     public String revokeSelfServiceLink(@PathVariable Long bookingId, RedirectAttributes redirectAttributes) {
         guestSelfServiceService.revokeAccess(bookingId);
         redirectAttributes.addFlashAttribute("flashMessage", "Enlace desactivado.");
+        redirectAttributes.addFlashAttribute("flashKind", "success");
         return "redirect:/bookings/" + bookingId;
-    }
-
-    @PostMapping("/bookings/{bookingId}/guests/{guestId}/review")
-    public Object markGuestReviewed(
-        @PathVariable Long bookingId,
-        @PathVariable Long guestId,
-        @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
-        RedirectAttributes redirectAttributes
-    ) {
-        try {
-            guestService.markReviewed(guestId);
-        } catch (IllegalArgumentException exception) {
-            if (isAjaxRequest(requestedWith)) {
-                return ResponseEntity.badRequest()
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(Map.of(
-                        "success", false,
-                        "message", "No se pudo marcar como revisado. Intentalo de nuevo."
-                    ));
-            }
-            redirectAttributes.addFlashAttribute("flashMessage", exception.getMessage());
-            return "redirect:/bookings/" + bookingId;
-        }
-
-        if (isAjaxRequest(requestedWith)) {
-            return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of(
-                    "success", true,
-                    "guestId", guestId,
-                    "message", "Huesped marcado como revisado."
-                ));
-        }
-
-        redirectAttributes.addFlashAttribute("flashMessage", "Huesped revisado.");
-        return "redirect:/bookings/" + bookingId;
-    }
-
-    private boolean isAjaxRequest(String requestedWith) {
-        return requestedWith != null && !requestedWith.isBlank();
     }
 
     private String populateForm(
@@ -319,6 +330,7 @@ public class GuestController {
         model.addAttribute("formAction", action);
         model.addAttribute("formTitle", title);
         model.addAttribute("submitLabel", submitLabel);
+        model.addAttribute("bookingUrl", "/bookings/" + bookingId);
         model.addAttribute("initialStep", step == null ? null : Math.max(step - 1, 0));
         String newAddressUrl = guestId == null
             ? "/bookings/" + bookingId + "/addresses/new"
@@ -329,5 +341,118 @@ public class GuestController {
             : "/bookings/" + bookingId + "/guests/" + guestId + "/draft-address";
         model.addAttribute("saveAddressDraftAction", saveDraftAction);
         return "guests/form";
+    }
+
+    private String populateReviewForm(
+        Model model,
+        Long bookingId,
+        Long guestId,
+        BookingDetails details,
+        Guest guest
+    ) {
+        List<String> reviewIssues = buildReviewIssues(guest, details.booking().getCheckInDate());
+        model.addAttribute("details", details);
+        model.addAttribute("guest", guest);
+        model.addAttribute("bookingUrl", "/bookings/" + bookingId);
+        model.addAttribute("reviewAction", "/bookings/" + bookingId + "/guests/" + guestId + "/review");
+        model.addAttribute("editUrl", "/bookings/" + bookingId + "/guests/" + guestId + "/edit");
+        model.addAttribute("nextPendingGuestId", findNextPendingGuestId(details, guestId));
+        model.addAttribute("reviewIssues", reviewIssues);
+        model.addAttribute("reviewLeadIssue", reviewIssues.getFirst());
+        model.addAttribute("showRelationship", isMinorAtCheckIn(guest, details.booking().getCheckInDate()) && !isBlank(guest.getRelationship()));
+        model.addAttribute("relationshipDisplay", buildRelationshipDisplay(guest));
+        model.addAttribute("showMunicipalityCode", showsMunicipalityCode(guest));
+        model.addAttribute("municipalityCodeDisplay", buildMunicipalityCodeDisplay(guest));
+        model.addAttribute("municipalityNameDisplay", buildMunicipalityNameDisplay(guest));
+        return "guests/review";
+    }
+
+    private Long findNextPendingGuestId(BookingDetails details, Long currentGuestId) {
+        return details.guests().stream()
+            .filter(guest -> guest.getReviewStatus() == GuestReviewStatus.PENDING_REVIEW)
+            .filter(guest -> !guest.getId().equals(currentGuestId))
+            .map(Guest::getId)
+            .findFirst()
+            .orElse(null);
+    }
+
+    private List<String> buildReviewIssues(Guest guest, LocalDate checkInDate) {
+        List<String> issues = new ArrayList<>();
+
+        if (requiresDocument(guest, checkInDate) && (guest.getDocumentType() == null || isBlank(guest.getDocumentNumber()))) {
+            issues.add("Falta revisar el documento.");
+        }
+        if (guest.getBirthDate() == null) {
+            issues.add("Falta la fecha de nacimiento.");
+        }
+        if (isBlank(guest.getPhone()) && isBlank(guest.getPhone2()) && isBlank(guest.getEmail())) {
+            issues.add("Falta un teléfono o un correo.");
+        }
+        if ("ESP".equalsIgnoreCase(guest.getCountry()) && isBlank(guest.getMunicipalityCode())) {
+            issues.add("Falta indicar el municipio.");
+        }
+        if (guest.getAddress() == null || isBlank(guest.getAddressLine()) || isBlank(guest.getPostalCode())) {
+            issues.add("Falta revisar la dirección.");
+        }
+        if (guest.getSex() == null) {
+            issues.add("Falta indicar el sexo.");
+        }
+        if (isMinorAtCheckIn(guest, checkInDate) && isBlank(guest.getRelationship())) {
+            issues.add("Falta indicar el parentesco.");
+        }
+        if (issues.isEmpty()) {
+            issues.add("Solo confirma que todo está correcto y guarda.");
+        }
+        return issues;
+    }
+
+    private boolean requiresDocument(Guest guest, LocalDate checkInDate) {
+        if (guest.getBirthDate() == null) {
+            return true;
+        }
+        int age = checkInDate.getYear() - guest.getBirthDate().getYear();
+        if (checkInDate.getDayOfYear() < guest.getBirthDate().getDayOfYear()) {
+            age--;
+        }
+        return age >= 18 || ("ESP".equalsIgnoreCase(guest.getNationality()) && age >= 14);
+    }
+
+    private boolean isMinorAtCheckIn(Guest guest, LocalDate checkInDate) {
+        if (guest.getBirthDate() == null) {
+            return false;
+        }
+        int age = checkInDate.getYear() - guest.getBirthDate().getYear();
+        if (checkInDate.getDayOfYear() < guest.getBirthDate().getDayOfYear()) {
+            age--;
+        }
+        return age < 18;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private boolean showsMunicipalityCode(Guest guest) {
+        return "ESP".equalsIgnoreCase(guest.getCountry());
+    }
+
+    private String buildMunicipalityCodeDisplay(Guest guest) {
+        return isBlank(guest.getMunicipalityCode()) ? "Sin código" : guest.getMunicipalityCode();
+    }
+
+    private String buildMunicipalityNameDisplay(Guest guest) {
+        return isBlank(guest.getMunicipalityName()) ? "Sin municipio" : guest.getMunicipalityName();
+    }
+
+    private String buildRelationshipDisplay(Guest guest) {
+        if (isBlank(guest.getRelationship())) {
+            return "";
+        }
+        for (GuestRelationship relationship : GuestRelationship.values()) {
+            if (relationship.name().equalsIgnoreCase(guest.getRelationship())) {
+                return relationship.getLabel();
+            }
+        }
+        return guest.getRelationship();
     }
 }

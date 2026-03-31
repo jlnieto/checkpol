@@ -5,143 +5,142 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Nueva estancia | Checkpol</title>
     <link rel="stylesheet" th:href="@{/app.css}">
-    <link rel="stylesheet" th:href="@{/css/base.css}">
-    <link rel="stylesheet" th:href="@{/css/components.css}">
-    <link rel="stylesheet" th:href="@{/css/owner.css}">
-    <link rel="stylesheet" th:href="@{/css/public.css}">
-    <link rel="stylesheet" th:href="@{/css/admin.css}">
     <script th:src="@{/wizard-form.js}" defer></script>
 </head>
-<body>
-<main class="shell shell-narrow">
-    <header class="page-header">
-        <a class="back-link" th:href="@{/bookings}">Volver al listado</a>
-        <h1 th:text="${formTitle}">Nueva estancia</h1>
-        <p th:if="${#lists.isEmpty(accommodations)}">
-            Antes de crear una estancia necesitas guardar al menos una vivienda.
-        </p>
-        <p th:unless="${#lists.isEmpty(accommodations)}">
-            Guarda los datos basicos ahora y completa el resto poco a poco.
-        </p>
-    </header>
-
-    <section class="panel" th:if="${#lists.isEmpty(accommodations)}">
-        <p>No hay viviendas creadas todavia.</p>
-        <a class="btn" th:href="@{/accommodations/new}">Crear primera vivienda</a>
-    </section>
-
-    <section class="panel" th:unless="${#lists.isEmpty(accommodations)}">
-        <form th:action="${formAction}" th:object="${bookingForm}" method="post" class="form-grid" data-wizard-form data-booking-form novalidate>
-            <div class="error-box" th:if="${#fields.hasGlobalErrors()}">
-                <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
+<main class="owner-shell-narrow">
+    <section class="owner-page">
+        <header class="owner-header">
+            <a class="public-back-link" th:href="@{/bookings}">
+                <span aria-hidden="true">←</span>
+                <span>Volver al listado</span>
+            </a>
+            <div class="space-y-2">
+                <p class="owner-kicker">Estancias</p>
+                <h1 class="owner-title" th:text="${formTitle}">Nueva estancia</h1>
+                <p class="owner-copy" th:if="${#lists.isEmpty(accommodations)}">
+                    Antes de crear una estancia necesitas guardar al menos una vivienda.
+                </p>
+                <p class="owner-copy" th:unless="${#lists.isEmpty(accommodations)}">
+                    Guarda los datos básicos ahora y completa el resto poco a poco. El formulario te guía por pasos cortos.
+                </p>
             </div>
+        </header>
 
-            <div class="wizard-shell">
-                <div class="wizard-header">
-                    <div>
-                        <p class="eyebrow">Alta de estancia</p>
-                        <h2 data-current-step-title>1. Datos basicos de la reserva</h2>
-                        <p class="muted" data-current-step-help>Primero identifica la vivienda y la reserva de Airbnb. Despues te pediremos las fechas.</p>
-                    </div>
-                    <span class="wizard-progress" data-step-progress>Paso 1 de 2</span>
+        <section class="owner-form-shell" th:if="${#lists.isEmpty(accommodations)}">
+            <h2 class="text-2xl font-extrabold tracking-tight text-slate-900">No hay viviendas creadas todavía</h2>
+            <p class="mt-2 owner-copy">Primero necesitas guardar una vivienda para poder asociarle una estancia.</p>
+            <div class="mt-4 owner-actions">
+                <a class="owner-button-primary" th:href="@{/accommodations/new}">Crear primera vivienda</a>
+            </div>
+        </section>
+
+        <section class="owner-form-shell" th:unless="${#lists.isEmpty(accommodations)}">
+            <form th:action="${formAction}" th:object="${bookingForm}" method="post" class="space-y-5" data-wizard-form data-booking-form novalidate data-wizard-root>
+                <div class="owner-error-box error-box" th:if="${#fields.hasGlobalErrors()}">
+                    <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
                 </div>
 
-                <div class="wizard-stepper">
-                    <div class="wizard-step wizard-step-active" data-step-indicator>
-                        <span>Paso 1</span>
-                        <strong>Estancia</strong>
-                    </div>
-                    <div class="wizard-step" data-step-indicator>
-                        <span>Paso 2</span>
-                        <strong>Fechas</strong>
-                    </div>
-                </div>
+                <section class="public-panel overflow-hidden p-5 sm:p-6">
+                    <div class="flex flex-col gap-4 border-b border-slate-200/80 pb-5">
+                        <div class="space-y-2">
+                            <p class="owner-kicker">
+                                <span data-step-progress>Paso 1 de 2</span>
+                            </p>
+                            <h2 class="text-2xl font-extrabold tracking-tight text-slate-900" data-current-step-title>Datos básicos de la reserva</h2>
+                            <p class="owner-copy" data-current-step-help>Primero identifica la vivienda, la referencia y cuántas personas vienen.</p>
+                        </div>
 
-                <section class="wizard-panel" data-step-panel data-step-title="1. Datos basicos de la reserva"
-                         data-step-help="Identifica la vivienda, la referencia de Airbnb y cuantas personas vienen en esta reserva.">
-                    <div>
-                        <h2>Datos de la estancia</h2>
-                        <p>Empieza eligiendo la vivienda y la referencia de Airbnb para reconocer esta reserva.</p>
-                    </div>
-                    <div class="error-box" data-panel-errors hidden></div>
-
-                    <label>
-                        <span>Vivienda</span>
-                        <select th:field="*{accommodationId}">
-                            <option value="">Selecciona una vivienda</option>
-                            <option th:each="accommodation : ${accommodations}"
-                                    th:value="${accommodation.id}"
-                                    th:text="${accommodation.name}"></option>
-                        </select>
-                        <small class="error" data-client-error-for="accommodationId"></small>
-                        <small class="error" th:if="${#fields.hasErrors('accommodationId')}" th:errors="*{accommodationId}"></small>
-                    </label>
-
-                    <div class="info-block">
-                        <strong>Canal</strong>
-                        <p>Esta estancia se guardara como reserva de Airbnb. El cobro se registrara automaticamente como pago a traves de plataforma.</p>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div class="public-step-chip wizard-step-active" data-step-indicator>
+                                <span class="public-step-chip-title">Paso 1</span>
+                                <p class="public-step-chip-copy">Estancia</p>
+                            </div>
+                            <div class="public-step-chip" data-step-indicator>
+                                <span class="public-step-chip-title">Paso 2</span>
+                                <p class="public-step-chip-copy">Fechas</p>
+                            </div>
+                        </div>
                     </div>
 
-                    <label>
-                        <span>Referencia Airbnb</span>
-                        <input th:field="*{referenceCode}" type="text" autocomplete="off">
-                        <small class="error" data-client-error-for="referenceCode"></small>
-                        <small class="error" th:if="${#fields.hasErrors('referenceCode')}" th:errors="*{referenceCode}"></small>
-                    </label>
+                    <div class="pt-5 sm:pt-6">
+                        <section class="space-y-5" data-step-panel data-step-title="Datos básicos de la reserva"
+                                 data-step-help="Identifica la vivienda, la referencia de Airbnb y cuántas personas vienen en esta reserva.">
+                            <div class="owner-error-box error-box" data-panel-errors hidden></div>
 
-                    <label>
-                        <span>Numero de personas</span>
-                        <input th:field="*{personCount}" type="number" min="1" max="20" inputmode="numeric">
-                        <small>Indica cuantas personas vienen en esta reserva.</small>
-                        <small class="error" data-client-error-for="personCount"></small>
-                        <small class="error" th:if="${#fields.hasErrors('personCount')}" th:errors="*{personCount}"></small>
-                    </label>
+                            <label class="owner-label">
+                                <span>Vivienda</span>
+                                <select class="owner-select" th:field="*{accommodationId}">
+                                    <option value="">Selecciona una vivienda</option>
+                                    <option th:each="accommodation : ${accommodations}" th:value="${accommodation.id}" th:text="${accommodation.name}"></option>
+                                </select>
+                                <small class="owner-error error" data-client-error-for="accommodationId"></small>
+                                <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('accommodationId')}" th:errors="*{accommodationId}"></small>
+                            </label>
 
-                    <div class="wizard-actions">
-                        <a class="button-ghost" th:href="@{/bookings}">Volver</a>
-                        <button class="btn" type="button" data-step-next>Seguir</button>
+                            <div class="owner-form-card">
+                                <p class="owner-kicker">Canal</p>
+                                <p class="mt-2 owner-copy">Esta estancia se guardará como reserva de Airbnb. El cobro se registrará automáticamente como pago a través de plataforma.</p>
+                            </div>
+
+                            <label class="owner-label">
+                                <span>Referencia Airbnb</span>
+                                <input class="owner-input" th:field="*{referenceCode}" type="text" autocomplete="off" placeholder="HMYECBTMZM">
+                                <small class="owner-error error" data-client-error-for="referenceCode"></small>
+                                <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('referenceCode')}" th:errors="*{referenceCode}"></small>
+                            </label>
+
+                            <label class="owner-label">
+                                <span>Número de personas</span>
+                                <input class="owner-input" th:field="*{personCount}" type="number" min="1" max="20" inputmode="numeric" placeholder="2">
+                                <small class="public-hint">Indica cuántas personas vienen en esta reserva.</small>
+                                <small class="owner-error error" data-client-error-for="personCount"></small>
+                                <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('personCount')}" th:errors="*{personCount}"></small>
+                            </label>
+
+                            <div class="owner-form-actions">
+                                <a class="owner-button-secondary button-ghost" th:href="@{/bookings}">Volver</a>
+                                <button class="owner-button-primary btn" type="button" data-step-next>Seguir</button>
+                            </div>
+                        </section>
+
+                        <section class="space-y-5" data-step-panel hidden
+                                 data-step-title="Fechas de la estancia"
+                                 data-step-help="Indica cuándo se hizo la reserva y las fechas reales de entrada y salida.">
+                            <div class="owner-error-box error-box" data-panel-errors hidden></div>
+
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <label class="owner-label">
+                                    <span>Fecha de reserva</span>
+                                    <input class="owner-input" th:field="*{contractDate}" type="date" autocomplete="off">
+                                    <small class="owner-error error" data-client-error-for="contractDate"></small>
+                                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('contractDate')}" th:errors="*{contractDate}"></small>
+                                </label>
+
+                                <label class="owner-label">
+                                    <span>Entrada</span>
+                                    <input class="owner-input" th:field="*{checkInDate}" type="date" autocomplete="off">
+                                    <small class="owner-error error" data-client-error-for="checkInDate"></small>
+                                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('checkInDate')}" th:errors="*{checkInDate}"></small>
+                                </label>
+
+                                <label class="owner-label md:col-span-2">
+                                    <span>Salida</span>
+                                    <input class="owner-input" th:field="*{checkOutDate}" type="date" autocomplete="off">
+                                    <small class="owner-error error" data-client-error-for="checkOutDate"></small>
+                                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('checkOutDate')}" th:errors="*{checkOutDate}"></small>
+                                </label>
+                            </div>
+
+                            <div class="owner-form-actions">
+                                <button type="button" class="owner-button-secondary button-ghost" data-step-prev>Volver</button>
+                                <button class="owner-button-primary btn" type="submit" th:text="${submitLabel}">Guardar estancia</button>
+                            </div>
+                        </section>
                     </div>
                 </section>
-
-                <section class="wizard-panel" data-step-panel hidden
-                         data-step-title="2. Fechas de la estancia"
-                         data-step-help="Indica cuando se hizo la reserva y las fechas reales de entrada y salida.">
-                    <div>
-                        <h2>Fechas importantes</h2>
-                        <p>Ahora indica cuando se cerro la reserva y las fechas de entrada y salida.</p>
-                    </div>
-                    <div class="error-box" data-panel-errors hidden></div>
-
-                    <div class="grid-2">
-                        <label>
-                            <span>Fecha de reserva</span>
-                            <input th:field="*{contractDate}" type="date" autocomplete="off">
-                            <small class="error" data-client-error-for="contractDate"></small>
-                            <small class="error" th:if="${#fields.hasErrors('contractDate')}" th:errors="*{contractDate}"></small>
-                        </label>
-
-                        <label>
-                            <span>Entrada</span>
-                            <input th:field="*{checkInDate}" type="date" autocomplete="off">
-                            <small class="error" data-client-error-for="checkInDate"></small>
-                            <small class="error" th:if="${#fields.hasErrors('checkInDate')}" th:errors="*{checkInDate}"></small>
-                        </label>
-
-                        <label>
-                            <span>Salida</span>
-                            <input th:field="*{checkOutDate}" type="date" autocomplete="off">
-                            <small class="error" data-client-error-for="checkOutDate"></small>
-                            <small class="error" th:if="${#fields.hasErrors('checkOutDate')}" th:errors="*{checkOutDate}"></small>
-                        </label>
-                    </div>
-
-                    <div class="wizard-actions">
-                        <button type="button" class="button-ghost" data-step-prev>Volver</button>
-                        <button class="btn" type="submit" th:text="${submitLabel}">Guardar estancia</button>
-                    </div>
-                </section>
-            </div>
-        </form>
+            </form>
+        </section>
     </section>
 </main>
 </body>

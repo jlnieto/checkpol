@@ -23,36 +23,34 @@ import java.util.regex.Pattern;
 public class GuestService {
 
     private static final Pattern ISO3_PATTERN = Pattern.compile("^[A-Za-z]{3}$");
-    private static final Pattern MUNICIPALITY_CODE_PATTERN = Pattern.compile("^\\d{5}$");
-    private static final Pattern SPANISH_POSTAL_CODE_PATTERN = Pattern.compile("^\\d{5}$");
     private static final Pattern NIF_PATTERN = Pattern.compile("^\\d{8}[A-Za-z]$");
     private static final Pattern NIE_PATTERN = Pattern.compile("^[XYZxyz]\\d{7}[A-Za-z]$");
     private static final Pattern INTERNATIONAL_PHONE_PATTERN = Pattern.compile("^\\+\\d[\\d\\s().-]{5,19}$");
     private final AddressRepository addressRepository;
     private final GuestRepository guestRepository;
     private final BookingRepository bookingRepository;
-    private final MunicipalityReviewService municipalityReviewService;
+    private final CurrentAppUserService currentAppUserService;
 
     public GuestService(
         AddressRepository addressRepository,
         GuestRepository guestRepository,
         BookingRepository bookingRepository,
-        MunicipalityReviewService municipalityReviewService
+        CurrentAppUserService currentAppUserService
     ) {
         this.addressRepository = addressRepository;
         this.guestRepository = guestRepository;
         this.bookingRepository = bookingRepository;
-        this.municipalityReviewService = municipalityReviewService;
+        this.currentAppUserService = currentAppUserService;
     }
 
     @Transactional(readOnly = true)
     public List<Guest> findByBookingId(Long bookingId) {
-        return guestRepository.findAllByBookingIdOrderByIdAsc(bookingId);
+        return guestRepository.findAllByBookingIdAndBookingOwnerIdOrderByIdAsc(bookingId, currentAppUserService.requireCurrentUserId());
     }
 
     @Transactional
     public Guest create(Long bookingId, GuestForm form) {
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdAndOwnerId(bookingId, currentAppUserService.requireCurrentUserId())
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa estancia."));
 
         validateContact(form);
@@ -85,14 +83,12 @@ public class GuestService {
             GuestReviewStatus.REVIEWED,
             null
         );
-        Guest savedGuest = guestRepository.save(guest);
-        municipalityReviewService.registerAutomaticResolution(savedGuest, address.toMunicipalityResolution());
-        return savedGuest;
+        return guestRepository.save(guest);
     }
 
     @Transactional(readOnly = true)
     public GuestForm getForm(Long guestId) {
-        Guest guest = guestRepository.findById(guestId)
+        Guest guest = guestRepository.findByIdAndBookingOwnerId(guestId, currentAppUserService.requireCurrentUserId())
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa persona."));
         return new GuestForm(
             guest.getFirstName(),
@@ -114,7 +110,7 @@ public class GuestService {
 
     @Transactional
     public Guest update(Long guestId, GuestForm form) {
-        Guest guest = guestRepository.findById(guestId)
+        Guest guest = guestRepository.findByIdAndBookingOwnerId(guestId, currentAppUserService.requireCurrentUserId())
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa persona."));
 
         validateContact(form);
@@ -143,7 +139,6 @@ public class GuestService {
             normalize(form.relationship())
         );
         guest.markReviewed();
-        municipalityReviewService.registerAutomaticResolution(guest, address.toMunicipalityResolution());
         return guest;
     }
 
@@ -182,9 +177,7 @@ public class GuestService {
             GuestReviewStatus.PENDING_REVIEW,
             OffsetDateTime.now()
         );
-        Guest savedGuest = guestRepository.save(guest);
-        municipalityReviewService.registerAutomaticResolution(savedGuest, address.toMunicipalityResolution());
-        return savedGuest;
+        return guestRepository.save(guest);
     }
 
     @Transactional
@@ -218,20 +211,19 @@ public class GuestService {
             normalize(form.email()),
             normalize(form.relationship())
         );
-        municipalityReviewService.registerAutomaticResolution(guest, address.toMunicipalityResolution());
         return guest;
     }
 
     @Transactional
     public void markReviewed(Long guestId) {
-        Guest guest = guestRepository.findById(guestId)
+        Guest guest = guestRepository.findByIdAndBookingOwnerId(guestId, currentAppUserService.requireCurrentUserId())
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa persona."));
         guest.markReviewed();
     }
 
     @Transactional
     public void assignAddress(Long guestId, Long addressId) {
-        Guest guest = guestRepository.findById(guestId)
+        Guest guest = guestRepository.findByIdAndBookingOwnerId(guestId, currentAppUserService.requireCurrentUserId())
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa persona."));
         Address address = getBookingAddress(guest.getBooking().getId(), addressId);
         guest.update(
@@ -250,7 +242,6 @@ public class GuestService {
             guest.getEmail(),
             guest.getRelationship()
         );
-        municipalityReviewService.registerAutomaticResolution(guest, address.toMunicipalityResolution());
     }
 
     private void validateContact(GuestForm form) {
@@ -355,7 +346,7 @@ public class GuestService {
         if (addressId == null) {
             throw new IllegalArgumentException("Selecciona una direccion.");
         }
-        return addressRepository.findByIdAndBookingId(addressId, bookingId)
+        return addressRepository.findByIdAndBookingIdAndBookingOwnerId(addressId, bookingId, currentAppUserService.requireCurrentUserId())
             .orElseThrow(() -> new IllegalArgumentException("La direccion seleccionada no pertenece a esta estancia."));
     }
 

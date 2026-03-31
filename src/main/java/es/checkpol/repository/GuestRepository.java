@@ -9,5 +9,9 @@ public interface GuestRepository extends JpaRepository<Guest, Long> {
 
     List<Guest> findAllByBookingIdOrderByIdAsc(Long bookingId);
 
+    List<Guest> findAllByBookingIdAndBookingOwnerIdOrderByIdAsc(Long bookingId, Long ownerId);
+
     long countByBookingId(Long bookingId);
+
+    java.util.Optional<Guest> findByIdAndBookingOwnerId(Long id, Long ownerId);
 }

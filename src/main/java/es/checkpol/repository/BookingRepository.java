@@ -14,17 +14,21 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         select b
         from Booking b
         join fetch b.accommodation
+        where b.owner.id = :ownerId
         order by b.checkInDate asc, b.id asc
         """)
-    List<Booking> findAllForList();
+    List<Booking> findAllForList(Long ownerId);
 
     @Query("""
         select b
         from Booking b
         join fetch b.accommodation
         where b.id = :id
+          and b.owner.id = :ownerId
         """)
-    Optional<Booking> findDetailById(Long id);
+    Optional<Booking> findDetailById(Long id, Long ownerId);
+
+    Optional<Booking> findByIdAndOwnerId(Long id, Long ownerId);
 
     @Query("""
         select b

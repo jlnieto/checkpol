@@ -2,6 +2,8 @@ package es.checkpol.service;
 
 import es.checkpol.domain.Accommodation;
 import es.checkpol.domain.Address;
+import es.checkpol.domain.AppUser;
+import es.checkpol.domain.AppUserRole;
 import es.checkpol.domain.Booking;
 import es.checkpol.domain.BookingChannel;
 import es.checkpol.domain.DocumentType;
@@ -9,7 +11,6 @@ import es.checkpol.domain.Guest;
 import es.checkpol.domain.GuestReviewStatus;
 import es.checkpol.domain.GuestSex;
 import es.checkpol.domain.GuestSubmissionSource;
-import es.checkpol.domain.MunicipalityResolutionStatus;
 import es.checkpol.domain.PaymentType;
 import es.checkpol.repository.AccommodationRepository;
 import es.checkpol.repository.BookingRepository;
@@ -34,11 +35,13 @@ class BookingServiceTest {
     private final AccommodationRepository accommodationRepository = Mockito.mock(AccommodationRepository.class);
     private final GuestRepository guestRepository = Mockito.mock(GuestRepository.class);
     private final GeneratedCommunicationRepository generatedCommunicationRepository = Mockito.mock(GeneratedCommunicationRepository.class);
+    private final CurrentAppUserService currentAppUserService = Mockito.mock(CurrentAppUserService.class);
     private final BookingService bookingService = new BookingService(
         bookingRepository,
         accommodationRepository,
         guestRepository,
-        generatedCommunicationRepository
+        generatedCommunicationRepository,
+        currentAppUserService
     );
 
     @Test
@@ -57,7 +60,9 @@ class BookingServiceTest {
 
     @Test
     void rejectsUnknownAccommodation() {
-        Mockito.when(accommodationRepository.findById(99L)).thenReturn(Optional.empty());
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(currentAppUserService.requireCurrentUserEntity()).thenReturn(sampleOwner());
+        Mockito.when(accommodationRepository.findByIdAndOwnerId(99L, 7L)).thenReturn(Optional.empty());
 
         BookingForm form = new BookingForm(
             99L,
@@ -73,8 +78,9 @@ class BookingServiceTest {
 
     @Test
     void storesAirbnbDefaultsForBookingMetadata() {
-        Accommodation accommodation = new Accommodation("Casa Olivo", "H123456789", "VT-123");
-        Mockito.when(accommodationRepository.findById(1L)).thenReturn(Optional.of(accommodation));
+        Accommodation accommodation = sampleAccommodation();
+        Mockito.when(currentAppUserService.requireCurrentUserEntity()).thenReturn(sampleOwner());
+        Mockito.when(accommodationRepository.findByIdAndOwnerId(1L, 7L)).thenReturn(Optional.of(accommodation));
         Mockito.when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Booking booking = bookingService.create(new BookingForm(
@@ -95,12 +101,13 @@ class BookingServiceTest {
     @Test
     void marksBookingReadyWhenGuestCountMatchesAndAllGuestsAreReviewedAndExportable() {
         Booking booking = sampleBooking(2);
-        Mockito.when(bookingRepository.findDetailById(1L)).thenReturn(Optional.of(booking));
-        Mockito.when(guestRepository.findAllByBookingIdOrderByIdAsc(1L)).thenReturn(List.of(
-            sampleGuest(booking, 1L, GuestReviewStatus.REVIEWED, sampleSpanishAddress(booking, "28079", MunicipalityResolutionStatus.EXACT)),
-            sampleGuest(booking, 2L, GuestReviewStatus.REVIEWED, sampleSpanishAddress(booking, "28079", MunicipalityResolutionStatus.EXACT))
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(bookingRepository.findDetailById(1L, 7L)).thenReturn(Optional.of(booking));
+        Mockito.when(guestRepository.findAllByBookingIdAndBookingOwnerIdOrderByIdAsc(1L, 7L)).thenReturn(List.of(
+            sampleGuest(booking, 1L, GuestReviewStatus.REVIEWED, sampleSpanishAddress(booking, "28079")),
+            sampleGuest(booking, 2L, GuestReviewStatus.REVIEWED, sampleSpanishAddress(booking, "28079"))
         ));
-        Mockito.when(generatedCommunicationRepository.findAllByBookingIdOrderByGeneratedAtDesc(1L)).thenReturn(List.of());
+        Mockito.when(generatedCommunicationRepository.findAllByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(1L, 7L)).thenReturn(List.of());
 
         BookingDetails details = bookingService.getDetails(1L);
 
@@ -112,11 +119,12 @@ class BookingServiceTest {
     @Test
     void blocksBookingWhenGuestCountIsLowerThanExpected() {
         Booking booking = sampleBooking(2);
-        Mockito.when(bookingRepository.findDetailById(1L)).thenReturn(Optional.of(booking));
-        Mockito.when(guestRepository.findAllByBookingIdOrderByIdAsc(1L)).thenReturn(List.of(
-            sampleGuest(booking, 1L, GuestReviewStatus.REVIEWED, sampleSpanishAddress(booking, "28079", MunicipalityResolutionStatus.EXACT))
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(bookingRepository.findDetailById(1L, 7L)).thenReturn(Optional.of(booking));
+        Mockito.when(guestRepository.findAllByBookingIdAndBookingOwnerIdOrderByIdAsc(1L, 7L)).thenReturn(List.of(
+            sampleGuest(booking, 1L, GuestReviewStatus.REVIEWED, sampleSpanishAddress(booking, "28079"))
         ));
-        Mockito.when(generatedCommunicationRepository.findAllByBookingIdOrderByGeneratedAtDesc(1L)).thenReturn(List.of());
+        Mockito.when(generatedCommunicationRepository.findAllByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(1L, 7L)).thenReturn(List.of());
 
         BookingDetails details = bookingService.getDetails(1L);
 
@@ -128,13 +136,14 @@ class BookingServiceTest {
     @Test
     void blocksBookingWhenGuestCountIsHigherThanExpected() {
         Booking booking = sampleBooking(2);
-        Mockito.when(bookingRepository.findDetailById(1L)).thenReturn(Optional.of(booking));
-        Mockito.when(guestRepository.findAllByBookingIdOrderByIdAsc(1L)).thenReturn(List.of(
-            sampleGuest(booking, 1L, GuestReviewStatus.REVIEWED, sampleSpanishAddress(booking, "28079", MunicipalityResolutionStatus.EXACT)),
-            sampleGuest(booking, 2L, GuestReviewStatus.REVIEWED, sampleSpanishAddress(booking, "28079", MunicipalityResolutionStatus.EXACT)),
-            sampleGuest(booking, 3L, GuestReviewStatus.REVIEWED, sampleSpanishAddress(booking, "28079", MunicipalityResolutionStatus.EXACT))
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(bookingRepository.findDetailById(1L, 7L)).thenReturn(Optional.of(booking));
+        Mockito.when(guestRepository.findAllByBookingIdAndBookingOwnerIdOrderByIdAsc(1L, 7L)).thenReturn(List.of(
+            sampleGuest(booking, 1L, GuestReviewStatus.REVIEWED, sampleSpanishAddress(booking, "28079")),
+            sampleGuest(booking, 2L, GuestReviewStatus.REVIEWED, sampleSpanishAddress(booking, "28079")),
+            sampleGuest(booking, 3L, GuestReviewStatus.REVIEWED, sampleSpanishAddress(booking, "28079"))
         ));
-        Mockito.when(generatedCommunicationRepository.findAllByBookingIdOrderByGeneratedAtDesc(1L)).thenReturn(List.of());
+        Mockito.when(generatedCommunicationRepository.findAllByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(1L, 7L)).thenReturn(List.of());
 
         BookingDetails details = bookingService.getDetails(1L);
 
@@ -146,11 +155,12 @@ class BookingServiceTest {
     @Test
     void blocksBookingWhenThereAreGuestsPendingReview() {
         Booking booking = sampleBooking(1);
-        Mockito.when(bookingRepository.findDetailById(1L)).thenReturn(Optional.of(booking));
-        Mockito.when(guestRepository.findAllByBookingIdOrderByIdAsc(1L)).thenReturn(List.of(
-            sampleGuest(booking, 1L, GuestReviewStatus.PENDING_REVIEW, sampleSpanishAddress(booking, "28079", MunicipalityResolutionStatus.EXACT))
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(bookingRepository.findDetailById(1L, 7L)).thenReturn(Optional.of(booking));
+        Mockito.when(guestRepository.findAllByBookingIdAndBookingOwnerIdOrderByIdAsc(1L, 7L)).thenReturn(List.of(
+            sampleGuest(booking, 1L, GuestReviewStatus.PENDING_REVIEW, sampleSpanishAddress(booking, "28079"))
         ));
-        Mockito.when(generatedCommunicationRepository.findAllByBookingIdOrderByGeneratedAtDesc(1L)).thenReturn(List.of());
+        Mockito.when(generatedCommunicationRepository.findAllByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(1L, 7L)).thenReturn(List.of());
 
         BookingDetails details = bookingService.getDetails(1L);
 
@@ -162,11 +172,12 @@ class BookingServiceTest {
     @Test
     void blocksBookingWhenSpanishAddressHasNoExportableMunicipalityCode() {
         Booking booking = sampleBooking(1);
-        Mockito.when(bookingRepository.findDetailById(1L)).thenReturn(Optional.of(booking));
-        Mockito.when(guestRepository.findAllByBookingIdOrderByIdAsc(1L)).thenReturn(List.of(
-            sampleGuest(booking, 1L, GuestReviewStatus.REVIEWED, sampleSpanishAddress(booking, null, MunicipalityResolutionStatus.APPROXIMATED))
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(bookingRepository.findDetailById(1L, 7L)).thenReturn(Optional.of(booking));
+        Mockito.when(guestRepository.findAllByBookingIdAndBookingOwnerIdOrderByIdAsc(1L, 7L)).thenReturn(List.of(
+            sampleGuest(booking, 1L, GuestReviewStatus.REVIEWED, sampleSpanishAddress(booking, null))
         ));
-        Mockito.when(generatedCommunicationRepository.findAllByBookingIdOrderByGeneratedAtDesc(1L)).thenReturn(List.of());
+        Mockito.when(generatedCommunicationRepository.findAllByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(1L, 7L)).thenReturn(List.of());
 
         BookingDetails details = bookingService.getDetails(1L);
 
@@ -176,8 +187,10 @@ class BookingServiceTest {
     }
 
     private Booking sampleBooking(int personCount) {
+        AppUser owner = sampleOwner();
         return new Booking(
-            new Accommodation("Casa Olivo", "H123456789", "VT-123"),
+            owner,
+            new Accommodation(owner, "Casa Olivo", "H123456789", "VT-123"),
             "ABC123",
             personCount,
             LocalDate.of(2026, 3, 20),
@@ -190,6 +203,16 @@ class BookingServiceTest {
             "Ana Lopez",
             null
         );
+    }
+
+    private Accommodation sampleAccommodation() {
+        return new Accommodation(sampleOwner(), "Casa Olivo", "H123456789", "VT-123");
+    }
+
+    private AppUser sampleOwner() {
+        AppUser owner = new AppUser("owner", "hash", "Owner", AppUserRole.OWNER, true, java.time.OffsetDateTime.now(), java.time.OffsetDateTime.now());
+        ReflectionTestUtils.setField(owner, "id", 7L);
+        return owner;
     }
 
     private Guest sampleGuest(Booking booking, Long id, GuestReviewStatus reviewStatus, Address address) {
@@ -217,16 +240,13 @@ class BookingServiceTest {
         return guest;
     }
 
-    private Address sampleSpanishAddress(Booking booking, String municipalityCode, MunicipalityResolutionStatus status) {
+    private Address sampleSpanishAddress(Booking booking, String municipalityCode) {
         return new Address(
             booking,
             "Calle Mayor 1",
             null,
             municipalityCode,
             "Madrid",
-            "Madrid",
-            status,
-            null,
             "28001",
             "ESP"
         );

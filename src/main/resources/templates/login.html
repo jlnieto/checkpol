@@ -5,40 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Acceso | Checkpol</title>
     <link rel="stylesheet" th:href="@{/app.css}">
-    <link rel="stylesheet" th:href="@{/css/base.css}">
-    <link rel="stylesheet" th:href="@{/css/components.css}">
-    <link rel="stylesheet" th:href="@{/css/owner.css}">
-    <link rel="stylesheet" th:href="@{/css/public.css}">
-    <link rel="stylesheet" th:href="@{/css/admin.css}">
 </head>
-<body>
-<main class="shell shell-narrow login-shell">
-    <section class="panel login-card">
-        <p class="eyebrow">Area privada</p>
-        <h1>Acceso de gestion</h1>
-        <p>Entra con tu usuario. Segun el rol accederas al area de propietarios o al panel de administracion.</p>
+<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
+<main class="owner-login-shell">
+    <section class="owner-login-grid">
+        <section class="owner-login-card">
+            <div class="inline-flex items-center rounded-full border border-primary/15 bg-white/80 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary shadow-sm">
+                Área privada
+            </div>
 
-        <div class="error-box" th:if="${param.error}">
-            <p>Usuario o contrasena incorrectos.</p>
-        </div>
+            <div class="mt-4">
+                <h1 class="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">Entrar</h1>
+            </div>
 
-        <div class="flash-box" th:if="${param.logout}">
-            <p>La sesion se ha cerrado correctamente.</p>
-        </div>
+            <div class="mt-5 owner-error-box error-box" th:if="${param.error}">
+                <p>Usuario o contraseña incorrectos.</p>
+            </div>
 
-        <form th:action="@{/login}" method="post" class="form-grid" novalidate>
-            <label>
-                <span>Usuario</span>
-                <input type="text" name="username" autocomplete="username" required autofocus>
-            </label>
+            <div class="mt-5 rounded-2xl border border-emerald-300/50 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 shadow-sm"
+                 th:if="${param.logout}">
+                <p>La sesión se ha cerrado correctamente.</p>
+            </div>
 
-            <label>
-                <span>Contrasena</span>
-                <input type="password" name="password" autocomplete="current-password" required>
-            </label>
+            <form th:action="@{/login}" method="post" class="mt-5 space-y-4" novalidate>
+                <label class="owner-label">
+                    <span>Usuario</span>
+                    <input class="owner-input" type="text" name="username" autocomplete="username" required autofocus placeholder="Introduce tu usuario">
+                </label>
 
-            <button type="submit">Entrar</button>
-        </form>
+                <label class="owner-label">
+                    <span>Contraseña</span>
+                    <input class="owner-input" type="password" name="password" autocomplete="current-password" required placeholder="Introduce tu contraseña">
+                </label>
+
+                <button type="submit" class="owner-button-primary w-full justify-center">Entrar</button>
+            </form>
+        </section>
     </section>
 </main>
 </body>

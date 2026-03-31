@@ -1,8 +1,6 @@
 package es.checkpol.web;
 
-import es.checkpol.service.MunicipalityReviewService;
-import es.checkpol.service.MunicipalityAdminDashboard;
-import es.checkpol.service.MunicipalityIssueSummary;
+import es.checkpol.service.AppUserAdminService;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -11,102 +9,92 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import java.util.Comparator;
 
 @Controller
 public class AdminController {
 
-    private final MunicipalityReviewService municipalityReviewService;
+    private final AppUserAdminService appUserAdminService;
 
-    public AdminController(MunicipalityReviewService municipalityReviewService) {
-        this.municipalityReviewService = municipalityReviewService;
+    public AdminController(AppUserAdminService appUserAdminService) {
+        this.appUserAdminService = appUserAdminService;
     }
 
     @GetMapping("/admin")
-    public String adminHome() {
-        return "redirect:/admin/municipalities";
+    public String dashboard(Model model) {
+        model.addAttribute("ownerCount", appUserAdminService.countOwners());
+        model.addAttribute("users", appUserAdminService.findAllUsers());
+        return "admin/index";
     }
 
-    @GetMapping("/admin/municipalities")
-    public String municipalityDashboard(
-        @RequestParam(name = "issueId", required = false) Long issueId,
-        Model model
-    ) {
-        MunicipalityAdminDashboard dashboard = municipalityReviewService.getDashboard();
-        MunicipalityIssueSummary selectedIssue = findSelectedIssue(dashboard, issueId);
-        model.addAttribute("dashboard", dashboard);
-        model.addAttribute("selectedIssue", selectedIssue);
-        model.addAttribute("selectedIssueId", selectedIssue != null ? selectedIssue.id() : null);
-        model.addAttribute("issueCorrectionForm", buildCorrectionForm(selectedIssue));
-        return "admin/municipalities";
+    @GetMapping("/admin/users")
+    public String listUsers(Model model) {
+        model.addAttribute("users", appUserAdminService.findAllUsers());
+        return "admin/users";
     }
 
-    @PostMapping("/admin/municipalities/issues/{issueId}")
-    public String correctMunicipalityIssue(
-        @PathVariable Long issueId,
-        @Valid @ModelAttribute("issueCorrectionForm") MunicipalityIssueCorrectionForm form,
+    @GetMapping("/admin/users/new")
+    public String newOwner(Model model) {
+        return populateForm(model, new AdminUserForm(), "/admin/users", "Nuevo usuario", "Crear usuario");
+    }
+
+    @PostMapping("/admin/users")
+    public String createOwner(
+        @Valid @ModelAttribute("adminUserForm") AdminUserForm form,
         BindingResult bindingResult,
         Model model,
         RedirectAttributes redirectAttributes
     ) {
-        MunicipalityAdminDashboard dashboard = municipalityReviewService.getDashboard();
-        MunicipalityIssueSummary selectedIssue = findSelectedIssue(dashboard, issueId);
-
         if (bindingResult.hasErrors()) {
-            model.addAttribute("dashboard", dashboard);
-            model.addAttribute("selectedIssue", selectedIssue);
-            model.addAttribute("selectedIssueId", issueId);
-            model.addAttribute("editingIssueId", issueId);
-            return "admin/municipalities";
+            return populateForm(model, form, "/admin/users", "Nuevo usuario", "Crear usuario");
         }
 
         try {
-            municipalityReviewService.correctIssue(issueId, form.municipalityCode(), form.municipalityName(), form.resolutionNote());
+            appUserAdminService.createOwner(form);
         } catch (IllegalArgumentException exception) {
-            bindingResult.reject("issue.invalid", exception.getMessage());
-            model.addAttribute("dashboard", dashboard);
-            model.addAttribute("selectedIssue", selectedIssue);
-            model.addAttribute("selectedIssueId", issueId);
-            model.addAttribute("editingIssueId", issueId);
-            return "admin/municipalities";
+            bindingResult.reject("user.invalid", exception.getMessage());
+            return populateForm(model, form, "/admin/users", "Nuevo usuario", "Crear usuario");
         }
 
-        redirectAttributes.addFlashAttribute("flashMessage", "Municipio corregido y regla aprendida.");
-        return "redirect:/admin/municipalities";
+        redirectAttributes.addFlashAttribute("flashMessage", "Usuario creado correctamente.");
+        redirectAttributes.addFlashAttribute("flashKind", "success");
+        return "redirect:/admin/users";
     }
 
-    private MunicipalityIssueSummary findSelectedIssue(MunicipalityAdminDashboard dashboard, Long issueId) {
-        if (dashboard.openIssues().isEmpty()) {
-            return null;
-        }
-
-        if (issueId != null) {
-            return dashboard.openIssues().stream()
-                .filter(issue -> issue.id().equals(issueId))
-                .findFirst()
-                .orElseGet(() -> firstIssue(dashboard));
-        }
-
-        return firstIssue(dashboard);
+    @GetMapping("/admin/users/{userId}/edit")
+    public String editOwner(@PathVariable Long userId, Model model) {
+        return populateForm(model, appUserAdminService.getOwnerForm(userId), "/admin/users/" + userId, "Editar usuario", "Guardar cambios");
     }
 
-    private MunicipalityIssueSummary firstIssue(MunicipalityAdminDashboard dashboard) {
-        return dashboard.openIssues().stream()
-            .min(Comparator.comparing(MunicipalityIssueSummary::createdAt))
-            .orElse(null);
+    @PostMapping("/admin/users/{userId}")
+    public String updateOwner(
+        @PathVariable Long userId,
+        @Valid @ModelAttribute("adminUserForm") AdminUserForm form,
+        BindingResult bindingResult,
+        Model model,
+        RedirectAttributes redirectAttributes
+    ) {
+        if (bindingResult.hasErrors()) {
+            return populateForm(model, form, "/admin/users/" + userId, "Editar usuario", "Guardar cambios");
+        }
+
+        try {
+            appUserAdminService.updateOwner(userId, form);
+        } catch (IllegalArgumentException exception) {
+            bindingResult.reject("user.invalid", exception.getMessage());
+            return populateForm(model, form, "/admin/users/" + userId, "Editar usuario", "Guardar cambios");
+        }
+
+        redirectAttributes.addFlashAttribute("flashMessage", "Usuario actualizado correctamente.");
+        redirectAttributes.addFlashAttribute("flashKind", "success");
+        return "redirect:/admin/users";
     }
 
-    private MunicipalityIssueCorrectionForm buildCorrectionForm(MunicipalityIssueSummary selectedIssue) {
-        if (selectedIssue == null) {
-            return new MunicipalityIssueCorrectionForm();
-        }
-        return new MunicipalityIssueCorrectionForm(
-            selectedIssue.assignedMunicipalityCode(),
-            selectedIssue.assignedMunicipalityName(),
-            selectedIssue.resolutionNote() != null ? selectedIssue.resolutionNote() : ""
-        );
+    private String populateForm(Model model, AdminUserForm form, String action, String title, String submitLabel) {
+        model.addAttribute("adminUserForm", form);
+        model.addAttribute("formAction", action);
+        model.addAttribute("formTitle", title);
+        model.addAttribute("submitLabel", submitLabel);
+        return "admin/user-form";
     }
 }

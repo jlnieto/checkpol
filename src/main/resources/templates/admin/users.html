@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Usuarios | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
+<main class="owner-shell">
+    <section class="owner-page">
+        <header class="owner-header">
+            <div>
+                <p class="owner-kicker">Administración</p>
+                <h1 class="owner-title">Usuarios</h1>
+                <p class="owner-copy">Crea y mantiene los accesos de los propietarios.</p>
+            </div>
+            <div class="owner-home-actions">
+                <a class="owner-button-secondary" th:href="@{/admin}">Volver</a>
+                <a class="owner-button-primary" th:href="@{/admin/users/new}">Nuevo usuario</a>
+            </div>
+        </header>
+
+        <div class="owner-success-box" th:if="${flashMessage != null and flashKind == 'success'}">
+            <p th:text="${flashMessage}">Usuario guardado.</p>
+        </div>
+
+        <section class="owner-card">
+            <div class="space-y-4" th:if="${!#lists.isEmpty(users)}">
+                <article class="owner-queue-entry" th:each="user : ${users}">
+                    <div class="owner-queue-body">
+                        <div>
+                            <div class="owner-booking-badge-row">
+                                <span class="owner-status-ready" th:text="${user.role.name() == 'SUPER_ADMIN' ? 'SUPER ADMIN' : 'OWNER'}">OWNER</span>
+                                <span class="owner-status-pending" th:if="${!user.active}">Inactivo</span>
+                            </div>
+                            <h2 class="mt-3 text-xl font-semibold text-slate-900" th:text="${user.displayName}">Juan Pérez</h2>
+                            <p class="owner-queue-meta" th:text="${user.username}">juan</p>
+                        </div>
+                        <div class="owner-queue-action">
+                            <a class="owner-button-secondary w-full justify-center sm:w-auto"
+                               th:if="${user.role.name() == 'OWNER'}"
+                               th:href="@{|/admin/users/${user.id}/edit|}">Editar</a>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <p class="owner-copy" th:if="${#lists.isEmpty(users)}">Todavía no hay usuarios dados de alta.</p>
+        </section>
+    </section>
+</main>
+</body>
+</html>
