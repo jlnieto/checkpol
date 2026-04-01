@@ -21,6 +21,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(properties = "checkpol.municipality.catalog.import-on-startup=false")
 @ActiveProfiles("test")
@@ -102,6 +103,27 @@ class MunicipalityAdminServiceTest {
 
         assertEquals(2, preview.municipalityRows());
         assertEquals(2, preview.postalMappingRows());
+    }
+
+    @Test
+    void verifiesOfficialSourcesAndReportsHealth() {
+        httpServer.createContext("/municipalities.xlsx", exchange -> respond(exchange, xlsxWorkbook()));
+        httpServer.createContext("/callejero.zip", exchange -> respond(exchange, postalZip()));
+
+        AdminMunicipalityImportForm form = new AdminMunicipalityImportForm(
+            baseUrl + "/municipalities.xlsx",
+            baseUrl + "/callejero.zip",
+            "ine-open-data",
+            "2026-01"
+        );
+
+        MunicipalityAdminService.VerificationSummary verification = municipalityAdminService.verifySources(form, "admin");
+        MunicipalityAdminService.DashboardSummary dashboard = municipalityAdminService.getDashboardSummary();
+
+        assertEquals("warning", verification.level());
+        assertTrue(verification.warnings().size() >= 1);
+        assertEquals("warning", dashboard.sourceHealth().level());
+        assertEquals(1, municipalityImportRecordRepository.findTop10ByOrderByCreatedAtDesc().size());
     }
 
     private void respond(com.sun.net.httpserver.HttpExchange exchange, byte[] body) throws java.io.IOException {

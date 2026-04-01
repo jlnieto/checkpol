@@ -19,6 +19,10 @@ public class MunicipalityImportRecord {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "operation_type", nullable = false, length = 20)
+    private MunicipalityImportOperation operationType;
+
     @Column(nullable = false, length = 40)
     private String source;
 
@@ -60,6 +64,7 @@ public class MunicipalityImportRecord {
     }
 
     public MunicipalityImportRecord(
+        MunicipalityImportOperation operationType,
         String source,
         String sourceVersion,
         String municipalitiesUrl,
@@ -73,6 +78,7 @@ public class MunicipalityImportRecord {
         String errorMessage,
         OffsetDateTime createdAt
     ) {
+        this.operationType = operationType;
         this.source = source;
         this.sourceVersion = sourceVersion;
         this.municipalitiesUrl = municipalitiesUrl;
@@ -93,6 +99,10 @@ public class MunicipalityImportRecord {
 
     public String getSource() {
         return source;
+    }
+
+    public MunicipalityImportOperation getOperationType() {
+        return operationType;
     }
 
     public String getSourceVersion() {

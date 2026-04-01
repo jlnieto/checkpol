@@ -6,48 +6,213 @@
     <title>Administración | Checkpol</title>
     <link rel="stylesheet" th:href="@{/app.css}">
 </head>
-<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
-<main class="owner-shell">
-    <section class="owner-page">
-        <header class="owner-header">
+<body class="admin-body antialiased">
+<main class="admin-app">
+    <aside class="admin-sidebar-shell" th:replace="~{admin/fragments :: sidebar('overview')}"></aside>
+
+    <section class="admin-content">
+        <header class="admin-header">
             <div>
-                <p class="owner-kicker">Administración</p>
-                <h1 class="owner-title">Panel del sistema</h1>
-                <p class="owner-copy">Desde aquí podrás gestionar usuarios propietarios y el catálogo global de municipalities.</p>
+                <p class="admin-kicker">Administración del sistema</p>
+                <h1 class="admin-title">Resumen</h1>
+                <p class="admin-copy">Estado global del sistema, accesos y catálogo oficial.</p>
             </div>
-            <div class="owner-home-actions">
-                <a class="owner-button-secondary" th:href="@{/admin/municipalities}">Municipalities</a>
-                <a class="owner-button-primary" th:href="@{/admin/users/new}">Nuevo usuario</a>
+            <div class="admin-actions">
+                <a class="admin-button-secondary" th:href="@{/admin/users}">Usuarios</a>
+                <a class="admin-button-secondary" th:href="@{/admin/municipalities}">Catálogo oficial</a>
+                <a class="admin-button-primary" th:href="@{/admin/users/new}">Nuevo owner</a>
             </div>
         </header>
 
-        <section class="owner-grid-main">
-            <div class="owner-stack">
-                <section class="owner-priority-card">
-                    <div class="owner-banner-row">
-                        <div>
-                            <p class="owner-priority-eyebrow">Siguiente paso</p>
-                            <h2 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Gestiona los accesos del sistema</h2>
-                            <p class="owner-copy">Ahora mismo hay <span th:text="${ownerCount}">0</span> usuarios propietarios dados de alta.</p>
-                        </div>
-                        <div class="owner-banner-actions">
-                            <a class="owner-button-primary" th:href="@{/admin/users}">Ver usuarios</a>
-                        </div>
-                    </div>
-                </section>
+        <div class="admin-page">
+            <section class="admin-metrics">
+                <article class="admin-metric">
+                    <p class="admin-metric-label">Propietarios</p>
+                    <p class="admin-metric-value" th:text="${ownerCount}">0</p>
+                    <p class="admin-metric-meta">
+                        <span th:text="${activeOwnerCount}">0</span> activos ·
+                        <span th:text="${inactiveOwnerCount}">0</span> inactivos
+                    </p>
+                </article>
+                <article class="admin-metric">
+                    <p class="admin-metric-label">Usuarios activos</p>
+                    <p class="admin-metric-value" th:text="${activeUserCount}">0</p>
+                    <p class="admin-metric-meta">
+                        <span th:text="${inactiveUserCount}">0</span> inactivos en el sistema
+                    </p>
+                </article>
+                <article class="admin-metric">
+                    <p class="admin-metric-label">Municipios activos</p>
+                    <p class="admin-metric-value" th:text="${dashboard.catalogLoaded ? dashboard.activeMunicipalityCount : 0}">0</p>
+                    <p class="admin-metric-meta"
+                       th:text="${dashboard.catalogLoaded ? 'Catálogo cargado' : 'Sin catálogo cargado todavía'}">Catálogo cargado</p>
+                </article>
+                <article class="admin-metric">
+                    <p class="admin-metric-label">Mappings postales</p>
+                    <p class="admin-metric-value" th:text="${dashboard.catalogLoaded ? dashboard.activePostalMappingCount : 0}">0</p>
+                    <p class="admin-metric-meta" th:text="${sourceHealth.title}">Fuentes oficiales verificadas recientemente.</p>
+                </article>
+            </section>
 
-                <section class="owner-card-soft p-6">
-                    <div class="space-y-3">
-                        <p class="owner-priority-eyebrow">Catálogo global</p>
-                        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">Actualiza municipalities y códigos postales</h2>
-                        <p class="owner-copy">La descarga, validación e importación del catálogo oficial vive ya en un módulo separado del área de usuarios.</p>
-                        <div class="owner-home-actions">
-                            <a class="owner-button-secondary" th:href="@{/admin/municipalities}">Abrir municipalities</a>
+            <section class="admin-shell-grid">
+                <div class="admin-stack">
+                    <section class="admin-card">
+                        <div class="admin-card-header">
+                            <div>
+                                <h2 class="admin-card-title">Estado del sistema</h2>
+                                <p class="admin-card-copy">Situación actual y siguiente foco operativo.</p>
+                            </div>
+                            <span class="admin-badge"
+                                  th:classappend="${!dashboard.catalogLoaded ? ' admin-badge-danger' : (sourceHealth.level == 'ok' ? ' admin-badge-success' : (sourceHealth.level == 'warning' ? ' admin-badge-warning' : ' admin-badge-danger'))}"
+                                  th:text="${!dashboard.catalogLoaded ? 'Catálogo pendiente' : (sourceHealth.level == 'ok' ? 'Estable' : (sourceHealth.level == 'warning' ? 'Revisar' : 'Atención'))}">Estable</span>
                         </div>
-                    </div>
-                </section>
-            </div>
-        </section>
+                        <div class="admin-card-body">
+                            <div class="admin-stat-list">
+                                <div class="admin-stat-row">
+                                    <div>
+                                        <p class="admin-stat-label">Salud de fuentes</p>
+                                        <p class="mt-1 text-[13px] leading-5 text-slate-600" th:text="${sourceHealth.detail}">Fuentes oficiales verificadas recientemente.</p>
+                                    </div>
+                                    <p class="admin-stat-value" th:text="${sourceHealth.title}">Operativo</p>
+                                </div>
+                                <div class="admin-stat-row">
+                                    <p class="admin-stat-label">Última verificación</p>
+                                    <p class="admin-stat-value"
+                                       th:text="${sourceHealth.checkedAt != null ? #temporals.format(sourceHealth.checkedAt, 'dd/MM/yyyy HH:mm') : 'Sin verificar'}">Sin verificar</p>
+                                </div>
+                                <div class="admin-stat-row">
+                                    <p class="admin-stat-label">Última importación</p>
+                                    <p class="admin-stat-value"
+                                       th:text="${dashboard.lastImport != null ? dashboard.lastImport.sourceVersion : 'Sin importaciones'}">Sin importaciones</p>
+                                </div>
+                                <div class="admin-stat-row">
+                                    <p class="admin-stat-label">Siguiente acción</p>
+                                    <div class="admin-actions">
+                                        <a class="admin-button-primary"
+                                           th:if="${!dashboard.catalogLoaded or sourceHealth.level != 'ok'}"
+                                           th:href="@{/admin/municipalities}">Revisar catálogo</a>
+                                        <a class="admin-button-primary"
+                                           th:if="${dashboard.catalogLoaded and sourceHealth.level == 'ok'}"
+                                           th:href="@{/admin/users}">Gestionar accesos</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="admin-card">
+                        <div class="admin-card-header">
+                            <div>
+                                <h2 class="admin-card-title">Módulos administrativos</h2>
+                                <p class="admin-card-copy">Accesos rápidos a las áreas de trabajo del backoffice.</p>
+                            </div>
+                        </div>
+                        <div class="admin-card-body">
+                            <div class="admin-link-grid">
+                                <article class="admin-link-card">
+                                    <div>
+                                        <span class="admin-badge admin-badge-neutral">Usuarios y accesos</span>
+                                        <h3 class="admin-link-title mt-4">Owners y control de acceso</h3>
+                                        <p class="admin-link-copy">Alta, edición y revisión rápida del estado de cada cuenta.</p>
+                                    </div>
+                                    <div class="admin-actions mt-5">
+                                        <a class="admin-button-secondary" th:href="@{/admin/users}">Abrir módulo</a>
+                                    </div>
+                                </article>
+
+                                <article class="admin-link-card">
+                                    <div>
+                                        <span class="admin-badge"
+                                              th:classappend="${sourceHealth.level == 'ok' ? ' admin-badge-success' : (sourceHealth.level == 'warning' ? ' admin-badge-warning' : ' admin-badge-danger')}"
+                                              th:text="${sourceHealth.level == 'ok' ? 'Catálogo estable' : (sourceHealth.level == 'warning' ? 'Revisión pendiente' : 'Incidencia detectada')}">Catálogo estable</span>
+                                        <h3 class="admin-link-title mt-4">Catálogo oficial y mappings</h3>
+                                        <p class="admin-link-copy">Verificación, previsualización e importación trazable del dataset global.</p>
+                                    </div>
+                                    <div class="admin-actions mt-5">
+                                        <a class="admin-button-secondary" th:href="@{/admin/municipalities}">Abrir módulo</a>
+                                    </div>
+                                </article>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="admin-card">
+                        <div class="admin-card-header">
+                            <div>
+                                <h2 class="admin-card-title">Actividad reciente</h2>
+                                <p class="admin-card-copy">Últimos movimientos relevantes en la administración global.</p>
+                            </div>
+                        </div>
+                        <div class="admin-card-body">
+                            <div class="admin-table-wrap" th:if="${!#lists.isEmpty(dashboard.recentImports)}">
+                                <table class="admin-table">
+                                    <thead>
+                                    <tr>
+                                        <th>Tipo</th>
+                                        <th>Versión</th>
+                                        <th>Ejecutado por</th>
+                                        <th>Fecha</th>
+                                        <th>Resultado</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr th:each="item : ${dashboard.recentImports}">
+                                        <td th:text="${item.operationType == 'VERIFY' ? 'Verificación' : 'Importación'}">Importación</td>
+                                        <td class="admin-table-strong" th:text="${item.sourceVersion}">2026-01</td>
+                                        <td th:text="${item.triggeredByUsername}">admin</td>
+                                        <td th:text="${#temporals.format(item.createdAt, 'dd/MM/yyyy HH:mm')}">31/03/2026 09:15</td>
+                                        <td th:text="${item.status == 'SUCCESS' ? 'OK' : 'Fallida'}">OK</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="admin-note" th:if="${#lists.isEmpty(dashboard.recentImports)}">Todavía no hay actividad administrativa registrada.</p>
+                        </div>
+                    </section>
+                </div>
+
+                <aside class="admin-side-stack">
+                    <section class="admin-card">
+                        <div class="admin-card-header">
+                            <div>
+                                <h2 class="admin-card-title">Estado operativo</h2>
+                                <p class="admin-card-copy">Lectura rápida de lo que condiciona el funcionamiento global.</p>
+                            </div>
+                        </div>
+                        <div class="admin-card-body">
+                            <div class="admin-compact-list">
+                                <article class="admin-compact-item">
+                                    <p class="admin-kicker text-slate-500">Salud de fuentes</p>
+                                    <p class="mt-2 text-sm font-semibold text-slate-900" th:text="${sourceHealth.title}">Fuentes oficiales verificadas recientemente.</p>
+                                    <p class="mt-2 text-sm leading-6 text-slate-600" th:text="${sourceHealth.detail}">Lanza una verificación antes de importar.</p>
+                                </article>
+
+                                <article class="admin-compact-item">
+                                    <p class="admin-kicker text-slate-500">Dataset activo</p>
+                                    <p class="mt-2 text-sm font-semibold text-slate-900"
+                                       th:text="${dashboard.currentSourceVersion != null ? dashboard.currentSourceVersion : 'Todavía sin versión activa'}">2026-01</p>
+                                    <p class="mt-2 text-sm leading-6 text-slate-600"
+                                       th:text="${dashboard.currentSource != null ? dashboard.currentSource : 'No hay carga global aplicada en base de datos.'}">ine-open-data</p>
+                                </article>
+
+                                <article class="admin-compact-item">
+                                    <p class="admin-kicker text-slate-500">Carga actual</p>
+                                    <p class="mt-2 text-sm font-semibold text-slate-900"
+                                       th:text="${dashboard.currentUpdatedAt != null ? #temporals.format(dashboard.currentUpdatedAt, 'dd/MM/yyyy HH:mm') : 'Todavía sin carga'}">31/03/2026 09:00</p>
+                                </article>
+
+                                <article class="admin-compact-item">
+                                    <div class="admin-actions">
+                                        <a class="admin-button-secondary" th:href="@{/admin/municipalities}">Ir al catálogo</a>
+                                        <a class="admin-button-secondary" th:href="@{/admin/users}">Ir a usuarios</a>
+                                    </div>
+                                </article>
+                            </div>
+                        </div>
+                    </section>
+                </aside>
+            </section>
+        </div>
     </section>
 </main>
 </body>

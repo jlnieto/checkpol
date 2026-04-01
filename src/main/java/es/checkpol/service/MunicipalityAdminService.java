@@ -1,6 +1,7 @@
 package es.checkpol.service;
 
 import es.checkpol.domain.MunicipalityCatalogEntry;
+import es.checkpol.domain.MunicipalityImportOperation;
 import es.checkpol.domain.MunicipalityImportRecord;
 import es.checkpol.domain.MunicipalityImportStatus;
 import es.checkpol.repository.MunicipalityCatalogEntryRepository;
@@ -22,6 +23,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.zip.ZipEntry;
@@ -32,6 +35,10 @@ public class MunicipalityAdminService {
 
     private static final String SPAIN = "ESP";
     private static final Duration DOWNLOAD_TIMEOUT = Duration.ofMinutes(3);
+    private static final Duration VERIFICATION_STALE_AFTER = Duration.ofDays(14);
+    private static final int MIN_REASONABLE_MUNICIPALITY_ROWS = 7000;
+    private static final int MIN_REASONABLE_POSTAL_MAPPING_ROWS = 10000;
+    private static final DateTimeFormatter VERIFICATION_VERSION_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     private final MunicipalityCatalogService municipalityCatalogService;
     private final MunicipalityCatalogImportService municipalityCatalogImportService;
@@ -76,7 +83,8 @@ public class MunicipalityAdminService {
     @Transactional(readOnly = true)
     public DashboardSummary getDashboardSummary() {
         Optional<MunicipalityCatalogEntry> currentDataset = municipalityCatalogEntryRepository.findTopByCountryCodeAndActiveTrueOrderByUpdatedAtDesc(SPAIN);
-        Optional<MunicipalityImportRecord> lastImport = municipalityImportRecordRepository.findTop10ByOrderByCreatedAtDesc().stream().findFirst();
+        Optional<MunicipalityImportRecord> lastImport = municipalityImportRecordRepository.findTopByOperationTypeOrderByCreatedAtDesc(MunicipalityImportOperation.IMPORT);
+        Optional<MunicipalityImportRecord> lastVerification = municipalityImportRecordRepository.findTopByOperationTypeOrderByCreatedAtDesc(MunicipalityImportOperation.VERIFY);
         return new DashboardSummary(
             municipalityCatalogService.hasSpanishCatalogData(),
             municipalityCatalogEntryRepository.countByCountryCodeAndActiveTrue(SPAIN),
@@ -84,8 +92,10 @@ public class MunicipalityAdminService {
             currentDataset.map(MunicipalityCatalogEntry::getSource).orElse(null),
             currentDataset.map(MunicipalityCatalogEntry::getSourceVersion).orElse(null),
             currentDataset.map(MunicipalityCatalogEntry::getUpdatedAt).orElse(null),
+            buildSourceHealth(lastVerification.orElse(null)),
             lastImport.map(record -> new ImportHistoryItem(
                 record.getId(),
+                record.getOperationType().name(),
                 record.getSource(),
                 record.getSourceVersion(),
                 record.getStatus().name(),
@@ -98,6 +108,7 @@ public class MunicipalityAdminService {
             municipalityImportRecordRepository.findTop10ByOrderByCreatedAtDesc().stream()
                 .map(record -> new ImportHistoryItem(
                     record.getId(),
+                    record.getOperationType().name(),
                     record.getSource(),
                     record.getSourceVersion(),
                     record.getStatus().name(),
@@ -116,8 +127,12 @@ public class MunicipalityAdminService {
             defaultMunicipalitiesUrl,
             defaultPostalMappingsUrl,
             defaultSource,
-            ""
+            defaultImportVersion()
         );
+    }
+
+    public VerificationSummary verifyDefaultSources(String triggeredByUsername) {
+        return verifySources(defaultVerificationForm(), triggeredByUsername);
     }
 
     @Transactional(readOnly = true)
@@ -132,6 +147,66 @@ public class MunicipalityAdminService {
     }
 
     @Transactional
+    public VerificationSummary verifySources(AdminMunicipalityImportForm form, String triggeredByUsername) {
+        try {
+            DownloadedCatalog catalog = downloadCatalog(form);
+            MunicipalityCatalogImportService.PreviewSummary preview = municipalityCatalogImportService.previewFromResources(
+                catalog.municipalitiesResource(),
+                catalog.postalMappingsResource(),
+                form.source().trim(),
+                form.sourceVersion().trim()
+            );
+            VerificationSummary summary = evaluateVerification(preview);
+            municipalityImportRecordRepository.save(new MunicipalityImportRecord(
+                MunicipalityImportOperation.VERIFY,
+                normalize(form.source()),
+                normalize(form.sourceVersion()),
+                normalize(form.municipalitiesUrl()),
+                normalize(form.postalMappingsUrl()),
+                MunicipalityImportStatus.SUCCESS,
+                preview.municipalityRows(),
+                0,
+                preview.postalMappingRows(),
+                0,
+                triggeredByUsername,
+                summary.message(),
+                OffsetDateTime.now()
+            ));
+            return summary;
+        } catch (RuntimeException exception) {
+            municipalityImportRecordRepository.save(new MunicipalityImportRecord(
+                MunicipalityImportOperation.VERIFY,
+                normalize(form.source()),
+                normalize(form.sourceVersion()),
+                normalize(form.municipalitiesUrl()),
+                normalize(form.postalMappingsUrl()),
+                MunicipalityImportStatus.FAILED,
+                0,
+                0,
+                0,
+                0,
+                triggeredByUsername,
+                abbreviate(exception.getMessage()),
+                OffsetDateTime.now()
+            ));
+            throw exception;
+        }
+    }
+
+    private AdminMunicipalityImportForm defaultVerificationForm() {
+        return new AdminMunicipalityImportForm(
+            defaultMunicipalitiesUrl,
+            defaultPostalMappingsUrl,
+            defaultSource,
+            "verify-" + OffsetDateTime.now().format(VERIFICATION_VERSION_FORMAT)
+        );
+    }
+
+    private String defaultImportVersion() {
+        return "manual-" + OffsetDateTime.now().format(VERIFICATION_VERSION_FORMAT);
+    }
+
+    @Transactional
     public MunicipalityCatalogImportService.ImportSummary importCatalog(AdminMunicipalityImportForm form, String triggeredByUsername) {
         try {
             DownloadedCatalog catalog = downloadCatalog(form);
@@ -142,6 +217,7 @@ public class MunicipalityAdminService {
                 form.sourceVersion().trim()
             );
             municipalityImportRecordRepository.save(new MunicipalityImportRecord(
+                MunicipalityImportOperation.IMPORT,
                 summary.source(),
                 summary.sourceVersion(),
                 form.municipalitiesUrl().trim(),
@@ -158,6 +234,7 @@ public class MunicipalityAdminService {
             return summary;
         } catch (RuntimeException exception) {
             municipalityImportRecordRepository.save(new MunicipalityImportRecord(
+                MunicipalityImportOperation.IMPORT,
                 normalize(form.source()),
                 normalize(form.sourceVersion()),
                 normalize(form.municipalitiesUrl()),
@@ -302,6 +379,122 @@ public class MunicipalityAdminService {
         return message.substring(0, 997) + "...";
     }
 
+    private VerificationSummary evaluateVerification(MunicipalityCatalogImportService.PreviewSummary preview) {
+        List<String> warnings = new ArrayList<>();
+        if (preview.municipalityRows() < MIN_REASONABLE_MUNICIPALITY_ROWS) {
+            warnings.add("El fichero de municipios devuelve " + preview.municipalityRows() + " filas, muy por debajo de lo esperable para España.");
+        }
+        if (preview.postalMappingRows() < MIN_REASONABLE_POSTAL_MAPPING_ROWS) {
+            warnings.add("El callejero solo genera " + preview.postalMappingRows() + " mappings postales, una cifra demasiado baja para una carga nacional.");
+        }
+
+        long currentMunicipalityCount = municipalityCatalogEntryRepository.countByCountryCodeAndActiveTrue(SPAIN);
+        long currentPostalMappingCount = postalCodeMunicipalityMappingRepository.countByActiveTrue();
+
+        if (currentMunicipalityCount > 0) {
+            double ratio = ((double) preview.municipalityRows()) / currentMunicipalityCount;
+            if (ratio < 0.8d || ratio > 1.2d) {
+                warnings.add("El número de municipios difiere mucho del catálogo activo actual (" + currentMunicipalityCount + ").");
+            }
+        }
+        if (currentPostalMappingCount > 0) {
+            double ratio = ((double) preview.postalMappingRows()) / currentPostalMappingCount;
+            if (ratio < 0.8d || ratio > 1.2d) {
+                warnings.add("El número de mappings postales difiere mucho del catálogo activo actual (" + currentPostalMappingCount + ").");
+            }
+        }
+
+        if (warnings.isEmpty()) {
+            return new VerificationSummary(
+                "ok",
+                "Fuentes oficiales verificadas. El formato actual parece compatible con el importador.",
+                preview.municipalityRows(),
+                preview.postalMappingRows(),
+                List.of()
+            );
+        }
+
+        return new VerificationSummary(
+            "warning",
+            warnings.getFirst(),
+            preview.municipalityRows(),
+            preview.postalMappingRows(),
+            warnings
+        );
+    }
+
+    private SourceHealthSummary buildSourceHealth(MunicipalityImportRecord lastVerification) {
+        if (lastVerification == null) {
+            return new SourceHealthSummary(
+                "warning",
+                "Fuentes oficiales sin verificar todavía.",
+                "Lanza una verificación desde esta pantalla antes de la próxima importación.",
+                null
+            );
+        }
+
+        if (lastVerification.getStatus() == MunicipalityImportStatus.FAILED) {
+            return new SourceHealthSummary(
+                "error",
+                "La última verificación ha fallado.",
+                lastVerification.getErrorMessage(),
+                lastVerification.getCreatedAt()
+            );
+        }
+
+        if (lastVerification.getCreatedAt().isBefore(OffsetDateTime.now().minus(VERIFICATION_STALE_AFTER))) {
+            return new SourceHealthSummary(
+                "warning",
+                "La última verificación está desactualizada.",
+                "Se validó el " + lastVerification.getCreatedAt().toLocalDate() + ". Conviene repetirla antes de importar.",
+                lastVerification.getCreatedAt()
+            );
+        }
+
+        List<String> warnings = evaluateStoredVerificationWarnings(lastVerification);
+        if (!warnings.isEmpty()) {
+            return new SourceHealthSummary(
+                "warning",
+                "La última verificación detectó avisos.",
+                warnings.getFirst(),
+                lastVerification.getCreatedAt()
+            );
+        }
+
+        return new SourceHealthSummary(
+            "ok",
+            "Fuentes oficiales verificadas recientemente.",
+            lastVerification.getErrorMessage(),
+            lastVerification.getCreatedAt()
+        );
+    }
+
+    private List<String> evaluateStoredVerificationWarnings(MunicipalityImportRecord verificationRecord) {
+        List<String> warnings = new ArrayList<>();
+        if (verificationRecord.getImportedMunicipalities() < MIN_REASONABLE_MUNICIPALITY_ROWS) {
+            warnings.add("El fichero de municipios devolvió " + verificationRecord.getImportedMunicipalities() + " filas, muy por debajo de lo esperable para España.");
+        }
+        if (verificationRecord.getImportedPostalMappings() < MIN_REASONABLE_POSTAL_MAPPING_ROWS) {
+            warnings.add("El callejero generó " + verificationRecord.getImportedPostalMappings() + " mappings postales, una cifra demasiado baja para una carga nacional.");
+        }
+
+        long currentMunicipalityCount = municipalityCatalogEntryRepository.countByCountryCodeAndActiveTrue(SPAIN);
+        long currentPostalMappingCount = postalCodeMunicipalityMappingRepository.countByActiveTrue();
+        if (currentMunicipalityCount > 0) {
+            double ratio = ((double) verificationRecord.getImportedMunicipalities()) / currentMunicipalityCount;
+            if (ratio < 0.8d || ratio > 1.2d) {
+                warnings.add("El número de municipios difiere mucho del catálogo activo actual (" + currentMunicipalityCount + ").");
+            }
+        }
+        if (currentPostalMappingCount > 0) {
+            double ratio = ((double) verificationRecord.getImportedPostalMappings()) / currentPostalMappingCount;
+            if (ratio < 0.8d || ratio > 1.2d) {
+                warnings.add("El número de mappings postales difiere mucho del catálogo activo actual (" + currentPostalMappingCount + ").");
+            }
+        }
+        return warnings;
+    }
+
     public record DashboardSummary(
         boolean catalogLoaded,
         long activeMunicipalityCount,
@@ -309,13 +502,23 @@ public class MunicipalityAdminService {
         String currentSource,
         String currentSourceVersion,
         OffsetDateTime currentUpdatedAt,
+        SourceHealthSummary sourceHealth,
         ImportHistoryItem lastImport,
         List<ImportHistoryItem> recentImports
     ) {
     }
 
+    public record SourceHealthSummary(
+        String level,
+        String title,
+        String detail,
+        OffsetDateTime checkedAt
+    ) {
+    }
+
     public record ImportHistoryItem(
         Long id,
+        String operationType,
         String source,
         String sourceVersion,
         String status,
@@ -324,6 +527,15 @@ public class MunicipalityAdminService {
         OffsetDateTime createdAt,
         String triggeredByUsername,
         String errorMessage
+    ) {
+    }
+
+    public record VerificationSummary(
+        String level,
+        String message,
+        int municipalityRows,
+        int postalMappingRows,
+        List<String> warnings
     ) {
     }
 

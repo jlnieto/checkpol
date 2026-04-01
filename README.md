@@ -126,14 +126,24 @@ El `SUPER_ADMIN` tiene dos áreas principales:
 - `/admin/users` para crear y mantener usuarios `OWNER`,
 - `/admin/municipalities` para descargar, validar, previsualizar e importar el catálogo municipal global.
 
+La home `/admin` también muestra el estado resumido de salud de las fuentes oficiales para que el `SUPER_ADMIN` vea si hay que revisar `municipalities`.
+
 El módulo de `municipalities` funciona así:
 
 1. descarga el fichero oficial de municipios del INE desde la URL indicada,
 2. transforma ese XLSX al CSV interno de la aplicación,
 3. descarga el ZIP oficial del callejero y deriva de ahí el mapping postal,
-4. valida ambos datasets,
-5. muestra una previsualización,
-6. y solo después importa a base de datos.
+4. permite verificar las fuentes oficiales sin tocar la BD,
+5. guarda el resultado de esa verificación y muestra un estado visible en la pantalla,
+6. valida ambos datasets,
+7. muestra una previsualización,
+8. y solo después importa a base de datos.
+
+Opcionalmente puede ejecutarse una verificación programada:
+
+- `CHECKPOL_MUNICIPALITY_ADMIN_VERIFICATION_ENABLED=true`
+- `CHECKPOL_MUNICIPALITY_ADMIN_VERIFICATION_CRON=0 0 6 * * *`
+- `CHECKPOL_MUNICIPALITY_ADMIN_VERIFICATION_ZONE=Europe/Madrid`
 
 Compatibilidad adicional:
 

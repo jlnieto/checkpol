@@ -93,6 +93,14 @@ Además, cada importación administrativa queda registrada en la tabla de histó
 - resultado,
 - y contadores básicos de municipios y mappings afectados.
 
+La verificación administrativa también deja trazabilidad:
+
+- si falla el parser o cambia el formato oficial, queda registrada como fallo,
+- si el formato sigue siendo compatible pero los volúmenes son sospechosos, queda registrada con avisos,
+- y `/admin/municipalities` muestra un bloque de salud de fuentes con estado `ok`, `warning` o `error`.
+
+Además, `/admin` refleja ese mismo estado de salud de forma resumida para que el `SUPER_ADMIN` vea el problema al entrar al área administrativa.
+
 ## Flujo administrativo
 
 Desde `/admin/municipalities` el `SUPER_ADMIN` puede:
@@ -100,8 +108,9 @@ Desde `/admin/municipalities` el `SUPER_ADMIN` puede:
 1. indicar la URL del fichero oficial de municipios,
 2. indicar la URL del ZIP oficial del callejero o del CSV postal equivalente,
 3. fijar `source` y `sourceVersion`,
-4. ejecutar una previsualización sin escribir en BD,
-5. y después confirmar la importación.
+4. lanzar una verificación explícita de las fuentes oficiales,
+5. ejecutar una previsualización sin escribir en BD,
+6. y después confirmar la importación.
 
 La importación repite la validación antes de escribir en base de datos.
 
@@ -133,7 +142,14 @@ checkpol:
       default-source: ine-open-data
       default-municipalities-url: https://www.ine.es/daco/daco42/codmun/diccionario26.xlsx
       default-postal-mappings-url: https://www.ine.es/prodyser/callejero/caj_esp/caj_esp_072025.zip
+      verification:
+        enabled: false
+        cron: 0 0 6 * * *
+        zone: Europe/Madrid
+        triggered-by: system-verifier
 ```
+
+Si `verification.enabled=true`, la aplicación lanzará la misma verificación de fuentes de forma programada y guardará el resultado en el histórico administrativo.
 
 ## Reimportación
 

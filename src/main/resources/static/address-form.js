@@ -7,13 +7,14 @@
     const countryField = form.querySelector("[data-country-field]");
     const postalCodeField = form.querySelector("[data-postal-code-field]");
     const municipalityNameField = form.querySelector("[data-municipality-name-field]");
+    const municipalityManualInput = form.querySelector("[data-municipality-manual-input]");
     const municipalityCodeField = form.querySelector("[data-municipality-code-field]");
     const municipalityTextShell = form.querySelector("[data-municipality-text-shell]");
     const spanishMunicipalityShell = form.querySelector("[data-spanish-municipality-shell]");
     const municipalitySelect = form.querySelector("[data-spanish-municipality-select]");
     const municipalityHint = form.querySelector("[data-spanish-municipality-hint]");
 
-    if (!countryField || !postalCodeField || !municipalityNameField || !municipalityCodeField || !municipalityTextShell || !spanishMunicipalityShell || !municipalitySelect) {
+    if (!countryField || !postalCodeField || !municipalityNameField || !municipalityCodeField || !municipalityTextShell || !spanishMunicipalityShell || !municipalitySelect || !municipalityManualInput) {
       return;
     }
 
@@ -22,6 +23,7 @@
     const clearSpanishSelection = () => {
       municipalityCodeField.value = "";
       municipalityNameField.value = "";
+      municipalityManualInput.value = "";
       municipalitySelect.value = "";
     };
 
@@ -31,6 +33,7 @@
       municipalitySelect.innerHTML = "";
       municipalitySelect.disabled = true;
       municipalityCodeField.value = "";
+      municipalityManualInput.value = municipalityNameField.value || "";
       if (municipalityHint) {
         municipalityHint.hidden = true;
         municipalityHint.textContent = "";
@@ -81,11 +84,13 @@
         municipalitySelect.value = options[0].municipalityCode;
         municipalityCodeField.value = options[0].municipalityCode;
         municipalityNameField.value = options[0].municipalityName;
+        municipalityManualInput.value = "";
       } else if (municipalityCodeField.value) {
         municipalitySelect.value = municipalityCodeField.value;
         if (municipalitySelect.value) {
           const selected = municipalitySelect.selectedOptions[0];
           municipalityNameField.value = selected?.dataset.municipalityName || "";
+          municipalityManualInput.value = "";
         } else {
           clearSpanishSelection();
         }
@@ -96,8 +101,8 @@
       if (municipalityHint) {
         municipalityHint.hidden = false;
         municipalityHint.textContent = options.length === 1
-          ? "El municipio queda seleccionado automáticamente."
-          : "Selecciona el municipio exacto para ese código postal.";
+          ? "Municipio oficial encontrado y seleccionado."
+          : "Elige el municipio oficial de la lista.";
       }
     };
 
@@ -113,7 +118,7 @@
       municipalityTextShell.hidden = true;
 
       if (!VALID_SPANISH_POSTAL_CODE.test(postalCode)) {
-        showSpanishHint("Escribe un código postal español de 5 números para ver los municipios disponibles.");
+        showSpanishHint("Primero escribe un código postal español de 5 números.");
         return;
       }
 
@@ -122,7 +127,7 @@
       }
 
       lastPostalLookup = postalCode;
-      showSpanishHint("Cargando municipios...");
+      showSpanishHint("Buscando municipios para ese código postal...");
 
       try {
         const response = await fetch(`/municipality-catalog/spanish-municipalities?postalCode=${encodeURIComponent(postalCode)}`, {
@@ -131,7 +136,7 @@
           },
         });
         if (!response.ok) {
-          showSpanishHint("No se ha podido cargar el catálogo de municipios. Inténtalo de nuevo o revisa la configuración.");
+          showSpanishHint("No se ha podido consultar el catálogo. Inténtalo de nuevo.");
           return;
         }
         const options = await response.json();
@@ -141,7 +146,7 @@
         }
         applySpanishOptions(options);
       } catch (_error) {
-        showSpanishHint("No se ha podido cargar el catálogo de municipios. Inténtalo de nuevo o revisa la configuración.");
+        showSpanishHint("No se ha podido consultar el catálogo. Inténtalo de nuevo.");
       }
     };
 
@@ -149,6 +154,11 @@
       const selected = municipalitySelect.selectedOptions[0];
       municipalityCodeField.value = municipalitySelect.value || "";
       municipalityNameField.value = selected?.dataset.municipalityName || "";
+      municipalityManualInput.value = "";
+    });
+
+    municipalityManualInput.addEventListener("input", () => {
+      municipalityNameField.value = municipalityManualInput.value;
     });
 
     countryField.addEventListener("change", () => {

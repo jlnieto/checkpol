@@ -1,6 +1,9 @@
 package es.checkpol.web;
 
+import es.checkpol.domain.AppUserRole;
+import es.checkpol.service.AdminUserSummary;
 import es.checkpol.service.AppUserAdminService;
+import es.checkpol.service.MunicipalityAdminService;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -11,25 +14,35 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
 @Controller
 public class AdminController {
 
     private final AppUserAdminService appUserAdminService;
+    private final MunicipalityAdminService municipalityAdminService;
 
-    public AdminController(AppUserAdminService appUserAdminService) {
+    public AdminController(AppUserAdminService appUserAdminService, MunicipalityAdminService municipalityAdminService) {
         this.appUserAdminService = appUserAdminService;
+        this.municipalityAdminService = municipalityAdminService;
     }
 
     @GetMapping("/admin")
     public String dashboard(Model model) {
-        model.addAttribute("ownerCount", appUserAdminService.countOwners());
-        model.addAttribute("users", appUserAdminService.findAllUsers());
+        List<AdminUserSummary> users = appUserAdminService.findAllUsers();
+        MunicipalityAdminService.DashboardSummary dashboard = municipalityAdminService.getDashboardSummary();
+        populateUserMetrics(model, users);
+        model.addAttribute("users", users);
+        model.addAttribute("dashboard", dashboard);
+        model.addAttribute("sourceHealth", dashboard.sourceHealth());
         return "admin/index";
     }
 
     @GetMapping("/admin/users")
     public String listUsers(Model model) {
-        model.addAttribute("users", appUserAdminService.findAllUsers());
+        List<AdminUserSummary> users = appUserAdminService.findAllUsers();
+        populateUserMetrics(model, users);
+        model.addAttribute("users", users);
         return "admin/users";
     }
 
@@ -96,5 +109,17 @@ public class AdminController {
         model.addAttribute("formTitle", title);
         model.addAttribute("submitLabel", submitLabel);
         return "admin/user-form";
+    }
+
+    private void populateUserMetrics(Model model, List<AdminUserSummary> users) {
+        long activeUserCount = users.stream().filter(AdminUserSummary::active).count();
+        long ownerCount = users.stream().filter(user -> user.role() == AppUserRole.OWNER).count();
+        long activeOwnerCount = users.stream().filter(user -> user.role() == AppUserRole.OWNER && user.active()).count();
+        model.addAttribute("userCount", users.size());
+        model.addAttribute("ownerCount", ownerCount);
+        model.addAttribute("activeUserCount", activeUserCount);
+        model.addAttribute("inactiveUserCount", users.size() - activeUserCount);
+        model.addAttribute("activeOwnerCount", activeOwnerCount);
+        model.addAttribute("inactiveOwnerCount", ownerCount - activeOwnerCount);
     }
 }

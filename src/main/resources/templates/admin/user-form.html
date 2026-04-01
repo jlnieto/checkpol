@@ -6,52 +6,73 @@
     <title th:text="${formTitle + ' | Checkpol'}">Usuario | Checkpol</title>
     <link rel="stylesheet" th:href="@{/app.css}">
 </head>
-<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
-<main class="owner-shell-narrow">
-    <section class="owner-page">
-        <header class="owner-header">
+<body class="admin-body antialiased">
+<main class="admin-app">
+    <aside class="admin-sidebar-shell" th:replace="~{admin/fragments :: sidebar('users')}"></aside>
+
+    <section class="admin-content">
+        <header class="admin-header">
             <div>
-                <p class="owner-kicker">Administración</p>
-                <h1 class="owner-title" th:text="${formTitle}">Nuevo usuario</h1>
-                <p class="owner-copy">Gestiona accesos de propietarios desde el panel administrativo.</p>
+                <p class="admin-kicker">Administración del sistema</p>
+                <h1 class="admin-title" th:text="${formTitle}">Nuevo usuario</h1>
+                <p class="admin-copy">Alta o actualización de un owner. Mantén las credenciales y el estado de acceso bajo control desde esta ficha.</p>
+            </div>
+            <div class="admin-actions">
+                <a class="admin-button-secondary" th:href="@{/admin/users}">Volver a usuarios</a>
             </div>
         </header>
 
-        <section class="owner-form-shell">
+        <div class="admin-page">
+        <div class="max-w-3xl">
+        <section class="admin-card">
+            <div class="admin-card-header">
+                <div>
+                    <h2 class="admin-card-title" th:text="${formTitle}">Nuevo usuario</h2>
+                    <p class="admin-card-copy">Ficha de acceso de propietario.</p>
+                </div>
+            </div>
+            <div class="admin-card-body">
             <form th:action="@{${formAction}}" th:object="${adminUserForm}" method="post" class="space-y-4" novalidate>
-                <div class="owner-error-box error-box" th:if="${#fields.hasGlobalErrors()}">
+                <div class="admin-alert-error" th:if="${#fields.hasGlobalErrors()}">
                     <p th:each="error : ${#fields.globalErrors()}" th:text="${error}">Error</p>
                 </div>
 
-                <label class="owner-label">
+                <div class="admin-note">
+                    Usa un nombre visible reconocible y deja la contraseña en blanco solo cuando quieras mantener la actual en una edición.
+                </div>
+
+                <label class="admin-form-label">
                     <span>Usuario</span>
-                    <input class="owner-input" th:field="*{username}" type="text" autocomplete="username">
-                    <small class="owner-error error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></small>
+                    <input class="admin-form-input" th:field="*{username}" type="text" autocomplete="username">
+                    <small class="admin-form-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></small>
                 </label>
 
-                <label class="owner-label">
+                <label class="admin-form-label">
                     <span>Nombre visible</span>
-                    <input class="owner-input" th:field="*{displayName}" type="text" autocomplete="name">
-                    <small class="owner-error error" th:if="${#fields.hasErrors('displayName')}" th:errors="*{displayName}"></small>
+                    <input class="admin-form-input" th:field="*{displayName}" type="text" autocomplete="name">
+                    <small class="admin-form-error" th:if="${#fields.hasErrors('displayName')}" th:errors="*{displayName}"></small>
                 </label>
 
-                <label class="owner-label">
+                <label class="admin-form-label">
                     <span>Contraseña</span>
-                    <input class="owner-input" th:field="*{password}" type="password" autocomplete="new-password" placeholder="Solo rellena si quieres definir o cambiar la contraseña">
-                    <small class="owner-error error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></small>
+                    <input class="admin-form-input" th:field="*{password}" type="password" autocomplete="new-password" placeholder="Solo rellena si quieres definir o cambiar la contraseña">
+                    <small class="admin-form-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></small>
                 </label>
 
-                <label class="inline-flex items-center gap-3 text-sm font-medium text-slate-700">
+                <label class="admin-checkbox">
                     <input th:field="*{active}" type="checkbox">
                     <span>Usuario activo</span>
                 </label>
 
-                <div class="owner-form-actions">
-                    <a class="owner-button-secondary" th:href="@{/admin/users}">Cancelar</a>
-                    <button class="owner-button-primary" type="submit" th:text="${submitLabel}">Guardar</button>
+                <div class="admin-actions">
+                    <a class="admin-button-secondary" th:href="@{/admin/users}">Cancelar</a>
+                    <button class="admin-button-primary" type="submit" th:text="${submitLabel}">Guardar</button>
                 </div>
             </form>
+            </div>
         </section>
+        </div>
+        </div>
     </section>
 </main>
 </body>

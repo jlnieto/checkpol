@@ -27,3 +27,8 @@ checkpol:
       default-source: ${CHECKPOL_MUNICIPALITY_ADMIN_DEFAULT_SOURCE:ine-open-data}
       default-municipalities-url: ${CHECKPOL_MUNICIPALITY_ADMIN_DEFAULT_MUNICIPALITIES_URL:https://www.ine.es/daco/daco42/codmun/diccionario26.xlsx}
       default-postal-mappings-url: ${CHECKPOL_MUNICIPALITY_ADMIN_DEFAULT_POSTAL_MAPPINGS_URL:https://www.ine.es/prodyser/callejero/caj_esp/caj_esp_072025.zip}
+      verification:
+        enabled: ${CHECKPOL_MUNICIPALITY_ADMIN_VERIFICATION_ENABLED:false}
+        cron: ${CHECKPOL_MUNICIPALITY_ADMIN_VERIFICATION_CRON:0 0 6 * * *}
+        zone: ${CHECKPOL_MUNICIPALITY_ADMIN_VERIFICATION_ZONE:Europe/Madrid}
+        triggered-by: ${CHECKPOL_MUNICIPALITY_ADMIN_VERIFICATION_TRIGGERED_BY:system-verifier}

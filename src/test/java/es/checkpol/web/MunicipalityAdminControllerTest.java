@@ -56,6 +56,7 @@ class MunicipalityAdminControllerTest {
             null,
             null,
             null,
+            new MunicipalityAdminService.SourceHealthSummary("warning", "Fuentes oficiales sin verificar todavía.", "Lanza una verificación desde esta pantalla antes de la próxima importación.", null),
             null,
             List.of()
         ));
@@ -77,6 +78,7 @@ class MunicipalityAdminControllerTest {
             null,
             null,
             null,
+            new MunicipalityAdminService.SourceHealthSummary("warning", "Fuentes oficiales sin verificar todavía.", "Lanza una verificación desde esta pantalla antes de la próxima importación.", null),
             null,
             List.of()
         ));
@@ -104,6 +106,45 @@ class MunicipalityAdminControllerTest {
             .andExpect(status().isOk())
             .andExpect(view().name("admin/municipalities"))
             .andExpect(model().attributeExists("preview"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
+    void verifiesMunicipalitySources() throws Exception {
+        when(currentAppUserService.requireAuthenticatedUser()).thenReturn(org.mockito.Mockito.mock(AppUserPrincipal.class, invocation -> {
+            if ("getUsername".equals(invocation.getMethod().getName())) {
+                return "admin";
+            }
+            return null;
+        }));
+        when(municipalityAdminService.getDashboardSummary()).thenReturn(new MunicipalityAdminService.DashboardSummary(
+            false,
+            0,
+            0,
+            null,
+            null,
+            null,
+            new MunicipalityAdminService.SourceHealthSummary("warning", "Fuentes oficiales sin verificar todavía.", "Lanza una verificación desde esta pantalla antes de la próxima importación.", null),
+            null,
+            List.of()
+        ));
+        when(municipalityAdminService.verifySources(any(), eq("admin"))).thenReturn(new MunicipalityAdminService.VerificationSummary(
+            "ok",
+            "Fuentes oficiales verificadas.",
+            8110,
+            23000,
+            List.of()
+        ));
+
+        mockMvc.perform(post("/admin/municipalities/verify")
+                .with(csrf())
+                .param("municipalitiesUrl", "https://www.ine.es/daco/daco42/codmun/diccionario26.xlsx")
+                .param("postalMappingsUrl", "https://www.ine.es/prodyser/callejero/caj_esp/caj_esp_072025.zip")
+                .param("source", "ine-open-data")
+                .param("sourceVersion", "2026-01"))
+            .andExpect(status().isOk())
+            .andExpect(view().name("admin/municipalities"))
+            .andExpect(model().attributeExists("verification"));
     }
 
     @Test

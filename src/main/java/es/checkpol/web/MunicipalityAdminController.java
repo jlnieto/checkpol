@@ -31,7 +31,7 @@ public class MunicipalityAdminController {
         if (!model.containsAttribute("municipalityImportForm")) {
             model.addAttribute("municipalityImportForm", municipalityAdminService.defaultForm());
         }
-        return populatePage(model, null);
+        return populatePage(model, null, null);
     }
 
     @PostMapping("/admin/municipalities/preview")
@@ -48,7 +48,24 @@ public class MunicipalityAdminController {
                 bindingResult.reject("municipality.preview.invalid", exception.getMessage());
             }
         }
-        return populatePage(model, preview);
+        return populatePage(model, preview, null);
+    }
+
+    @PostMapping("/admin/municipalities/verify")
+    public String verify(
+        @Valid @ModelAttribute("municipalityImportForm") AdminMunicipalityImportForm form,
+        BindingResult bindingResult,
+        Model model
+    ) {
+        MunicipalityAdminService.VerificationSummary verification = null;
+        if (!bindingResult.hasErrors()) {
+            try {
+                verification = municipalityAdminService.verifySources(form, currentAppUserService.requireAuthenticatedUser().getUsername());
+            } catch (IllegalArgumentException exception) {
+                bindingResult.reject("municipality.verify.invalid", exception.getMessage());
+            }
+        }
+        return populatePage(model, null, verification);
     }
 
     @PostMapping("/admin/municipalities/import")
@@ -59,7 +76,7 @@ public class MunicipalityAdminController {
         RedirectAttributes redirectAttributes
     ) {
         if (bindingResult.hasErrors()) {
-            return populatePage(model, null);
+            return populatePage(model, null, null);
         }
 
         try {
@@ -77,13 +94,18 @@ public class MunicipalityAdminController {
                 preview = municipalityAdminService.previewImport(form);
             } catch (RuntimeException ignored) {
             }
-            return populatePage(model, preview);
+            return populatePage(model, preview, null);
         }
     }
 
-    private String populatePage(Model model, MunicipalityCatalogImportService.PreviewSummary preview) {
+    private String populatePage(
+        Model model,
+        MunicipalityCatalogImportService.PreviewSummary preview,
+        MunicipalityAdminService.VerificationSummary verification
+    ) {
         model.addAttribute("dashboard", municipalityAdminService.getDashboardSummary());
         model.addAttribute("preview", preview);
+        model.addAttribute("verification", verification);
         return "admin/municipalities";
     }
 }

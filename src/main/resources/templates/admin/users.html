@@ -6,48 +6,99 @@
     <title>Usuarios | Checkpol</title>
     <link rel="stylesheet" th:href="@{/app.css}">
 </head>
-<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
-<main class="owner-shell">
-    <section class="owner-page">
-        <header class="owner-header">
+<body class="admin-body antialiased">
+<main class="admin-app">
+    <aside class="admin-sidebar-shell" th:replace="~{admin/fragments :: sidebar('users')}"></aside>
+
+    <section class="admin-content">
+        <header class="admin-header">
             <div>
-                <p class="owner-kicker">Administración</p>
-                <h1 class="owner-title">Usuarios</h1>
-                <p class="owner-copy">Crea y mantiene los accesos de los propietarios.</p>
+                <p class="admin-kicker">Administración del sistema</p>
+                <h1 class="admin-title">Usuarios y accesos</h1>
+                <p class="admin-copy">Gestión de propietarios y estado de acceso del sistema.</p>
             </div>
-            <div class="owner-home-actions">
-                <a class="owner-button-secondary" th:href="@{/admin}">Volver</a>
-                <a class="owner-button-primary" th:href="@{/admin/users/new}">Nuevo usuario</a>
+            <div class="admin-actions">
+                <a class="admin-button-secondary" th:href="@{/admin}">Volver al panel</a>
+                <a class="admin-button-primary" th:href="@{/admin/users/new}">Nuevo owner</a>
             </div>
         </header>
 
-        <div class="owner-success-box" th:if="${flashMessage != null and flashKind == 'success'}">
-            <p th:text="${flashMessage}">Usuario guardado.</p>
-        </div>
-
-        <section class="owner-card">
-            <div class="space-y-4" th:if="${!#lists.isEmpty(users)}">
-                <article class="owner-queue-entry" th:each="user : ${users}">
-                    <div class="owner-queue-body">
-                        <div>
-                            <div class="owner-booking-badge-row">
-                                <span class="owner-status-ready" th:text="${user.role.name() == 'SUPER_ADMIN' ? 'SUPER ADMIN' : 'OWNER'}">OWNER</span>
-                                <span class="owner-status-pending" th:if="${!user.active}">Inactivo</span>
-                            </div>
-                            <h2 class="mt-3 text-xl font-semibold text-slate-900" th:text="${user.displayName}">Juan Pérez</h2>
-                            <p class="owner-queue-meta" th:text="${user.username}">juan</p>
-                        </div>
-                        <div class="owner-queue-action">
-                            <a class="owner-button-secondary w-full justify-center sm:w-auto"
-                               th:if="${user.role.name() == 'OWNER'}"
-                               th:href="@{|/admin/users/${user.id}/edit|}">Editar</a>
-                        </div>
-                    </div>
-                </article>
+        <div class="admin-page">
+            <div class="admin-alert-success" th:if="${flashMessage != null and flashKind == 'success'}">
+                <p th:text="${flashMessage}">Usuario guardado.</p>
             </div>
 
-            <p class="owner-copy" th:if="${#lists.isEmpty(users)}">Todavía no hay usuarios dados de alta.</p>
-        </section>
+            <section class="admin-metrics">
+                <article class="admin-metric">
+                    <p class="admin-metric-label">Propietarios</p>
+                    <p class="admin-metric-value" th:text="${ownerCount}">0</p>
+                    <p class="admin-metric-meta">Propietarios dados de alta en el sistema.</p>
+                </article>
+                <article class="admin-metric">
+                    <p class="admin-metric-label">Propietarios activos</p>
+                    <p class="admin-metric-value" th:text="${activeOwnerCount}">0</p>
+                    <p class="admin-metric-meta">Cuentas listas para operar.</p>
+                </article>
+                <article class="admin-metric">
+                    <p class="admin-metric-label">Propietarios inactivos</p>
+                    <p class="admin-metric-value" th:text="${inactiveOwnerCount}">0</p>
+                    <p class="admin-metric-meta">Revisar si deben reactivarse o mantenerse bloqueados.</p>
+                </article>
+            </section>
+
+            <section class="admin-card">
+                <div class="admin-card-header">
+                    <div>
+                        <h2 class="admin-card-title">Directorio de cuentas</h2>
+                        <p class="admin-card-copy">Vista operativa de usuarios y estado de acceso.</p>
+                    </div>
+                    <div class="admin-actions">
+                        <a class="admin-button-primary" th:href="@{/admin/users/new}">Crear nuevo owner</a>
+                    </div>
+                </div>
+
+                <div class="admin-card-body">
+                    <div class="admin-table-wrap" th:if="${!#lists.isEmpty(users)}">
+                        <table class="admin-table">
+                            <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Rol</th>
+                                <th>Estado</th>
+                                <th>Acción</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="user : ${users}">
+                                <td>
+                                    <p class="admin-table-strong" th:text="${user.displayName}">Juan Pérez</p>
+                                    <p class="mt-1 text-sm text-slate-500" th:text="${user.username}">juan</p>
+                                </td>
+                                <td>
+                                    <span class="admin-badge"
+                                          th:classappend="${user.role.name() == 'SUPER_ADMIN' ? ' admin-badge-neutral' : ' admin-badge-success'}"
+                                          th:text="${user.role.name() == 'SUPER_ADMIN' ? 'SUPER ADMIN' : 'OWNER'}">OWNER</span>
+                                </td>
+                                <td>
+                                    <div class="flex items-center gap-2">
+                                        <span class="admin-dot" th:classappend="${user.active ? ' admin-dot-success' : ' admin-dot-warning'}"></span>
+                                        <span th:text="${user.active ? 'Activo' : 'Inactivo'}">Activo</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <a class="admin-button-secondary"
+                                       th:if="${user.role.name() == 'OWNER'}"
+                                       th:href="@{|/admin/users/${user.id}/edit|}">Editar</a>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <p class="admin-note" th:if="${#lists.isEmpty(users)}">Todavía no hay usuarios dados de alta.</p>
+                </div>
+            </section>
+        </div>
     </section>
 </main>
 </body>

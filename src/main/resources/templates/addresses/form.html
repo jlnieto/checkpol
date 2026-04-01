@@ -27,6 +27,7 @@
             <form th:action="${formAction}" th:object="${addressForm}" method="post" class="space-y-5" data-address-form>
                 <input th:if="${guestId != null}" type="hidden" name="guestId" th:value="${guestId}">
                 <input th:field="*{municipalityCode}" type="hidden" data-municipality-code-field>
+                <input th:field="*{municipalityName}" type="hidden" data-municipality-name-field>
 
                 <div class="owner-error-box error-box" th:if="${#fields.hasGlobalErrors()}">
                     <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
@@ -56,20 +57,21 @@
                 <label class="owner-label">
                     <span>Código postal</span>
                     <input class="owner-input" th:field="*{postalCode}" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="28001" data-postal-code-field>
+                    <small class="public-hint field-hint">En España, este código postal carga el municipio oficial.</small>
                     <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('postalCode')}" th:errors="*{postalCode}"></small>
                 </label>
 
-                <label class="owner-label" data-spanish-municipality-shell hidden>
-                    <span>Municipio</span>
+                <label class="owner-label owner-label-followup" data-spanish-municipality-shell hidden>
+                    <span>Municipio oficial</span>
                     <select class="owner-select" data-spanish-municipality-select>
                         <option value="">Municipio</option>
                     </select>
-                    <small class="public-hint field-hint" data-spanish-municipality-hint hidden></small>
+                    <small class="public-hint field-hint" data-spanish-municipality-hint hidden aria-live="polite"></small>
                 </label>
 
                 <label class="owner-label" data-municipality-text-shell>
-                    <span>Municipio</span>
-                    <input class="owner-input" th:field="*{municipalityName}" type="text" autocomplete="address-level2" placeholder="Madrid" data-municipality-name-field>
+                    <span>Ciudad o municipio</span>
+                    <input class="owner-input" th:value="*{municipalityName}" type="text" autocomplete="address-level2" placeholder="Madrid" data-municipality-manual-input>
                     <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('municipalityName')}" th:errors="*{municipalityName}"></small>
                 </label>
 
