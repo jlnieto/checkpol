@@ -19,7 +19,9 @@ class InePostalMappingsZipParserTest {
     void convertsOfficialTramZipIntoInternalCsv() throws Exception {
         byte[] zipBytes = zipWithEntry(
             "caj_esp_072025/TRAM.D250630.G250702",
-            tramLine("28079", "28001") + "\n" + tramLine("35014", "35540") + "\n" + tramLine("28079", "00000") + "\n"
+            officialLikeTramLine("28079", "28001") + "\n"
+                + officialLikeTramLine("35014", "35540") + "\n"
+                + officialLikeTramLine("28079", "00000") + "\n"
         );
 
         Optional<byte[]> converted = parser.tryConvertToInternalCsv(zipBytes);
@@ -51,12 +53,14 @@ class InePostalMappingsZipParserTest {
         return outputStream.toByteArray();
     }
 
-    private String tramLine(String municipalityCode, String postalCode) {
-        char[] buffer = new char[280];
+    private String officialLikeTramLine(String municipalityCode, String postalCode) {
+        char[] buffer = new char[273];
         java.util.Arrays.fill(buffer, ' ');
         write(buffer, 0, municipalityCode);
         write(buffer, 42, postalCode);
-        write(buffer, 69, municipalityCode);
+        write(buffer, 61, "20250630");
+        write(buffer, 70, "01001");
+        write(buffer, 78, "0001701");
         return new String(buffer);
     }
 

@@ -23,8 +23,6 @@ public class InePostalMappingsZipParser {
     private static final int MUNICIPALITY_CODE_END = 5;
     private static final int POSTAL_CODE_START = 42;
     private static final int POSTAL_CODE_END = 47;
-    private static final int REPEATED_MUNICIPALITY_CODE_START = 69;
-    private static final int REPEATED_MUNICIPALITY_CODE_END = 74;
 
     public Optional<byte[]> tryConvertToInternalCsv(byte[] zipBytes) {
         try (ZipInputStream inputStream = new ZipInputStream(new ByteArrayInputStream(zipBytes), StandardCharsets.ISO_8859_1)) {
@@ -68,19 +66,15 @@ public class InePostalMappingsZipParser {
             if (line.isBlank()) {
                 continue;
             }
-            if (line.length() < POSTAL_CODE_END || line.length() < REPEATED_MUNICIPALITY_CODE_END) {
+            if (line.length() < POSTAL_CODE_END) {
                 throw invalidFormat(entryName, lineNumber, "Longitud de registro insuficiente.");
             }
 
             String municipalityCode = line.substring(MUNICIPALITY_CODE_START, MUNICIPALITY_CODE_END).trim();
             String postalCode = line.substring(POSTAL_CODE_START, POSTAL_CODE_END).trim();
-            String repeatedMunicipalityCode = line.substring(REPEATED_MUNICIPALITY_CODE_START, REPEATED_MUNICIPALITY_CODE_END).trim();
 
             if (!CODE_PATTERN.matcher(municipalityCode).matches()) {
                 throw invalidFormat(entryName, lineNumber, "No he encontrado un código de municipio válido en la cabecera del tramo.");
-            }
-            if (!repeatedMunicipalityCode.isEmpty() && !municipalityCode.equals(repeatedMunicipalityCode)) {
-                throw invalidFormat(entryName, lineNumber, "El formato del tramo no coincide con el diseño esperado del callejero oficial.");
             }
             if ("00000".equals(postalCode) || postalCode.isBlank()) {
                 continue;

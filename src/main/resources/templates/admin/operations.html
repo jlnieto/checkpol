@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${pageTitle + ' | Checkpol'}">Operaciones | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="mono-body antialiased">
+<main class="mono-app">
+    <aside class="mono-sidebar-shell" th:replace="~{admin/fragments :: sidebar(${activeSection})}"></aside>
+
+    <section class="mono-content">
+        <header class="mono-topbar">
+            <div class="mono-topbar-left">
+                <button class="mono-topbar-button" type="button" aria-label="Navegación">
+                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M3 5h14v2H3V5Zm0 4h14v2H3V9Zm0 4h14v2H3v-2Z"/>
+                    </svg>
+                </button>
+                <label class="mono-search">
+                    <svg class="mono-search-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M8.5 3a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Zm0 1.5a4 4 0 1 0 2.6 7l3.2 3.2 1.1-1.1-3.2-3.2A4 4 0 0 0 8.5 4.5Z"/>
+                    </svg>
+                    <input class="mono-search-input" type="text" placeholder="Buscar en historial..." readonly>
+                </label>
+            </div>
+            <div class="mono-topbar-right">
+                <span class="mono-topbar-meta">Catálogo:
+                    <strong th:text="${dashboard.currentSourceVersion != null ? dashboard.currentSourceVersion : 'SIN_VERSIÓN'}">SIN_VERSIÓN</strong>
+                </span>
+                <a class="mono-btn-ghost" th:href="@{/admin}">Resumen</a>
+            </div>
+        </header>
+
+        <div class="mono-page">
+            <div class="mono-page-head">
+                <h1 class="mono-page-title" th:text="${pageTitle}">Actividad reciente</h1>
+                <nav class="mono-breadcrumb">
+                    <span>Admin</span>
+                    <span>/</span>
+                    <span class="mono-breadcrumb-active" th:text="${pageTitle}">Actividad reciente</span>
+                </nav>
+            </div>
+
+            <section class="mono-layout">
+                <div class="mono-main">
+                    <section class="mono-table-panel">
+                        <div class="mono-panel-strip">
+                            <h2 class="mono-panel-title" th:text="${pageSubtitle}">Timeline operativo del área administrativa</h2>
+                            <a class="mono-panel-link" th:href="@{/admin/municipalities}">Abrir catálogo oficial</a>
+                        </div>
+                        <div th:if="${!#lists.isEmpty(items)}">
+                            <table class="mono-table">
+                                <thead>
+                                <tr>
+                                    <th>Operación</th>
+                                    <th>Versión</th>
+                                    <th>Origen</th>
+                                    <th>Usuario</th>
+                                    <th>Resultado</th>
+                                    <th>Fecha</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="item : ${items}">
+                                    <td>
+                                        <p class="mono-table-strong"
+                                           th:text="${item.operationType == 'VERIFY' ? 'Verificación'
+                                               : (item.operationType == 'PREVIEW' ? 'Previsualización'
+                                               : 'Importación')}">Verificación</p>
+                                        <p class="mono-table-meta">
+                                            <span th:text="${item.importedMunicipalities}">0</span> municipios ·
+                                            <span th:text="${item.importedPostalMappings}">0</span> mappings
+                                        </p>
+                                    </td>
+                                    <td class="mono-table-meta" th:text="${item.sourceVersion}">manual-2026-04-03</td>
+                                    <td class="mono-table-meta" th:text="${item.source}">ine-open-data</td>
+                                    <td th:text="${item.triggeredByUsername}">admin</td>
+                                    <td>
+                                        <span class="mono-pill"
+                                              th:classappend="${item.status == 'SUCCESS' ? ' mono-pill-success' : ' mono-pill-danger'}"
+                                              th:text="${item.status == 'SUCCESS' ? 'Completado' : 'Fallido'}">Completado</span>
+                                    </td>
+                                    <td class="mono-table-meta" th:text="${#temporals.format(item.createdAt, 'dd/MM/yyyy HH:mm')}">03/04/2026 10:47</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mono-panel-body" th:if="${#lists.isEmpty(items)}">
+                            <p class="mono-compact-copy">Todavía no hay registros para esta vista.</p>
+                        </div>
+                    </section>
+                </div>
+
+                <aside class="mono-rail">
+                    <section class="mono-health">
+                        <h3 class="mono-health-title">Salud operativa</h3>
+                        <div class="mono-meter">
+                            <div class="mono-meter-head">
+                                <span class="mono-meter-label">Catálogo oficial</span>
+                                <span class="mono-meter-value" th:text="${catalogReadyPercent + '%'}">0%</span>
+                            </div>
+                            <div class="mono-meter-track">
+                                <div class="mono-meter-bar mono-meter-bar-amber" th:style="'width:' + ${catalogReadyPercent} + '%'"></div>
+                            </div>
+                        </div>
+                        <div class="mono-meter">
+                            <div class="mono-meter-head">
+                                <span class="mono-meter-label">Salud de fuentes</span>
+                                <span class="mono-meter-value" th:text="${sourceHealthPercent + '%'}">0%</span>
+                            </div>
+                            <div class="mono-meter-track">
+                                <div class="mono-meter-bar mono-meter-bar-red" th:style="'width:' + ${sourceHealthPercent} + '%'"></div>
+                            </div>
+                        </div>
+                        <div class="mono-meter">
+                            <div class="mono-meter-head">
+                                <span class="mono-meter-label">Registros visibles</span>
+                                <span class="mono-meter-value" th:text="${#lists.size(items)}">0</span>
+                            </div>
+                            <div class="mono-meter-track">
+                                <div class="mono-meter-bar" th:style="'width:' + ${#lists.isEmpty(items) ? 0 : 100} + '%'"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="mono-rail-panel">
+                        <div class="mono-panel-strip">
+                            <h2 class="mono-panel-title">Accesos rápidos</h2>
+                        </div>
+                        <div class="mono-link-list">
+                            <a class="mono-link-item" th:href="@{/admin/verifications}">Verificaciones</a>
+                            <a class="mono-link-item" th:href="@{/admin/imports}">Importaciones</a>
+                            <a class="mono-link-item" th:href="@{/admin/activity}">Actividad reciente</a>
+                        </div>
+                    </section>
+
+                    <section class="mono-message">
+                        <p class="mono-message-label">Trazabilidad</p>
+                        <p class="mono-message-copy">Esta vista sirve para auditar qué se revisó, qué se previsualizó y qué terminó entrando en base de datos.</p>
+                        <a class="mono-message-link" th:href="@{/admin/municipalities}">Ir al catálogo oficial</a>
+                    </section>
+                </aside>
+            </section>
+        </div>
+    </section>
+</main>
+</body>
+</html>

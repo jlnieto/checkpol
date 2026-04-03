@@ -6,72 +6,118 @@
     <title th:text="${formTitle + ' | Checkpol'}">Usuario | Checkpol</title>
     <link rel="stylesheet" th:href="@{/app.css}">
 </head>
-<body class="admin-body antialiased">
-<main class="admin-app">
-    <aside class="admin-sidebar-shell" th:replace="~{admin/fragments :: sidebar('users')}"></aside>
+<body class="mono-body antialiased">
+<main class="mono-app">
+    <aside class="mono-sidebar-shell" th:replace="~{admin/fragments :: sidebar('users')}"></aside>
 
-    <section class="admin-content">
-        <header class="admin-header">
-            <div>
-                <p class="admin-kicker">Administración del sistema</p>
-                <h1 class="admin-title" th:text="${formTitle}">Nuevo usuario</h1>
-                <p class="admin-copy">Alta o actualización de un owner. Mantén las credenciales y el estado de acceso bajo control desde esta ficha.</p>
+    <section class="mono-content">
+        <header class="mono-topbar">
+            <div class="mono-topbar-left">
+                <button class="mono-topbar-button" type="button" aria-label="Navegación">
+                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M3 5h14v2H3V5Zm0 4h14v2H3V9Zm0 4h14v2H3v-2Z"/>
+                    </svg>
+                </button>
+                <label class="mono-search">
+                    <svg class="mono-search-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M8.5 3a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Zm0 1.5a4 4 0 1 0 2.6 7l3.2 3.2 1.1-1.1-3.2-3.2A4 4 0 0 0 8.5 4.5Z"/>
+                    </svg>
+                    <input class="mono-search-input" type="text" placeholder="Buscar propietario..." readonly>
+                </label>
             </div>
-            <div class="admin-actions">
-                <a class="admin-button-secondary" th:href="@{/admin/users}">Volver a usuarios</a>
+            <div class="mono-topbar-right">
+                <span class="mono-topbar-meta">Catálogo:
+                    <strong th:text="${dashboard.currentSourceVersion != null ? dashboard.currentSourceVersion : 'SIN_VERSIÓN'}">SIN_VERSIÓN</strong>
+                </span>
+                <a class="mono-btn-ghost" th:href="@{/admin/users}">Volver</a>
             </div>
         </header>
 
-        <div class="admin-page">
-        <div class="max-w-3xl">
-        <section class="admin-card">
-            <div class="admin-card-header">
-                <div>
-                    <h2 class="admin-card-title" th:text="${formTitle}">Nuevo usuario</h2>
-                    <p class="admin-card-copy">Ficha de acceso de propietario.</p>
-                </div>
-            </div>
-            <div class="admin-card-body">
-            <form th:action="@{${formAction}}" th:object="${adminUserForm}" method="post" class="space-y-4" novalidate>
-                <div class="admin-alert-error" th:if="${#fields.hasGlobalErrors()}">
-                    <p th:each="error : ${#fields.globalErrors()}" th:text="${error}">Error</p>
-                </div>
-
-                <div class="admin-note">
-                    Usa un nombre visible reconocible y deja la contraseña en blanco solo cuando quieras mantener la actual en una edición.
-                </div>
-
-                <label class="admin-form-label">
-                    <span>Usuario</span>
-                    <input class="admin-form-input" th:field="*{username}" type="text" autocomplete="username">
-                    <small class="admin-form-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></small>
-                </label>
-
-                <label class="admin-form-label">
-                    <span>Nombre visible</span>
-                    <input class="admin-form-input" th:field="*{displayName}" type="text" autocomplete="name">
-                    <small class="admin-form-error" th:if="${#fields.hasErrors('displayName')}" th:errors="*{displayName}"></small>
-                </label>
-
-                <label class="admin-form-label">
-                    <span>Contraseña</span>
-                    <input class="admin-form-input" th:field="*{password}" type="password" autocomplete="new-password" placeholder="Solo rellena si quieres definir o cambiar la contraseña">
-                    <small class="admin-form-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></small>
-                </label>
-
-                <label class="admin-checkbox">
-                    <input th:field="*{active}" type="checkbox">
-                    <span>Usuario activo</span>
-                </label>
-
-                <div class="admin-actions">
-                    <a class="admin-button-secondary" th:href="@{/admin/users}">Cancelar</a>
-                    <button class="admin-button-primary" type="submit" th:text="${submitLabel}">Guardar</button>
-                </div>
-            </form>
-            </div>
-        </section>
+        <div class="mono-page">
+        <div class="mono-page-head">
+            <h1 class="mono-page-title" th:text="${formTitle}">Nuevo usuario</h1>
+            <nav class="mono-breadcrumb">
+                <span>Admin</span>
+                <span>/</span>
+                <span>Propietarios</span>
+                <span>/</span>
+                <span class="mono-breadcrumb-active" th:text="${formTitle}">Nuevo usuario</span>
+            </nav>
         </div>
+
+        <section class="mono-layout">
+            <div class="mono-main">
+                <section class="mono-form-panel">
+                    <div class="mono-panel-strip">
+                        <h2 class="mono-panel-title" th:text="${formTitle}">Nuevo usuario</h2>
+                    </div>
+                    <div class="mono-panel-body">
+                    <form th:action="@{${formAction}}" th:object="${adminUserForm}" method="post" class="mono-form-grid" novalidate>
+                        <div class="mono-alert-error" th:if="${#fields.hasGlobalErrors()}">
+                            <p th:each="error : ${#fields.globalErrors()}" th:text="${error}">Error</p>
+                        </div>
+
+                        <p class="mono-compact-copy">Usa un nombre visible reconocible y deja la contraseña en blanco solo cuando quieras mantener la actual en una edición.</p>
+
+                        <label class="mono-field">
+                            <span class="mono-field-label">Usuario</span>
+                            <input class="mono-field-input" th:field="*{username}" type="text" autocomplete="username">
+                            <small class="mono-field-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></small>
+                        </label>
+
+                        <label class="mono-field">
+                            <span class="mono-field-label">Nombre visible</span>
+                            <input class="mono-field-input" th:field="*{displayName}" type="text" autocomplete="name">
+                            <small class="mono-field-error" th:if="${#fields.hasErrors('displayName')}" th:errors="*{displayName}"></small>
+                        </label>
+
+                        <label class="mono-field">
+                            <span class="mono-field-label">Contraseña</span>
+                            <input class="mono-field-input" th:field="*{password}" type="password" autocomplete="new-password" placeholder="Solo rellena si quieres definir o cambiar la contraseña">
+                            <small class="mono-field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></small>
+                        </label>
+
+                        <label class="mono-checkbox">
+                            <input th:field="*{active}" type="checkbox">
+                            <span>Usuario activo</span>
+                        </label>
+
+                        <div class="mono-inline-actions">
+                            <a class="mono-btn-secondary" th:href="@{/admin/users}">Cancelar</a>
+                            <button class="mono-btn-primary" type="submit" th:text="${submitLabel}">Guardar</button>
+                        </div>
+                    </form>
+                    </div>
+                </section>
+            </div>
+
+            <aside class="mono-rail">
+                <section class="mono-rail-panel">
+                    <div class="mono-panel-strip">
+                        <h2 class="mono-panel-title">Guía rápida</h2>
+                    </div>
+                    <div class="mono-panel-body">
+                        <div class="mono-compact-list">
+                            <article class="mono-compact-item">
+                                <p class="mono-compact-label">Usuario</p>
+                                <p class="mono-compact-value">Identificador de acceso</p>
+                                <p class="mono-compact-copy">Debe ser estable y reconocible para la operativa diaria.</p>
+                            </article>
+                            <article class="mono-compact-item">
+                                <p class="mono-compact-label">Contraseña</p>
+                                <p class="mono-compact-value">Solo cuando haga falta</p>
+                                <p class="mono-compact-copy">En edición, dejarla vacía conserva la contraseña actual.</p>
+                            </article>
+                            <article class="mono-compact-item">
+                                <p class="mono-compact-label">Estado</p>
+                                <p class="mono-compact-value">Activo o inactivo</p>
+                                <p class="mono-compact-copy">Determina si el owner puede entrar y trabajar con reservas, huéspedes y XML.</p>
+                            </article>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+        </section>
         </div>
     </section>
 </main>

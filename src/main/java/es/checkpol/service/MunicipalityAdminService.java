@@ -8,7 +8,6 @@ import es.checkpol.repository.MunicipalityCatalogEntryRepository;
 import es.checkpol.repository.MunicipalityImportRecordRepository;
 import es.checkpol.repository.PostalCodeMunicipalityMappingRepository;
 import es.checkpol.web.AdminMunicipalityImportForm;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -36,6 +35,7 @@ public class MunicipalityAdminService {
     private static final String SPAIN = "ESP";
     private static final Duration DOWNLOAD_TIMEOUT = Duration.ofMinutes(3);
     private static final Duration VERIFICATION_STALE_AFTER = Duration.ofDays(14);
+    private static final Duration PREVIEW_STALE_AFTER = Duration.ofHours(12);
     private static final int MIN_REASONABLE_MUNICIPALITY_ROWS = 7000;
     private static final int MIN_REASONABLE_POSTAL_MAPPING_ROWS = 10000;
     private static final DateTimeFormatter VERIFICATION_VERSION_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -47,10 +47,8 @@ public class MunicipalityAdminService {
     private final MunicipalityImportRecordRepository municipalityImportRecordRepository;
     private final IneMunicipalityWorkbookParser ineMunicipalityWorkbookParser;
     private final InePostalMappingsZipParser inePostalMappingsZipParser;
+    private final AdminSettingsService adminSettingsService;
     private final HttpClient httpClient;
-    private final String defaultMunicipalitiesUrl;
-    private final String defaultPostalMappingsUrl;
-    private final String defaultSource;
 
     public MunicipalityAdminService(
         MunicipalityCatalogService municipalityCatalogService,
@@ -60,9 +58,7 @@ public class MunicipalityAdminService {
         MunicipalityImportRecordRepository municipalityImportRecordRepository,
         IneMunicipalityWorkbookParser ineMunicipalityWorkbookParser,
         InePostalMappingsZipParser inePostalMappingsZipParser,
-        @Value("${checkpol.municipality.admin.default-municipalities-url:https://www.ine.es/daco/daco42/codmun/diccionario26.xlsx}") String defaultMunicipalitiesUrl,
-        @Value("${checkpol.municipality.admin.default-postal-mappings-url:https://www.ine.es/prodyser/callejero/caj_esp/caj_esp_072025.zip}") String defaultPostalMappingsUrl,
-        @Value("${checkpol.municipality.admin.default-source:ine-open-data}") String defaultSource
+        AdminSettingsService adminSettingsService
     ) {
         this.municipalityCatalogService = municipalityCatalogService;
         this.municipalityCatalogImportService = municipalityCatalogImportService;
@@ -71,9 +67,7 @@ public class MunicipalityAdminService {
         this.municipalityImportRecordRepository = municipalityImportRecordRepository;
         this.ineMunicipalityWorkbookParser = ineMunicipalityWorkbookParser;
         this.inePostalMappingsZipParser = inePostalMappingsZipParser;
-        this.defaultMunicipalitiesUrl = defaultMunicipalitiesUrl;
-        this.defaultPostalMappingsUrl = defaultPostalMappingsUrl;
-        this.defaultSource = defaultSource;
+        this.adminSettingsService = adminSettingsService;
         this.httpClient = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.ALWAYS)
             .connectTimeout(DOWNLOAD_TIMEOUT)
@@ -123,12 +117,53 @@ public class MunicipalityAdminService {
     }
 
     public AdminMunicipalityImportForm defaultForm() {
+        AdminSettingsService.MunicipalityAdminDefaults defaults = adminSettingsService.getMunicipalityAdminDefaults();
         return new AdminMunicipalityImportForm(
-            defaultMunicipalitiesUrl,
-            defaultPostalMappingsUrl,
-            defaultSource,
+            defaults.municipalitiesUrl(),
+            defaults.postalMappingsUrl(),
+            defaults.source(),
             defaultImportVersion()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<ResumablePreviewSummary> findResumablePreview(String triggeredByUsername) {
+        Optional<MunicipalityImportRecord> previewRecord = municipalityImportRecordRepository
+            .findTopByOperationTypeAndStatusAndTriggeredByUsernameOrderByCreatedAtDesc(
+                MunicipalityImportOperation.PREVIEW,
+                MunicipalityImportStatus.SUCCESS,
+                triggeredByUsername
+            );
+        if (previewRecord.isEmpty()) {
+            return Optional.empty();
+        }
+
+        MunicipalityImportRecord preview = previewRecord.get();
+        if (preview.getCreatedAt().isBefore(OffsetDateTime.now().minus(PREVIEW_STALE_AFTER))) {
+            return Optional.empty();
+        }
+
+        Optional<MunicipalityImportRecord> latestImport = municipalityImportRecordRepository
+            .findTopByOperationTypeAndStatusAndTriggeredByUsernameOrderByCreatedAtDesc(
+                MunicipalityImportOperation.IMPORT,
+                MunicipalityImportStatus.SUCCESS,
+                triggeredByUsername
+            );
+        if (latestImport.isPresent() && !latestImport.get().getCreatedAt().isBefore(preview.getCreatedAt())) {
+            return Optional.empty();
+        }
+
+        return Optional.of(new ResumablePreviewSummary(
+            preview.getId(),
+            preview.getSource(),
+            preview.getSourceVersion(),
+            preview.getMunicipalitiesUrl(),
+            preview.getPostalMappingsUrl(),
+            preview.getImportedMunicipalities(),
+            preview.getImportedPostalMappings(),
+            preview.getCreatedAt(),
+            preview.getTriggeredByUsername()
+        ));
     }
 
     public VerificationSummary verifyDefaultSources(String triggeredByUsername) {
@@ -136,14 +171,70 @@ public class MunicipalityAdminService {
     }
 
     @Transactional(readOnly = true)
-    public MunicipalityCatalogImportService.PreviewSummary previewImport(AdminMunicipalityImportForm form) {
-        DownloadedCatalog catalog = downloadCatalog(form);
-        return municipalityCatalogImportService.previewFromResources(
-            catalog.municipalitiesResource(),
-            catalog.postalMappingsResource(),
-            form.source().trim(),
-            form.sourceVersion().trim()
-        );
+    public List<ImportHistoryItem> getRecentVerifications() {
+        return municipalityImportRecordRepository.findTop50ByOperationTypeOrderByCreatedAtDesc(MunicipalityImportOperation.VERIFY).stream()
+            .map(this::toHistoryItem)
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ImportHistoryItem> getRecentImports() {
+        return municipalityImportRecordRepository.findTop50ByOperationTypeOrderByCreatedAtDesc(MunicipalityImportOperation.IMPORT).stream()
+            .map(this::toHistoryItem)
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ImportHistoryItem> getRecentActivity() {
+        return municipalityImportRecordRepository.findTop50ByOrderByCreatedAtDesc().stream()
+            .map(this::toHistoryItem)
+            .toList();
+    }
+
+    @Transactional
+    public MunicipalityCatalogImportService.PreviewSummary previewImport(AdminMunicipalityImportForm form, String triggeredByUsername) {
+        try {
+            DownloadedCatalog catalog = downloadCatalog(form);
+            MunicipalityCatalogImportService.PreviewSummary preview = municipalityCatalogImportService.previewFromResources(
+                catalog.municipalitiesResource(),
+                catalog.postalMappingsResource(),
+                form.source().trim(),
+                form.sourceVersion().trim()
+            );
+            municipalityImportRecordRepository.save(new MunicipalityImportRecord(
+                MunicipalityImportOperation.PREVIEW,
+                normalize(form.source()),
+                normalize(form.sourceVersion()),
+                normalize(form.municipalitiesUrl()),
+                normalize(form.postalMappingsUrl()),
+                MunicipalityImportStatus.SUCCESS,
+                preview.municipalityRows(),
+                0,
+                preview.postalMappingRows(),
+                0,
+                triggeredByUsername,
+                "Previsualización lista para importar.",
+                OffsetDateTime.now()
+            ));
+            return preview;
+        } catch (RuntimeException exception) {
+            municipalityImportRecordRepository.save(new MunicipalityImportRecord(
+                MunicipalityImportOperation.PREVIEW,
+                normalize(form.source()),
+                normalize(form.sourceVersion()),
+                normalize(form.municipalitiesUrl()),
+                normalize(form.postalMappingsUrl()),
+                MunicipalityImportStatus.FAILED,
+                0,
+                0,
+                0,
+                0,
+                triggeredByUsername,
+                abbreviate(exception.getMessage()),
+                OffsetDateTime.now()
+            ));
+            throw exception;
+        }
     }
 
     @Transactional
@@ -194,10 +285,11 @@ public class MunicipalityAdminService {
     }
 
     private AdminMunicipalityImportForm defaultVerificationForm() {
+        AdminSettingsService.MunicipalityAdminDefaults defaults = adminSettingsService.getMunicipalityAdminDefaults();
         return new AdminMunicipalityImportForm(
-            defaultMunicipalitiesUrl,
-            defaultPostalMappingsUrl,
-            defaultSource,
+            defaults.municipalitiesUrl(),
+            defaults.postalMappingsUrl(),
+            defaults.source(),
             "verify-" + OffsetDateTime.now().format(VERIFICATION_VERSION_FORMAT)
         );
     }
@@ -495,6 +587,21 @@ public class MunicipalityAdminService {
         return warnings;
     }
 
+    private ImportHistoryItem toHistoryItem(MunicipalityImportRecord record) {
+        return new ImportHistoryItem(
+            record.getId(),
+            record.getOperationType().name(),
+            record.getSource(),
+            record.getSourceVersion(),
+            record.getStatus().name(),
+            record.getImportedMunicipalities(),
+            record.getImportedPostalMappings(),
+            record.getCreatedAt(),
+            record.getTriggeredByUsername(),
+            record.getErrorMessage()
+        );
+    }
+
     public record DashboardSummary(
         boolean catalogLoaded,
         long activeMunicipalityCount,
@@ -528,6 +635,27 @@ public class MunicipalityAdminService {
         String triggeredByUsername,
         String errorMessage
     ) {
+    }
+
+    public record ResumablePreviewSummary(
+        Long id,
+        String source,
+        String sourceVersion,
+        String municipalitiesUrl,
+        String postalMappingsUrl,
+        int municipalityRows,
+        int postalMappingRows,
+        OffsetDateTime createdAt,
+        String triggeredByUsername
+    ) {
+        public AdminMunicipalityImportForm toForm() {
+            return new AdminMunicipalityImportForm(
+                municipalitiesUrl,
+                postalMappingsUrl,
+                source,
+                sourceVersion
+            );
+        }
     }
 
     public record VerificationSummary(

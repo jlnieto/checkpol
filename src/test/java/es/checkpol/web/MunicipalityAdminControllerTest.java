@@ -18,6 +18,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -40,9 +41,20 @@ class MunicipalityAdminControllerTest {
     @MockitoBean
     private CurrentAppUserService currentAppUserService;
 
+    private AppUserPrincipal adminPrincipal() {
+        return mock(AppUserPrincipal.class, invocation -> {
+            if ("getUsername".equals(invocation.getMethod().getName())) {
+                return "admin";
+            }
+            return null;
+        });
+    }
+
     @Test
     @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
     void showsMunicipalitiesDashboard() throws Exception {
+        when(currentAppUserService.requireAuthenticatedUser()).thenReturn(adminPrincipal());
+        when(municipalityAdminService.findResumablePreview("admin")).thenReturn(java.util.Optional.empty());
         when(municipalityAdminService.defaultForm()).thenReturn(new AdminMunicipalityImportForm(
             "https://www.ine.es/daco/daco42/codmun/diccionario26.xlsx",
             "https://www.ine.es/prodyser/callejero/caj_esp/caj_esp_072025.zip",
@@ -71,6 +83,7 @@ class MunicipalityAdminControllerTest {
     @Test
     @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
     void previewsMunicipalityImport() throws Exception {
+        when(currentAppUserService.requireAuthenticatedUser()).thenReturn(adminPrincipal());
         when(municipalityAdminService.getDashboardSummary()).thenReturn(new MunicipalityAdminService.DashboardSummary(
             false,
             0,
@@ -82,7 +95,7 @@ class MunicipalityAdminControllerTest {
             null,
             List.of()
         ));
-        when(municipalityAdminService.previewImport(any())).thenReturn(new MunicipalityCatalogImportService.PreviewSummary(
+        when(municipalityAdminService.previewImport(any(), eq("admin"))).thenReturn(new MunicipalityCatalogImportService.PreviewSummary(
             2,
             2,
             2,
@@ -111,12 +124,7 @@ class MunicipalityAdminControllerTest {
     @Test
     @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
     void verifiesMunicipalitySources() throws Exception {
-        when(currentAppUserService.requireAuthenticatedUser()).thenReturn(org.mockito.Mockito.mock(AppUserPrincipal.class, invocation -> {
-            if ("getUsername".equals(invocation.getMethod().getName())) {
-                return "admin";
-            }
-            return null;
-        }));
+        when(currentAppUserService.requireAuthenticatedUser()).thenReturn(adminPrincipal());
         when(municipalityAdminService.getDashboardSummary()).thenReturn(new MunicipalityAdminService.DashboardSummary(
             false,
             0,
@@ -150,12 +158,7 @@ class MunicipalityAdminControllerTest {
     @Test
     @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
     void importsMunicipalityCatalog() throws Exception {
-        when(currentAppUserService.requireAuthenticatedUser()).thenReturn(org.mockito.Mockito.mock(AppUserPrincipal.class, invocation -> {
-            if ("getUsername".equals(invocation.getMethod().getName())) {
-                return "admin";
-            }
-            return null;
-        }));
+        when(currentAppUserService.requireAuthenticatedUser()).thenReturn(adminPrincipal());
         when(municipalityAdminService.importCatalog(any(), eq("admin"))).thenReturn(new MunicipalityCatalogImportService.ImportSummary(
             2,
             0,

@@ -5,262 +5,304 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Catálogo oficial | Checkpol</title>
     <link rel="stylesheet" th:href="@{/app.css}">
+    <script th:src="@{/admin-municipalities.js}" defer></script>
 </head>
-<body class="admin-body antialiased">
-<main class="admin-app">
-    <aside class="admin-sidebar-shell" th:replace="~{admin/fragments :: sidebar('catalog')}"></aside>
+<body class="mono-body antialiased">
+<main class="mono-app">
+    <aside class="mono-sidebar-shell" th:replace="~{admin/fragments :: sidebar('catalog')}"></aside>
 
-    <section class="admin-content">
-        <header class="admin-header">
-            <div>
-                <p class="admin-kicker">Administración del sistema</p>
-                <h1 class="admin-title">Catálogo oficial</h1>
-                <p class="admin-copy">Verifica fuentes, mide el impacto de cada carga y mantén trazabilidad de municipios y mappings postales antes de tocar la base de datos.</p>
+    <section class="mono-content">
+        <header class="mono-topbar">
+            <div class="mono-topbar-left">
+                <button class="mono-topbar-button" type="button" aria-label="Navegación">
+                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M3 5h14v2H3V5Zm0 4h14v2H3V9Zm0 4h14v2H3v-2Z"/>
+                    </svg>
+                </button>
+                <label class="mono-search">
+                    <svg class="mono-search-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M8.5 3a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Zm0 1.5a4 4 0 1 0 2.6 7l3.2 3.2 1.1-1.1-3.2-3.2A4 4 0 0 0 8.5 4.5Z"/>
+                    </svg>
+                    <input class="mono-search-input" type="text" placeholder="Buscar en catálogo oficial..." readonly>
+                </label>
             </div>
-            <div class="admin-actions">
-                <a class="admin-button-secondary" th:href="@{/admin}">Volver al panel</a>
+            <div class="mono-topbar-right">
+                <span class="mono-topbar-meta">Catálogo:
+                    <strong th:text="${dashboard.currentSourceVersion != null ? dashboard.currentSourceVersion : 'SIN_VERSIÓN'}">SIN_VERSIÓN</strong>
+                </span>
+                <a class="mono-btn-ghost" th:href="@{/admin}">Resumen</a>
             </div>
         </header>
 
-        <div class="admin-page">
-        <div class="admin-alert-success" th:if="${flashMessage != null and flashKind == 'success'}">
+        <div class="mono-page">
+        <div class="mono-page-head">
+            <h1 class="mono-page-title">Catálogo oficial</h1>
+            <nav class="mono-breadcrumb">
+                <span>Admin</span>
+                <span>/</span>
+                <span class="mono-breadcrumb-active">Catálogo</span>
+            </nav>
+        </div>
+
+        <div class="mono-alert-success" th:if="${flashMessage != null and flashKind == 'success'}">
             <p th:text="${flashMessage}">Catálogo importado.</p>
         </div>
 
         <div th:object="${municipalityImportForm}">
-            <div class="admin-alert-error" th:if="${#fields.hasGlobalErrors()}">
+            <div class="mono-alert-error" th:if="${#fields.hasGlobalErrors()}">
                 <p th:each="error : ${#fields.globalErrors()}" th:text="${error}">No he podido validar la importación.</p>
             </div>
         </div>
 
-        <section class="admin-metrics">
-            <article class="admin-metric">
-                <p class="admin-metric-label">Estado del catálogo</p>
-                <p class="admin-metric-value" th:text="${dashboard.catalogLoaded ? 'Activo' : 'Pendiente'}">Activo</p>
-                <p class="admin-metric-meta"
-                   th:text="${dashboard.catalogLoaded ? 'Hay dataset activo en base de datos.' : 'Todavía no hay catálogo cargado.'}">Hay dataset activo en base de datos.</p>
+        <section class="mono-kpi-grid">
+            <article class="mono-kpi">
+                <div class="mono-kpi-head">
+                    <span class="mono-kpi-label">Estado del catálogo</span>
+                    <span class="mono-kpi-chip mono-kpi-chip-blue" th:text="${dashboard.catalogLoaded ? 'OK' : 'PEND'}">OK</span>
+                </div>
+                <p class="mono-kpi-value" th:text="${dashboard.catalogLoaded ? 'Activo' : 'Pendiente'}">Activo</p>
+                <p class="mono-kpi-copy mono-kpi-copy-blue"
+                   th:text="${dashboard.catalogLoaded ? 'Hay una versión activa cargada en base de datos.' : 'Todavía no hay catálogo cargado.'}">Hay una versión activa cargada en base de datos.</p>
             </article>
-            <article class="admin-metric">
-                <p class="admin-metric-label">Municipios activos</p>
-                <p class="admin-metric-value" th:text="${dashboard.activeMunicipalityCount}">0</p>
-                <p class="admin-metric-meta">Registros activos del catálogo global.</p>
+            <article class="mono-kpi mono-kpi-cyan">
+                <div class="mono-kpi-head">
+                    <span class="mono-kpi-label">Municipios activos</span>
+                    <span class="mono-kpi-chip mono-kpi-chip-cyan">MUN</span>
+                </div>
+                <p class="mono-kpi-value" th:text="${dashboard.activeMunicipalityCount}">0</p>
+                <p class="mono-kpi-copy mono-kpi-copy-cyan">Registros activos del catálogo global.</p>
             </article>
-            <article class="admin-metric">
-                <p class="admin-metric-label">Mappings postales</p>
-                <p class="admin-metric-value" th:text="${dashboard.activePostalMappingCount}">0</p>
-                <p class="admin-metric-meta">Relaciones activas entre código postal y municipio.</p>
+            <article class="mono-kpi mono-kpi-amber">
+                <div class="mono-kpi-head">
+                    <span class="mono-kpi-label">Mappings postales</span>
+                    <span class="mono-kpi-chip mono-kpi-chip-amber">MAP</span>
+                </div>
+                <p class="mono-kpi-value" th:text="${dashboard.activePostalMappingCount}">0</p>
+                <p class="mono-kpi-copy mono-kpi-copy-amber">Relaciones activas entre código postal y municipio.</p>
             </article>
-            <article class="admin-metric">
-                <p class="admin-metric-label">Salud de fuentes</p>
-                <p class="admin-metric-value"
+            <article class="mono-kpi mono-kpi-red">
+                <div class="mono-kpi-head">
+                    <span class="mono-kpi-label">Salud de fuentes</span>
+                    <span class="mono-kpi-chip mono-kpi-chip-red" th:text="${dashboard.sourceHealth.level == 'ok' ? 'OK' : 'REV'}">REV</span>
+                </div>
+                <p class="mono-kpi-value"
                    th:text="${dashboard.sourceHealth.level == 'ok' ? 'OK' : (dashboard.sourceHealth.level == 'warning' ? 'Revisar' : 'Error')}">OK</p>
-                <p class="admin-metric-meta" th:text="${dashboard.sourceHealth.title}">Fuentes oficiales verificadas recientemente.</p>
+                <p class="mono-kpi-copy mono-kpi-copy-red" th:text="${dashboard.sourceHealth.title}">Fuentes oficiales verificadas recientemente.</p>
             </article>
         </section>
 
-        <section class="admin-main-grid">
-            <div class="admin-stack">
-                <section class="admin-card" th:object="${municipalityImportForm}">
-                    <div class="admin-card-header">
-                        <div>
-                            <span class="admin-badge"
-                                  th:classappend="${dashboard.sourceHealth.level == 'ok' ? ' admin-badge-success' : (dashboard.sourceHealth.level == 'warning' ? ' admin-badge-warning' : ' admin-badge-danger')}"
-                                  th:text="${dashboard.sourceHealth.level == 'ok' ? 'Fuentes estables' : (dashboard.sourceHealth.level == 'warning' ? 'Revisión recomendada' : 'Incidencia detectada')}">Fuentes estables</span>
-                            <h2 class="admin-card-title mt-3">Preparar nueva carga</h2>
-                            <p class="admin-card-copy">La verificación no escribe nada. La importación repite la validación y deja trazabilidad del origen, versión y resultado.</p>
-                        </div>
+        <section class="mono-layout">
+            <div class="mono-main">
+                <section class="mono-form-panel" th:object="${municipalityImportForm}">
+                    <div class="mono-panel-strip">
+                        <h2 class="mono-panel-title">Fuentes oficiales e importación</h2>
+                        <span class="mono-panel-link"
+                              th:text="${dashboard.sourceHealth.level == 'ok' ? 'Fuentes estables' : (dashboard.sourceHealth.level == 'warning' ? 'Revisión recomendada' : 'Incidencia detectada')}">Fuentes estables</span>
                     </div>
-                    <div class="admin-card-body">
-                    <form class="admin-form-grid" th:action="@{/admin/municipalities/preview}" method="post">
-                        <label class="admin-form-label">
-                            <span>URL municipios INE</span>
-                            <input class="admin-form-input" th:field="*{municipalitiesUrl}" type="url" placeholder="https://www.ine.es/.../diccionario26.xlsx">
-                            <small class="admin-form-error" th:if="${#fields.hasErrors('municipalitiesUrl')}" th:errors="*{municipalitiesUrl}"></small>
+                    <div class="mono-panel-body">
+                    <form class="mono-form-grid" th:action="@{/admin/municipalities/preview}" method="post" data-admin-submit-lock>
+                        <label class="mono-field">
+                            <span class="mono-field-label">URL municipios INE</span>
+                            <input class="mono-field-input" th:field="*{municipalitiesUrl}" type="url" placeholder="https://www.ine.es/.../diccionario26.xlsx">
+                            <small class="mono-field-error" th:if="${#fields.hasErrors('municipalitiesUrl')}" th:errors="*{municipalitiesUrl}"></small>
                         </label>
 
-                        <label class="admin-form-label">
-                            <span>URL callejero INE / datos.gob</span>
-                            <input class="admin-form-input" th:field="*{postalMappingsUrl}" type="url" placeholder="https://www.ine.es/prodyser/callejero/caj_esp/caj_esp_072025.zip">
-                            <small class="admin-form-help">Puede ser el ZIP oficial del callejero del INE o, como respaldo, un CSV normalizado `postalCode;municipalityCode`.</small>
-                            <small class="admin-form-error" th:if="${#fields.hasErrors('postalMappingsUrl')}" th:errors="*{postalMappingsUrl}"></small>
+                        <label class="mono-field">
+                            <span class="mono-field-label">URL callejero INE / datos.gob</span>
+                            <input class="mono-field-input" th:field="*{postalMappingsUrl}" type="url" placeholder="https://www.ine.es/prodyser/callejero/caj_esp/caj_esp_072025.zip">
+                            <small class="mono-field-help">Puede ser el ZIP oficial del callejero del INE o, como respaldo, un CSV normalizado `postalCode;municipalityCode`.</small>
+                            <small class="mono-field-error" th:if="${#fields.hasErrors('postalMappingsUrl')}" th:errors="*{postalMappingsUrl}"></small>
                         </label>
 
-                        <div class="admin-form-row">
-                            <label class="admin-form-label">
-                                <span>Origen</span>
-                                <input class="admin-form-input" th:field="*{source}" type="text" placeholder="ine-open-data">
-                                <small class="admin-form-error" th:if="${#fields.hasErrors('source')}" th:errors="*{source}"></small>
+                        <div class="mono-form-row">
+                            <label class="mono-field">
+                                <span class="mono-field-label">Origen</span>
+                                <input class="mono-field-input" th:field="*{source}" type="text" placeholder="ine-open-data">
+                                <small class="mono-field-error" th:if="${#fields.hasErrors('source')}" th:errors="*{source}"></small>
                             </label>
 
-                            <label class="admin-form-label">
-                                <span>Versión</span>
-                                <input class="admin-form-input" th:field="*{sourceVersion}" type="text" placeholder="2026-01-municipios__2026-01-postal">
-                                <small class="admin-form-help">Usa un identificador trazable de la carga real.</small>
-                                <small class="admin-form-error" th:if="${#fields.hasErrors('sourceVersion')}" th:errors="*{sourceVersion}"></small>
+                            <label class="mono-field">
+                                <span class="mono-field-label">Versión</span>
+                                <input class="mono-field-input" th:field="*{sourceVersion}" type="text" placeholder="2026-01-municipios__2026-01-postal">
+                                <small class="mono-field-help">Usa un identificador trazable de la carga real.</small>
+                                <small class="mono-field-error" th:if="${#fields.hasErrors('sourceVersion')}" th:errors="*{sourceVersion}"></small>
                             </label>
                         </div>
 
-                        <div class="admin-actions">
-                            <button class="admin-button-secondary" type="submit" formaction="/admin/municipalities/verify" formnovalidate>Verificar fuentes</button>
-                            <button class="admin-button-primary" type="submit">Descargar y validar</button>
+                        <div class="mono-inline-actions">
+                            <button class="mono-btn-secondary" type="submit" formaction="/admin/municipalities/verify" formnovalidate data-loading-label="Verificando fuentes...">Verificar fuentes</button>
+                            <button class="mono-btn-primary" type="submit" data-loading-label="Descargando y previsualizando...">Descargar y previsualizar</button>
                         </div>
                     </form>
                     </div>
                 </section>
 
-                <section class="admin-card" th:if="${verification != null}">
-                    <div class="admin-card-header">
-                        <div>
-                            <span class="admin-badge"
-                                  th:classappend="${verification.level == 'ok' ? ' admin-badge-success' : ' admin-badge-warning'}"
-                                  th:text="${verification.level == 'ok' ? 'Verificación OK' : 'Verificación con avisos'}">Verificación OK</span>
-                            <h2 class="admin-card-title mt-3">Resultado de verificación</h2>
-                            <p class="admin-card-copy" th:text="${verification.message}">Las fuentes oficiales parecen compatibles.</p>
+                <section class="mono-panel" th:if="${verification != null}">
+                    <div class="mono-panel-strip">
+                        <h2 class="mono-panel-title">Resultado de verificación</h2>
+                    </div>
+                    <div class="mono-panel-body">
+                        <div class="mono-compact-list">
+                            <article class="mono-compact-item">
+                                <p class="mono-compact-label">Estado</p>
+                                <p class="mono-compact-value" th:text="${verification.level == 'ok' ? 'Verificación OK' : 'Verificación con avisos'}">Verificación OK</p>
+                                <p class="mono-compact-copy" th:text="${verification.message}">Las fuentes oficiales parecen compatibles.</p>
+                            </article>
+                            <article class="mono-compact-item">
+                                <p class="mono-compact-label">Resumen</p>
+                                <p class="mono-compact-value">
+                                    <span th:text="${verification.municipalityRows}">0</span> municipios ·
+                                    <span th:text="${verification.postalMappingRows}">0</span> mappings postales
+                                </p>
+                            </article>
+                            <article class="mono-compact-item" th:if="${!#lists.isEmpty(verification.warnings)}">
+                                <p class="mono-compact-label">Avisos</p>
+                                <p class="mono-compact-copy" th:each="warning : ${verification.warnings}" th:text="${warning}">Aviso.</p>
+                            </article>
                         </div>
-                    </div>
-                    <div class="admin-card-body">
-                    <div class="admin-link-grid">
-                        <article class="admin-link-card">
-                            <h3 class="admin-link-title">Resumen</h3>
-                            <p class="admin-link-copy mt-3">Municipios detectados: <strong th:text="${verification.municipalityRows}">0</strong></p>
-                            <p class="admin-link-copy">Mappings postales detectados: <strong th:text="${verification.postalMappingRows}">0</strong></p>
-                        </article>
-
-                        <article class="admin-link-card" th:if="${!#lists.isEmpty(verification.warnings)}">
-                            <h3 class="admin-link-title">Avisos</h3>
-                            <p class="admin-link-copy mt-3" th:each="warning : ${verification.warnings}" th:text="${warning}">Aviso.</p>
-                        </article>
-                    </div>
                     </div>
                 </section>
 
-                <section class="admin-card" th:if="${preview != null}" th:object="${municipalityImportForm}">
-                    <div class="admin-card-header">
-                        <div>
-                            <h2 class="admin-card-title">Previsualización de impacto</h2>
-                            <p class="admin-card-copy">
-                                Se van a procesar <span th:text="${preview.municipalityRows}">0</span> municipios y
-                                <span th:text="${preview.postalMappingRows}">0</span> mappings postales.
-                            </p>
+                <div class="mono-alert-success" th:if="${resumablePreview != null and preview == null}">
+                    <p>Hay una previsualización válida pendiente de importación. Puedes retomarla sin volver a descargar ni revisar las fuentes.</p>
+                </div>
+
+                <section class="mono-panel" th:if="${resumablePreview != null and preview == null}">
+                    <div class="mono-panel-strip">
+                        <h2 class="mono-panel-title">Previsualización lista para importar</h2>
+                        <form th:action="@{/admin/municipalities/import}" method="post" class="mono-inline-actions" data-admin-submit-lock>
+                            <input type="hidden" name="municipalitiesUrl" th:value="${resumablePreview.municipalitiesUrl}">
+                            <input type="hidden" name="postalMappingsUrl" th:value="${resumablePreview.postalMappingsUrl}">
+                            <input type="hidden" name="source" th:value="${resumablePreview.source}">
+                            <input type="hidden" name="sourceVersion" th:value="${resumablePreview.sourceVersion}">
+                            <button class="mono-btn-primary" type="submit" data-loading-label="Importando...">Continuar importación</button>
+                        </form>
+                    </div>
+                    <div class="mono-panel-body">
+                        <div class="mono-compact-list">
+                            <article class="mono-compact-item">
+                                <p class="mono-compact-label">Generada</p>
+                                <p class="mono-compact-value" th:text="${#temporals.format(resumablePreview.createdAt, 'dd/MM/yyyy HH:mm')}">03/04/2026 12:10</p>
+                                <p class="mono-compact-copy" th:text="${'Preparada por ' + resumablePreview.triggeredByUsername + ' · versión ' + resumablePreview.sourceVersion}">Preparada por admin · versión manual-2026-04-03</p>
+                            </article>
+                            <article class="mono-compact-item">
+                                <p class="mono-compact-label">Resumen de la previsualización</p>
+                                <p class="mono-compact-value">
+                                    <span th:text="${resumablePreview.municipalityRows}">0</span> municipios ·
+                                    <span th:text="${resumablePreview.postalMappingRows}">0</span> mappings postales
+                                </p>
+                                <p class="mono-compact-copy">Esta previsualización sigue disponible para continuar la importación.</p>
+                            </article>
                         </div>
-                        <form th:action="@{/admin/municipalities/import}" method="post" class="admin-actions">
+                    </div>
+                </section>
+
+                <div class="mono-alert-success" th:if="${preview != null}">
+                    <p>Previsualización generada correctamente. Revisa el impacto y confirma con `Importar a base de datos`.</p>
+                </div>
+
+                <section class="mono-panel" th:if="${preview != null}" th:object="${municipalityImportForm}" id="preview-panel" data-preview-panel>
+                    <div class="mono-panel-strip">
+                        <h2 class="mono-panel-title">Previsualización de importación</h2>
+                        <form th:action="@{/admin/municipalities/import}" method="post" class="mono-inline-actions" data-admin-submit-lock>
                             <input type="hidden" th:field="*{municipalitiesUrl}">
                             <input type="hidden" th:field="*{postalMappingsUrl}">
                             <input type="hidden" th:field="*{source}">
                             <input type="hidden" th:field="*{sourceVersion}">
-                            <button class="admin-button-primary" type="submit">Importar a base de datos</button>
+                            <button class="mono-btn-primary" type="submit" data-preview-focus data-loading-label="Importando...">Importar a base de datos</button>
                         </form>
                     </div>
-                    <div class="admin-card-body">
-                    <div class="admin-link-grid">
-                        <article class="admin-link-card">
-                            <h3 class="admin-link-title">Municipios</h3>
-                            <p class="admin-link-copy mt-3">Nuevos: <strong th:text="${preview.newMunicipalities}">0</strong></p>
-                            <p class="admin-link-copy">Actualizados/reactivados: <strong th:text="${preview.updatedMunicipalities}">0</strong></p>
-                            <p class="admin-link-copy">Se desactivarán: <strong th:text="${preview.deactivatedMunicipalities}">0</strong></p>
-                        </article>
-
-                        <article class="admin-link-card">
-                            <h3 class="admin-link-title">Mappings postales</h3>
-                            <p class="admin-link-copy mt-3">Nuevos: <strong th:text="${preview.newPostalMappings}">0</strong></p>
-                            <p class="admin-link-copy">Reactivados: <strong th:text="${preview.reactivatedPostalMappings}">0</strong></p>
-                            <p class="admin-link-copy">Se desactivarán: <strong th:text="${preview.deactivatedPostalMappings}">0</strong></p>
-                        </article>
-                    </div>
-
-                    <div class="admin-link-grid mt-4">
-                        <article class="admin-link-card">
-                            <h3 class="admin-link-title">Muestra de municipios</h3>
-                            <div class="mt-4 space-y-3" th:if="${!#lists.isEmpty(preview.municipalitySamples)}">
-                                <div th:each="row : ${preview.municipalitySamples}">
-                                    <p class="font-semibold text-slate-900" th:text="${row.municipalityName + ' · ' + row.municipalityCode}">Madrid · 28079</p>
-                                    <p class="admin-history-meta" th:text="${row.provinceName + ' · ' + row.provinceCode}">Madrid · 28</p>
+                    <div class="mono-panel-body">
+                        <div class="mono-module-grid">
+                            <article class="mono-module">
+                                <div class="mono-module-head">
+                                    <svg class="mono-module-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path d="M4 3h9l3 3v11H4V3Zm2 2v10h8V7.2L12.8 5H6Z"/>
+                                    </svg>
+                                    <h3 class="mono-module-title">Municipios</h3>
                                 </div>
-                            </div>
-                        </article>
-
-                        <article class="admin-link-card">
-                            <h3 class="admin-link-title">Muestra de mappings</h3>
-                            <div class="mt-4 space-y-3" th:if="${!#lists.isEmpty(preview.postalMappingSamples)}">
-                                <div th:each="row : ${preview.postalMappingSamples}">
-                                    <p class="font-semibold text-slate-900" th:text="${row.postalCode + ' → ' + row.municipalityCode}">28001 → 28079</p>
+                                <p class="mono-module-copy">Nuevos: <strong th:text="${preview.newMunicipalities}">0</strong></p>
+                                <p class="mono-module-copy">Actualizados/reactivados: <strong th:text="${preview.updatedMunicipalities}">0</strong></p>
+                                <p class="mono-module-copy">Se desactivarán: <strong th:text="${preview.deactivatedMunicipalities}">0</strong></p>
+                            </article>
+                            <article class="mono-module">
+                                <div class="mono-module-head">
+                                    <svg class="mono-module-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path d="M3 4h14v3H3V4Zm0 4.5h14V16H3V8.5Zm2 2V14h3v-3.5H5Zm5 0V14h5v-3.5h-5Z"/>
+                                    </svg>
+                                    <h3 class="mono-module-title">Mappings postales</h3>
                                 </div>
-                            </div>
-                        </article>
-                    </div>
+                                <p class="mono-module-copy">Nuevos: <strong th:text="${preview.newPostalMappings}">0</strong></p>
+                                <p class="mono-module-copy">Reactivados: <strong th:text="${preview.reactivatedPostalMappings}">0</strong></p>
+                                <p class="mono-module-copy">Se desactivarán: <strong th:text="${preview.deactivatedPostalMappings}">0</strong></p>
+                            </article>
+                        </div>
                     </div>
                 </section>
             </div>
 
-            <aside class="admin-side-stack">
-                <section class="admin-card">
-                    <div class="admin-card-header">
-                        <div>
-                            <h2 class="admin-card-title">Dataset activo</h2>
-                            <p class="admin-card-copy">Foto actual del catálogo que está operativo dentro del sistema.</p>
+            <aside class="mono-rail">
+                <section class="mono-health">
+                    <h3 class="mono-health-title">Salud operativa</h3>
+                    <div class="mono-meter">
+                        <div class="mono-meter-head">
+                            <span class="mono-meter-label">Catálogo oficial</span>
+                            <span class="mono-meter-value" th:text="${catalogReadyPercent + '%'}">0%</span>
+                        </div>
+                        <div class="mono-meter-track">
+                            <div class="mono-meter-bar mono-meter-bar-amber" th:style="'width:' + ${catalogReadyPercent} + '%'"></div>
                         </div>
                     </div>
-                    <div class="admin-card-body">
-                        <dl class="admin-kv-list">
-                            <div class="admin-kv-row">
-                                <dt>Origen</dt>
-                                <dd th:text="${dashboard.currentSource != null ? dashboard.currentSource : 'Sin carga activa'}">ine-open-data</dd>
-                            </div>
-                            <div class="admin-kv-row">
-                                <dt>Versión</dt>
-                                <dd th:text="${dashboard.currentSourceVersion != null ? dashboard.currentSourceVersion : 'Sin versión'}">2026-01</dd>
-                            </div>
-                            <div class="admin-kv-row">
-                                <dt>Actualizado</dt>
-                                <dd th:text="${dashboard.currentUpdatedAt != null ? #temporals.format(dashboard.currentUpdatedAt, 'dd/MM/yyyy HH:mm') : 'Todavía sin carga'}">31/03/2026 09:00</dd>
-                            </div>
-                            <div class="admin-kv-row">
-                                <dt>Última verificación</dt>
-                                <dd th:text="${dashboard.sourceHealth.checkedAt != null ? #temporals.format(dashboard.sourceHealth.checkedAt, 'dd/MM/yyyy HH:mm') : 'Sin verificar'}">01/04/2026 10:00</dd>
-                            </div>
-                        </dl>
-
-                        <div class="admin-note" th:text="${dashboard.sourceHealth.detail}">Lanza una verificación antes de importar.</div>
+                    <div class="mono-meter">
+                        <div class="mono-meter-head">
+                            <span class="mono-meter-label">Salud de fuentes</span>
+                            <span class="mono-meter-value" th:text="${sourceHealthPercent + '%'}">0%</span>
+                        </div>
+                        <div class="mono-meter-track">
+                            <div class="mono-meter-bar mono-meter-bar-red" th:style="'width:' + ${sourceHealthPercent} + '%'"></div>
+                        </div>
+                    </div>
+                    <div class="mono-meter">
+                        <div class="mono-meter-head">
+                            <span class="mono-meter-label">Histórico reciente</span>
+                            <span class="mono-meter-value" th:text="${#lists.size(dashboard.recentImports)} + ' registros'">0 registros</span>
+                        </div>
+                        <div class="mono-meter-track">
+                            <div class="mono-meter-bar" th:style="'width:' + ${#lists.isEmpty(dashboard.recentImports) ? 0 : 100} + '%'"></div>
+                        </div>
                     </div>
                 </section>
 
-                <section class="admin-card">
-                    <div class="admin-card-header">
-                        <div>
-                            <h2 class="admin-card-title">Histórico reciente</h2>
-                            <p class="admin-card-copy">Últimas verificaciones e importaciones ejecutadas por administración.</p>
-                        </div>
+                <section class="mono-rail-panel">
+                    <div class="mono-panel-strip">
+                        <h2 class="mono-panel-title">Versión activa</h2>
                     </div>
-                    <div class="admin-card-body">
-                        <div class="admin-list" th:if="${!#lists.isEmpty(dashboard.recentImports)}">
-                            <article class="admin-history-item" th:each="item : ${dashboard.recentImports}">
-                                <div class="space-y-3">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <span class="admin-badge"
-                                              th:classappend="${item.status == 'SUCCESS' ? ' admin-badge-success' : ' admin-badge-danger'}"
-                                              th:text="${item.operationType == 'VERIFY' ? 'Verificación' : 'Importación'}">Importación</span>
-                                    </div>
-                                    <div>
-                                        <p class="font-semibold text-slate-950" th:text="${item.sourceVersion}">2026-01</p>
-                                        <p class="admin-history-meta">
-                                            <span th:text="${item.triggeredByUsername}">admin</span>
-                                            <span>·</span>
-                                            <span th:text="${#temporals.format(item.createdAt, 'dd/MM/yyyy HH:mm')}">31/03/2026 09:15</span>
-                                        </p>
-                                    </div>
-                                    <p class="text-sm leading-6 text-slate-600" th:if="${item.status == 'SUCCESS'}">
-                                        <span th:text="${item.importedMunicipalities}">0</span> municipios ·
-                                        <span th:text="${item.importedPostalMappings}">0</span> mappings postales
-                                    </p>
-                                    <p class="text-sm leading-6 text-slate-600" th:if="${item.status == 'FAILED' and item.errorMessage != null}" th:text="${item.errorMessage}">
-                                        Error de importación.
-                                    </p>
-                                </div>
-                            </article>
-                        </div>
+                    <div class="mono-panel-body">
+                        <dl class="mono-kv">
+                            <div class="mono-kv-row">
+                                <dt>Origen</dt>
+                                <dd th:text="${dashboard.currentSource != null ? dashboard.currentSource : 'Sin carga activa'}">ine-open-data</dd>
+                            </div>
+                            <div class="mono-kv-row">
+                                <dt>Versión</dt>
+                                <dd th:text="${dashboard.currentSourceVersion != null ? dashboard.currentSourceVersion : 'Sin versión'}">2026-01</dd>
+                            </div>
+                            <div class="mono-kv-row">
+                                <dt>Actualizado</dt>
+                                <dd th:text="${dashboard.currentUpdatedAt != null ? #temporals.format(dashboard.currentUpdatedAt, 'dd/MM/yyyy HH:mm') : 'Sin carga'}">03/04/2026 09:00</dd>
+                            </div>
+                            <div class="mono-kv-row">
+                                <dt>Última verificación</dt>
+                                <dd th:text="${dashboard.sourceHealth.checkedAt != null ? #temporals.format(dashboard.sourceHealth.checkedAt, 'dd/MM/yyyy HH:mm') : 'Sin verificar'}">03/04/2026 10:00</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </section>
 
-                        <p class="admin-note" th:if="${#lists.isEmpty(dashboard.recentImports)}">Todavía no hay importaciones registradas.</p>
-                    </div>
+                <section class="mono-message">
+                    <p class="mono-message-label">Mensaje del sistema</p>
+                    <p class="mono-message-copy" th:text="${dashboard.sourceHealth.detail}">Lanza una verificación antes de importar.</p>
+                    <a class="mono-message-link" th:href="@{/admin}">Volver al resumen</a>
                 </section>
             </aside>
         </section>

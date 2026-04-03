@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpServer;
 import es.checkpol.repository.MunicipalityCatalogEntryRepository;
 import es.checkpol.repository.MunicipalityImportRecordRepository;
 import es.checkpol.repository.PostalCodeMunicipalityMappingRepository;
+import es.checkpol.web.AdminCatalogDefaultsForm;
 import es.checkpol.web.AdminMunicipalityImportForm;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +41,9 @@ class MunicipalityAdminServiceTest {
     @Autowired
     private MunicipalityImportRecordRepository municipalityImportRecordRepository;
 
+    @Autowired
+    private AdminSettingsService adminSettingsService;
+
     private HttpServer httpServer;
     private String baseUrl;
 
@@ -69,18 +73,20 @@ class MunicipalityAdminServiceTest {
             "2026-01"
         );
 
-        MunicipalityCatalogImportService.PreviewSummary preview = municipalityAdminService.previewImport(form);
+        MunicipalityCatalogImportService.PreviewSummary preview = municipalityAdminService.previewImport(form, "admin");
         assertEquals(2, preview.municipalityRows());
         assertEquals(2, preview.postalMappingRows());
         assertEquals(2, preview.newMunicipalities());
         assertEquals(2, preview.newPostalMappings());
+        assertTrue(municipalityAdminService.findResumablePreview("admin").isPresent());
 
         MunicipalityCatalogImportService.ImportSummary summary = municipalityAdminService.importCatalog(form, "admin");
         assertEquals(2, summary.importedMunicipalities());
         assertEquals(2, summary.importedPostalMappings());
         assertEquals(2, municipalityCatalogEntryRepository.countByCountryCodeAndActiveTrue("ESP"));
         assertEquals(2, postalCodeMunicipalityMappingRepository.countByActiveTrue());
-        assertEquals(1, municipalityImportRecordRepository.findTop10ByOrderByCreatedAtDesc().size());
+        assertTrue(municipalityAdminService.findResumablePreview("admin").isEmpty());
+        assertEquals(2, municipalityImportRecordRepository.findTop10ByOrderByCreatedAtDesc().size());
     }
 
     @Test
@@ -99,7 +105,7 @@ class MunicipalityAdminServiceTest {
             "2026-01"
         );
 
-        MunicipalityCatalogImportService.PreviewSummary preview = municipalityAdminService.previewImport(form);
+        MunicipalityCatalogImportService.PreviewSummary preview = municipalityAdminService.previewImport(form, "admin");
 
         assertEquals(2, preview.municipalityRows());
         assertEquals(2, preview.postalMappingRows());
@@ -124,6 +130,21 @@ class MunicipalityAdminServiceTest {
         assertTrue(verification.warnings().size() >= 1);
         assertEquals("warning", dashboard.sourceHealth().level());
         assertEquals(1, municipalityImportRecordRepository.findTop10ByOrderByCreatedAtDesc().size());
+    }
+
+    @Test
+    void usesSavedCatalogDefaultsInAdminForms() {
+        adminSettingsService.updateMunicipalityAdminDefaults(new AdminCatalogDefaultsForm(
+            "custom-source",
+            "https://example.com/municipalities.xlsx",
+            "https://example.com/postal.zip"
+        ), "admin");
+
+        AdminMunicipalityImportForm form = municipalityAdminService.defaultForm();
+
+        assertEquals("custom-source", form.source());
+        assertEquals("https://example.com/municipalities.xlsx", form.municipalitiesUrl());
+        assertEquals("https://example.com/postal.zip", form.postalMappingsUrl());
     }
 
     private void respond(com.sun.net.httpserver.HttpExchange exchange, byte[] body) throws java.io.IOException {
@@ -245,11 +266,13 @@ class MunicipalityAdminServiceTest {
     }
 
     private String tramLine(String municipalityCode, String postalCode) {
-        char[] buffer = new char[280];
+        char[] buffer = new char[273];
         java.util.Arrays.fill(buffer, ' ');
         write(buffer, 0, municipalityCode);
         write(buffer, 42, postalCode);
-        write(buffer, 69, municipalityCode);
+        write(buffer, 61, "20250630");
+        write(buffer, 70, "01001");
+        write(buffer, 78, "0001701");
         return new String(buffer);
     }
 

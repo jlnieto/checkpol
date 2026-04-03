@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Settings | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="mono-body antialiased">
+<main class="mono-app">
+    <aside class="mono-sidebar-shell" th:replace="~{admin/fragments :: sidebar(${activeSection})}"></aside>
+
+    <section class="mono-content">
+        <header class="mono-topbar">
+            <div class="mono-topbar-left">
+                <button class="mono-topbar-button" type="button" aria-label="Navegación">
+                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M3 5h14v2H3V5Zm0 4h14v2H3V9Zm0 4h14v2H3v-2Z"/>
+                    </svg>
+                </button>
+                <label class="mono-search">
+                    <svg class="mono-search-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M8.5 3a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Zm0 1.5a4 4 0 1 0 2.6 7l3.2 3.2 1.1-1.1-3.2-3.2A4 4 0 0 0 8.5 4.5Z"/>
+                    </svg>
+                    <input class="mono-search-input" type="text" placeholder="Buscar en settings..." readonly>
+                </label>
+            </div>
+            <div class="mono-topbar-right">
+                <span class="mono-topbar-meta">Catálogo:
+                    <strong th:text="${dashboard.currentSourceVersion != null ? dashboard.currentSourceVersion : 'SIN_VERSIÓN'}">SIN_VERSIÓN</strong>
+                </span>
+                <a class="mono-btn-ghost" th:href="@{/admin}">Resumen</a>
+            </div>
+        </header>
+
+        <div class="mono-page">
+            <div class="mono-page-head">
+                <h1 class="mono-page-title">Settings</h1>
+                <nav class="mono-breadcrumb">
+                    <span>Admin</span>
+                    <span>/</span>
+                    <span class="mono-breadcrumb-active">Settings</span>
+                </nav>
+            </div>
+
+            <div class="mono-alert-success" th:if="${flashMessage != null and flashKind == 'success'}">
+                <p th:text="${flashMessage}">Configuración actualizada.</p>
+            </div>
+
+            <div th:object="${catalogDefaultsForm}">
+                <div class="mono-alert-error" th:if="${#fields.hasGlobalErrors()}">
+                    <p th:each="error : ${#fields.globalErrors()}" th:text="${error}">No he podido guardar la configuración.</p>
+                </div>
+            </div>
+            <div th:object="${verificationSettingsForm}">
+                <div class="mono-alert-error" th:if="${#fields.hasGlobalErrors()}">
+                    <p th:each="error : ${#fields.globalErrors()}" th:text="${error}">No he podido guardar la configuración automática.</p>
+                </div>
+            </div>
+
+            <section class="mono-kpi-grid">
+                <article class="mono-kpi">
+                    <div class="mono-kpi-head">
+                        <span class="mono-kpi-label">Verificación automática</span>
+                        <span class="mono-kpi-chip mono-kpi-chip-blue" th:text="${verificationSettings.enabled ? 'ON' : 'OFF'}">OFF</span>
+                    </div>
+                    <p class="mono-kpi-value" th:text="${verificationSettings.enabled ? 'Activa' : 'Desactivada'}">Activa</p>
+                    <p class="mono-kpi-copy mono-kpi-copy-blue">Controla si el sistema revisa las fuentes oficiales por tarea programada.</p>
+                </article>
+                <article class="mono-kpi mono-kpi-cyan">
+                    <div class="mono-kpi-head">
+                        <span class="mono-kpi-label">Zona horaria</span>
+                        <span class="mono-kpi-chip mono-kpi-chip-cyan">TZ</span>
+                    </div>
+                    <p class="mono-kpi-value" th:text="${verificationSettings.zone}">Europe/Madrid</p>
+                    <p class="mono-kpi-copy mono-kpi-copy-cyan">Zona usada por la programación de verificaciones.</p>
+                </article>
+                <article class="mono-kpi mono-kpi-amber">
+                    <div class="mono-kpi-head">
+                        <span class="mono-kpi-label">Fuente por defecto</span>
+                        <span class="mono-kpi-chip mono-kpi-chip-amber">SRC</span>
+                    </div>
+                    <p class="mono-kpi-value" th:text="${catalogDefaults.source}">ine-open-data</p>
+                    <p class="mono-kpi-copy mono-kpi-copy-amber">Origen preconfigurado para las cargas manuales del catálogo.</p>
+                </article>
+                <article class="mono-kpi mono-kpi-red">
+                    <div class="mono-kpi-head">
+                        <span class="mono-kpi-label">Carga al arrancar</span>
+                        <span class="mono-kpi-chip mono-kpi-chip-red" th:text="${settings.startupImportEnabled ? 'ON' : 'OFF'}">OFF</span>
+                    </div>
+                    <p class="mono-kpi-value" th:text="${settings.startupImportEnabled ? 'Activa' : 'Desactivada'}">Desactivada</p>
+                    <p class="mono-kpi-copy mono-kpi-copy-red">Indica si el catálogo se intenta cargar automáticamente al iniciar la aplicación.</p>
+                </article>
+            </section>
+
+            <section class="mono-layout">
+                <div class="mono-main">
+                    <section class="mono-panel">
+                        <div class="mono-panel-strip">
+                            <h2 class="mono-panel-title">Valores por defecto del catálogo</h2>
+                            <span class="mono-panel-link">Editable</span>
+                        </div>
+                        <div class="mono-panel-body" th:object="${catalogDefaultsForm}">
+                            <form class="mono-form-grid" th:action="@{/admin/settings/catalog-defaults}" method="post">
+                                <label class="mono-field">
+                                    <span class="mono-field-label">Origen por defecto</span>
+                                    <input class="mono-field-input" th:field="*{source}" type="text" placeholder="ine-open-data">
+                                    <small class="mono-field-help">Se usará al abrir el módulo de catálogo y al lanzar verificaciones por defecto.</small>
+                                    <small class="mono-field-error" th:if="${#fields.hasErrors('source')}" th:errors="*{source}"></small>
+                                </label>
+
+                                <label class="mono-field">
+                                    <span class="mono-field-label">URL municipios</span>
+                                    <input class="mono-field-input" th:field="*{municipalitiesUrl}" type="url" placeholder="https://www.ine.es/.../diccionario26.xlsx">
+                                    <small class="mono-field-error" th:if="${#fields.hasErrors('municipalitiesUrl')}" th:errors="*{municipalitiesUrl}"></small>
+                                </label>
+
+                                <label class="mono-field">
+                                    <span class="mono-field-label">URL callejero</span>
+                                    <input class="mono-field-input" th:field="*{postalMappingsUrl}" type="url" placeholder="https://www.ine.es/prodyser/callejero/caj_esp/caj_esp_072025.zip">
+                                    <small class="mono-field-error" th:if="${#fields.hasErrors('postalMappingsUrl')}" th:errors="*{postalMappingsUrl}"></small>
+                                </label>
+
+                                <div class="mono-inline-actions">
+                                    <button class="mono-btn-primary" type="submit">Guardar valores por defecto</button>
+                                </div>
+                            </form>
+                        </div>
+                    </section>
+
+                    <section class="mono-panel">
+                        <div class="mono-panel-strip">
+                            <h2 class="mono-panel-title">Verificación automática</h2>
+                            <span class="mono-panel-link" th:text="${verificationSettings.enabled ? 'Programada' : 'Manual'}">Manual</span>
+                        </div>
+                        <div class="mono-panel-body" th:object="${verificationSettingsForm}">
+                            <form class="mono-form-grid" th:action="@{/admin/settings/verification}" method="post">
+                                <label class="mono-checkbox">
+                                    <input type="checkbox" th:field="*{enabled}">
+                                    <span>Activar verificación automática</span>
+                                </label>
+
+                                <label class="mono-field">
+                                    <span class="mono-field-label">Cron</span>
+                                    <input class="mono-field-input" th:field="*{cron}" type="text" placeholder="0 0 6 * * *">
+                                    <small class="mono-field-help">Se evalúa en runtime sin reiniciar la aplicación.</small>
+                                    <small class="mono-field-error" th:if="${#fields.hasErrors('cron')}" th:errors="*{cron}"></small>
+                                </label>
+
+                                <label class="mono-field">
+                                    <span class="mono-field-label">Zona horaria</span>
+                                    <input class="mono-field-input" th:field="*{zone}" type="text" placeholder="Europe/Madrid">
+                                    <small class="mono-field-error" th:if="${#fields.hasErrors('zone')}" th:errors="*{zone}"></small>
+                                </label>
+
+                                <label class="mono-field">
+                                    <span class="mono-field-label">Usuario técnico</span>
+                                    <input class="mono-field-input" th:field="*{triggeredByUsername}" type="text" placeholder="system-verifier">
+                                    <small class="mono-field-error" th:if="${#fields.hasErrors('triggeredByUsername')}" th:errors="*{triggeredByUsername}"></small>
+                                </label>
+
+                                <div class="mono-inline-actions">
+                                    <button class="mono-btn-primary" type="submit">Guardar automatismo</button>
+                                </div>
+                            </form>
+                        </div>
+                    </section>
+
+                    <section class="mono-panel">
+                        <div class="mono-panel-strip">
+                            <h2 class="mono-panel-title">Configuración efectiva</h2>
+                            <span class="mono-panel-link">Auditada</span>
+                        </div>
+                        <div class="mono-panel-body">
+                            <dl class="mono-kv">
+                                <div class="mono-kv-row">
+                                    <dt>Origen por defecto</dt>
+                                    <dd th:text="${catalogDefaults.source}">ine-open-data</dd>
+                                </div>
+                                <div class="mono-kv-row">
+                                    <dt>URL municipios</dt>
+                                    <dd th:text="${catalogDefaults.municipalitiesUrl}">https://www.ine.es/...</dd>
+                                </div>
+                                <div class="mono-kv-row">
+                                    <dt>URL callejero</dt>
+                                    <dd th:text="${catalogDefaults.postalMappingsUrl}">https://www.ine.es/...</dd>
+                                </div>
+                                <div class="mono-kv-row">
+                                    <dt>Última actualización</dt>
+                                    <dd th:text="${catalogDefaults.updatedAt != null ? (#temporals.format(catalogDefaults.updatedAt, 'dd/MM/yyyy HH:mm') + ' · ' + catalogDefaults.updatedByUsername) : 'Configuración inicial del sistema'}">03/04/2026 16:20 · admin</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </section>
+
+                    <section class="mono-panel">
+                        <div class="mono-panel-strip">
+                            <h2 class="mono-panel-title">Sistema y acceso</h2>
+                            <span class="mono-panel-link">Bootstrap</span>
+                        </div>
+                        <div class="mono-panel-body">
+                            <dl class="mono-kv">
+                                <div class="mono-kv-row">
+                                    <dt>Super admin bootstrap</dt>
+                                    <dd th:text="${settings.bootstrapAdminUsername}">admin</dd>
+                                </div>
+                                <div class="mono-kv-row">
+                                    <dt>Nombre visible</dt>
+                                    <dd th:text="${settings.bootstrapAdminDisplayName}">Administrador</dd>
+                                </div>
+                                <div class="mono-kv-row">
+                                    <dt>Importación al arrancar</dt>
+                                    <dd th:text="${settings.startupImportEnabled ? 'Activada' : 'Desactivada'}">Desactivada</dd>
+                                </div>
+                                <div class="mono-kv-row">
+                                    <dt>Origen de arranque</dt>
+                                    <dd th:text="${settings.startupImportSource}">classpath-csv</dd>
+                                </div>
+                                <div class="mono-kv-row">
+                                    <dt>Versión de arranque</dt>
+                                    <dd th:text="${settings.startupImportSourceVersion}">example-v1</dd>
+                                </div>
+                                <div class="mono-kv-row">
+                                    <dt>Última actualización del automatismo</dt>
+                                    <dd th:text="${verificationSettings.updatedAt != null ? (#temporals.format(verificationSettings.updatedAt, 'dd/MM/yyyy HH:mm') + ' · ' + verificationSettings.updatedByUsername) : 'Configuración inicial del sistema'}">03/04/2026 16:20 · admin</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </section>
+                </div>
+
+                <aside class="mono-rail">
+                    <section class="mono-rail-panel">
+                        <div class="mono-panel-strip">
+                            <h2 class="mono-panel-title">Qué debe vivir aquí</h2>
+                        </div>
+                        <div class="mono-panel-body">
+                            <div class="mono-compact-list">
+                                <article class="mono-compact-item">
+                                    <p class="mono-compact-label">Catálogo oficial</p>
+                                    <p class="mono-compact-copy">Desde aquí ya puedes ajustar el origen y las URLs por defecto que usa el módulo de catálogo.</p>
+                                </article>
+                                <article class="mono-compact-item">
+                                    <p class="mono-compact-label">Automatismos</p>
+                                    <p class="mono-compact-copy">Cron de verificación y actor técnico del sistema siguen visibles, pero todavía no editables desde UI.</p>
+                                </article>
+                                <article class="mono-compact-item">
+                                    <p class="mono-compact-label">Seguridad operativa</p>
+                                    <p class="mono-compact-copy">El bootstrap admin sigue auditado aquí, pero sin exponer edición sensible en esta fase.</p>
+                                </article>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="mono-message">
+                        <p class="mono-message-label">Criterio</p>
+                        <p class="mono-message-copy">Se ha abierto primero la edición que aporta valor operativo inmediato al admin: los valores por defecto del catálogo. El resto sigue en solo lectura hasta definir un modelo de configuración más amplio.</p>
+                        <a class="mono-message-link" th:href="@{/admin/municipalities}">Ir al catálogo oficial</a>
+                    </section>
+                </aside>
+            </section>
+        </div>
+    </section>
+</main>
+</body>
+</html>

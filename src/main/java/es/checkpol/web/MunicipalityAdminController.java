@@ -28,10 +28,13 @@ public class MunicipalityAdminController {
 
     @GetMapping("/admin/municipalities")
     public String municipalities(Model model) {
+        MunicipalityAdminService.ResumablePreviewSummary resumablePreview = municipalityAdminService
+            .findResumablePreview(currentAppUserService.requireAuthenticatedUser().getUsername())
+            .orElse(null);
         if (!model.containsAttribute("municipalityImportForm")) {
-            model.addAttribute("municipalityImportForm", municipalityAdminService.defaultForm());
+            model.addAttribute("municipalityImportForm", resumablePreview != null ? resumablePreview.toForm() : municipalityAdminService.defaultForm());
         }
-        return populatePage(model, null, null);
+        return populatePage(model, null, resumablePreview, null);
     }
 
     @PostMapping("/admin/municipalities/preview")
@@ -43,12 +46,12 @@ public class MunicipalityAdminController {
         MunicipalityCatalogImportService.PreviewSummary preview = null;
         if (!bindingResult.hasErrors()) {
             try {
-                preview = municipalityAdminService.previewImport(form);
+                preview = municipalityAdminService.previewImport(form, currentAppUserService.requireAuthenticatedUser().getUsername());
             } catch (IllegalArgumentException exception) {
                 bindingResult.reject("municipality.preview.invalid", exception.getMessage());
             }
         }
-        return populatePage(model, preview, null);
+        return populatePage(model, preview, null, null);
     }
 
     @PostMapping("/admin/municipalities/verify")
@@ -65,7 +68,7 @@ public class MunicipalityAdminController {
                 bindingResult.reject("municipality.verify.invalid", exception.getMessage());
             }
         }
-        return populatePage(model, null, verification);
+        return populatePage(model, null, null, verification);
     }
 
     @PostMapping("/admin/municipalities/import")
@@ -76,7 +79,7 @@ public class MunicipalityAdminController {
         RedirectAttributes redirectAttributes
     ) {
         if (bindingResult.hasErrors()) {
-            return populatePage(model, null, null);
+            return populatePage(model, null, null, null);
         }
 
         try {
@@ -91,20 +94,30 @@ public class MunicipalityAdminController {
             bindingResult.reject("municipality.import.invalid", exception.getMessage());
             MunicipalityCatalogImportService.PreviewSummary preview = null;
             try {
-                preview = municipalityAdminService.previewImport(form);
+                preview = municipalityAdminService.previewImport(form, currentAppUserService.requireAuthenticatedUser().getUsername());
             } catch (RuntimeException ignored) {
             }
-            return populatePage(model, preview, null);
+            return populatePage(model, preview, null, null);
         }
     }
 
     private String populatePage(
         Model model,
         MunicipalityCatalogImportService.PreviewSummary preview,
+        MunicipalityAdminService.ResumablePreviewSummary resumablePreview,
         MunicipalityAdminService.VerificationSummary verification
     ) {
-        model.addAttribute("dashboard", municipalityAdminService.getDashboardSummary());
+        MunicipalityAdminService.DashboardSummary dashboard = municipalityAdminService.getDashboardSummary();
+        model.addAttribute("dashboard", dashboard);
+        model.addAttribute("sourceHealthPercent", switch (dashboard.sourceHealth().level()) {
+            case "ok" -> 100;
+            case "warning" -> 65;
+            case "error" -> 20;
+            default -> 0;
+        });
+        model.addAttribute("catalogReadyPercent", dashboard.catalogLoaded() ? 100 : 0);
         model.addAttribute("preview", preview);
+        model.addAttribute("resumablePreview", resumablePreview);
         model.addAttribute("verification", verification);
         return "admin/municipalities";
     }
