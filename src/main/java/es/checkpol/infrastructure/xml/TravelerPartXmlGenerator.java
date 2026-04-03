@@ -1,7 +1,6 @@
 package es.checkpol.infrastructure.xml;
 
 import es.checkpol.domain.Booking;
-import es.checkpol.domain.DocumentType;
 import es.checkpol.domain.Guest;
 import es.checkpol.service.BookingDetails;
 import org.springframework.stereotype.Component;
@@ -46,11 +45,7 @@ public class TravelerPartXmlGenerator {
             appendOptional(xml, "apellido2", guest.getLastName2());
             appendOptional(xml, "tipoDocumento", guest.getDocumentType() == null ? null : guest.getDocumentType().name());
             appendOptional(xml, "numeroDocumento", guest.getDocumentNumber());
-            if (guest.getDocumentType() == DocumentType.NIF || guest.getDocumentType() == DocumentType.NIE) {
-                appendOptional(xml, "soporteDocumento", guest.getDocumentSupport());
-            } else {
-                appendOptional(xml, "soporteDocumento", guest.getDocumentSupport());
-            }
+            appendOptional(xml, "soporteDocumento", guest.getDocumentSupport());
             xml.append(tag("fechaNacimiento", formatDate(guest.getBirthDate())));
             appendOptional(xml, "nacionalidad", guest.getNationality());
             appendOptional(xml, "sexo", guest.getSex() == null ? null : guest.getSex().name());

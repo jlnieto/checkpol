@@ -179,6 +179,12 @@ En formularios:
 - si solo hay uno, queda seleccionado automáticamente,
 - si no lo hay o falla la consulta, no se permite resolver España por texto libre.
 
+En persistencia y exportación:
+
+- para `ESP`, la dirección guarda el `municipalityCode` oficial y también el nombre canónico resuelto,
+- el XML de `parte de viajeros` exporta `codigoMunicipio` desde ese valor persistido,
+- para países distintos de `ESP`, la dirección guarda `municipalityName` libre y el XML exporta `nombreMunicipio`.
+
 ## Importante
 
 Los CSV incluidos ahora son solo una semilla de ejemplo para dejar el mecanismo operativo y testeable.

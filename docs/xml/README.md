@@ -20,6 +20,11 @@ El sistema ya permite:
 - descargar versiones anteriores,
 - registrar descargas y ultima fecha de descarga.
 
+En direcciones:
+
+- si el país es `ESP`, el XML usa `codigoMunicipio` a partir del `municipalityCode` persistido en `Address`,
+- si el país no es `ESP`, el XML usa `nombreMunicipio` a partir del `municipalityName` guardado en la dirección.
+
 ## Documentos disponibles en el repositorio
 
 - `docs/instrucciones-crear-xml-hospedaje-ses-v1.2.0.pdf`

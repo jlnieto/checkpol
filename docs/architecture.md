@@ -116,8 +116,8 @@ El frontend vive dentro del mismo monolito.
 Estado actual:
 
 - `public` usa la compilacion compartida de Tailwind,
-- `owner` sigue parcialmente en CSS legacy,
-- existe una transicion controlada hacia una unica base visual.
+- `owner` y `admin` usan la misma compilacion compartida,
+- la base visual activa queda concentrada en `src/main/frontend/app.css`.
 
 Piezas relevantes:
 
@@ -168,6 +168,7 @@ El flujo publico ya es una parte estructural del producto:
 - el enlace tiene token y caducidad,
 - el huesped puede crear o editar sus datos,
 - puede seleccionar una direccion existente o crear una nueva sin romper el wizard,
+- la resolucion publica de direcciones y huespedes se hace contra la `Booking` validada por token, sin reutilizar la sesion autenticada del `OWNER`,
 - los datos enviados quedan sujetos a revision interna antes del XML.
 
 ## Catálogo de municipios
@@ -179,6 +180,8 @@ Las direcciones de España se validan directamente contra una base local canóni
 - selección guiada en formularios internos y públicos.
 
 Para España el flujo operativo es único: código postal, selección de municipio del catálogo y almacenamiento directo del código oficial.
+
+Ese `municipalityCode` queda persistido en `Address` y es el valor que se exporta como `codigoMunicipio` en el XML de `parte de viajeros`.
 
 La actualización del catálogo ya no depende solo de recursos empaquetados:
 

@@ -22,6 +22,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AddressServiceTest {
@@ -58,6 +59,25 @@ class AddressServiceTest {
         assertEquals("Madrid", saved.getMunicipalityName());
         assertEquals("28001", saved.getPostalCode());
         assertEquals("ESP", saved.getCountry());
+    }
+
+    @Test
+    void createsSpanishAddressFromCatalogSelectionInSelfService() {
+        Booking booking = sampleBooking();
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(municipalityCatalogService.hasSpanishCatalogData()).thenReturn(true);
+        when(municipalityCatalogService.findSpanishMunicipalityByPostalCodeAndCode("28001", "28079"))
+            .thenReturn(Optional.of(entry("28", "Madrid", "28079", "Madrid")));
+        when(addressRepository.save(any(Address.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        addressService.createForSelfService(1L, new AddressForm("28079", "Calle Mayor 1", "Piso 2B", "28001", "", "ESP"));
+
+        ArgumentCaptor<Address> captor = ArgumentCaptor.forClass(Address.class);
+        verify(addressRepository).save(captor.capture());
+        Address saved = captor.getValue();
+        assertEquals("28079", saved.getMunicipalityCode());
+        assertEquals("Madrid", saved.getMunicipalityName());
+        assertEquals("28001", saved.getPostalCode());
     }
 
     @Test

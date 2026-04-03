@@ -69,7 +69,7 @@ La interfaz se sirve desde el mismo monolito Spring Boot.
 Estado actual del frontend:
 
 - `public` usa la compilacion compartida de Tailwind,
-- `owner` sigue en transicion desde CSS legacy a la base visual nueva.
+- `owner` y `admin` usan la misma compilacion compartida servida como `app.css`.
 
 Archivos principales de estilo:
 
@@ -148,6 +148,19 @@ Opcionalmente puede ejecutarse una verificación programada:
 Compatibilidad adicional:
 
 - si hace falta, el mapping postal remoto también puede venir ya como CSV `postalCode;municipalityCode` o como ZIP con un único CSV de ese formato.
+
+## Direcciones y XML
+
+Para direcciones de España, el flujo operativo actual es:
+
+1. el formulario consulta municipios válidos por `postalCode`,
+2. el usuario selecciona un `municipalityCode` oficial,
+3. la aplicación persiste ese `municipalityCode` en `Address`,
+4. y el XML usa ese código persistido como `codigoMunicipio`.
+
+Para países distintos de `ESP`, la dirección guarda `municipalityName` como texto libre y el XML exporta `nombreMunicipio`.
+
+El flujo público por enlace no requiere sesión autenticada de `OWNER`: la resolución de direcciones y huéspedes se hace contra la `Booking` validada por token.
 
 ## Estructura
 

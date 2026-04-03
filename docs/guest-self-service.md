@@ -68,7 +68,8 @@ Esta funcionalidad ya implica:
 - origen de carga por huesped,
 - estado de revision por huesped,
 - wizard de captura con JS propio,
-- gestion de direccion dentro del flujo publico.
+- gestion de direccion dentro del flujo publico,
+- resolucion de direcciones y huespedes contra la `Booking` validada por token, sin depender de una sesion autenticada de `OWNER`.
 
 ## Limitaciones actuales
 

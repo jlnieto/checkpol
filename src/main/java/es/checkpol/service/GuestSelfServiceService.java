@@ -95,7 +95,7 @@ public class GuestSelfServiceService {
         Booking booking = bookingRepository.findBySelfServiceToken(token)
             .orElseThrow(() -> new IllegalArgumentException("El enlace indicado no existe."));
         validateToken(booking);
-        return addressService.create(booking.getId(), form).getId();
+        return addressService.createForSelfService(booking.getId(), form).getId();
     }
 
     @Transactional

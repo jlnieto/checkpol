@@ -155,7 +155,7 @@ public class GuestService {
         validateMinorRelationship(form, booking.getCheckInDate());
         validateRelationshipCode(form);
         validatePhoneNumbers(form);
-        Address address = getBookingAddress(booking.getId(), form.addressId());
+        Address address = getBookingAddressForSelfService(booking.getId(), form.addressId());
 
         Guest guest = new Guest(
             booking,
@@ -193,7 +193,7 @@ public class GuestService {
         validateMinorRelationship(form, guest.getBooking().getCheckInDate());
         validateRelationshipCode(form);
         validatePhoneNumbers(form);
-        Address address = getBookingAddress(guest.getBooking().getId(), form.addressId());
+        Address address = getBookingAddressForSelfService(guest.getBooking().getId(), form.addressId());
 
         guest.update(
             form.firstName().trim(),
@@ -347,6 +347,14 @@ public class GuestService {
             throw new IllegalArgumentException("Selecciona una direccion.");
         }
         return addressRepository.findByIdAndBookingIdAndBookingOwnerId(addressId, bookingId, currentAppUserService.requireCurrentUserId())
+            .orElseThrow(() -> new IllegalArgumentException("La direccion seleccionada no pertenece a esta estancia."));
+    }
+
+    private Address getBookingAddressForSelfService(Long bookingId, Long addressId) {
+        if (addressId == null) {
+            throw new IllegalArgumentException("Selecciona una direccion.");
+        }
+        return addressRepository.findByIdAndBookingId(addressId, bookingId)
             .orElseThrow(() -> new IllegalArgumentException("La direccion seleccionada no pertenece a esta estancia."));
     }
 

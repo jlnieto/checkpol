@@ -40,8 +40,7 @@ Reglas:
 - No usar el CDN de Tailwind en plantillas.
 - La entrada compartida de estilos es `src/main/frontend/app.css`.
 - El CSS compilado servido por Spring es `src/main/resources/static/app.css`.
-- `public` y `admin` ya deben usar esa compilacion compartida.
-- `owner` puede seguir cargando CSS legacy mientras dure la migracion.
+- `public`, `owner` y `admin` deben usar esa compilacion compartida.
 - Si un patron visual se repite, extraerlo como fragmento Thymeleaf o capa pequena de utilidades compartidas.
 
 Scripts:

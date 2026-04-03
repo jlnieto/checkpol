@@ -50,16 +50,24 @@ public class AddressService {
     public Address create(Long bookingId, AddressForm form) {
         Booking booking = bookingRepository.findByIdAndOwnerId(bookingId, currentAppUserService.requireCurrentUserId())
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa estancia."));
+        return createForBooking(booking, form);
+    }
 
+    @Transactional
+    public Address createForSelfService(Long bookingId, AddressForm form) {
+        Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa estancia."));
+        return createForBooking(booking, form);
+    }
+
+    private Address createForBooking(Booking booking, AddressForm form) {
         validate(form);
         String normalizedCountry = form.country().trim().toUpperCase();
         String municipalityCode = null;
         String municipalityName;
 
         if ("ESP".equals(normalizedCountry)) {
-            MunicipalityCatalogEntry municipality = municipalityCatalogService
-                .findSpanishMunicipalityByPostalCodeAndCode(form.postalCode().trim(), normalizeMunicipalityCode(form.municipalityCode()))
-                .orElseThrow(() -> new IllegalArgumentException("El municipio seleccionado no corresponde a ese código postal."));
+            MunicipalityCatalogEntry municipality = resolveSpanishMunicipality(form);
             municipalityCode = municipality.getMunicipalityCode();
             municipalityName = municipality.getMunicipalityName();
         } else {
@@ -95,14 +103,17 @@ public class AddressService {
             if (form.municipalityCode() != null && !form.municipalityCode().isBlank() && !form.municipalityCode().trim().matches("\\d{5}")) {
                 throw new IllegalArgumentException("El codigo de municipio debe tener 5 numeros.");
             }
-            if (municipalityCatalogService.findSpanishMunicipalityByPostalCodeAndCode(form.postalCode().trim(), form.municipalityCode().trim()).isEmpty()) {
-                throw new IllegalArgumentException("El municipio seleccionado no corresponde a ese código postal.");
-            }
             return;
         }
         if (form.municipalityName() == null || form.municipalityName().isBlank()) {
             throw new IllegalArgumentException("Escribe la ciudad o municipio.");
         }
+    }
+
+    private MunicipalityCatalogEntry resolveSpanishMunicipality(AddressForm form) {
+        return municipalityCatalogService
+            .findSpanishMunicipalityByPostalCodeAndCode(form.postalCode().trim(), normalizeMunicipalityCode(form.municipalityCode()))
+            .orElseThrow(() -> new IllegalArgumentException("El municipio seleccionado no corresponde a ese código postal."));
     }
 
     private String normalizeMunicipalityCode(String municipalityCode) {

@@ -41,8 +41,8 @@ Construir el producto por incrementos pequenos, dejando siempre algo usable y si
 
 ### 1. Cierre visual del frontend compartido
 
-- terminar la migracion de `owner` a la base visual compartida,
-- eliminar carga residual de CSS legacy cuando ya no sea necesaria.
+- consolidar la base visual compartida de `public`, `owner` y `admin`,
+- simplificar naming, fragmentos y utilidades para reducir deuda visual.
 
 ### 2. Mejora operativa del autoservicio
 
