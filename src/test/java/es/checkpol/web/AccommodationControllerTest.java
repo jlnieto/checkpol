@@ -50,8 +50,8 @@ class AccommodationControllerTest {
             .andExpect(status().isOk())
             .andExpect(view().name("accommodations/form"))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("Indica un nombre para la vivienda.")))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("Indica el codigo SES de la vivienda.")))
-            .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("El codigo SES debe tener exactamente 10 caracteres."))));
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Indica el código SES de la vivienda.")))
+            .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("El código SES debe tener exactamente 10 caracteres."))));
     }
 
     @Test
@@ -65,6 +65,6 @@ class AccommodationControllerTest {
                 .param("roomCount", ""))
             .andExpect(status().isOk())
             .andExpect(view().name("accommodations/form"))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("El codigo SES debe tener exactamente 10 caracteres.")));
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("El código SES debe tener exactamente 10 caracteres.")));
     }
 }

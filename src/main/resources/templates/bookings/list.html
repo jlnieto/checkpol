@@ -120,17 +120,21 @@
                         <div class="space-y-3">
                             <p class="owner-priority-eyebrow">Siguiente paso</p>
                             <div class="space-y-2">
-                                <h2 class="text-3xl font-extrabold tracking-tight text-slate-900">No hay nada bloqueado</h2>
-                                <p class="owner-copy">Ahora mismo no hay estancias pendientes de revisión. Lo más habitual será registrar la siguiente reserva nueva.</p>
+                                <h2 class="text-3xl font-extrabold tracking-tight text-slate-900"
+                                    th:text="${countAll == 0 ? 'Tu vivienda ya está lista' : 'No hay nada bloqueado'}">Tu vivienda ya está lista</h2>
+                                <p class="owner-copy"
+                                   th:text="${countAll == 0 ? 'El siguiente paso es crear tu primera estancia.' : 'Ahora mismo no hay estancias pendientes de revisión. Lo más habitual será registrar la siguiente reserva nueva.'}">El siguiente paso es crear tu primera estancia.</p>
                             </div>
                         </div>
                         <div class="owner-banner-actions">
-                            <a class="owner-button-primary" th:href="@{/bookings/new}">Nueva estancia</a>
+                            <a class="owner-button-primary"
+                               th:href="@{/bookings/new}"
+                               th:text="${countAll == 0 ? 'Crear primera estancia' : 'Nueva estancia'}">Crear primera estancia</a>
                         </div>
                     </div>
                 </section>
 
-                <section class="owner-card" th:if="${hasAccommodations and !#lists.isEmpty(reviewQueue)}">
+                <section class="owner-card" th:if="${hasAccommodations and #lists.size(reviewQueue) > 1}">
                     <div class="space-y-1">
                         <p class="owner-kicker">Para revisar ahora</p>
                         <h2 class="text-xl font-extrabold tracking-tight text-slate-900">Estas son las siguientes</h2>
@@ -157,7 +161,7 @@
                     </div>
                 </section>
 
-                <section class="owner-card" th:if="${hasAccommodations and #lists.isEmpty(reviewQueue)}">
+                <section class="owner-card" th:if="${hasAccommodations and #lists.isEmpty(reviewQueue) and countAll > 0}">
                     <div class="space-y-2">
                         <p class="owner-kicker">Pendientes</p>
                         <h2 class="text-2xl font-extrabold tracking-tight text-slate-900">No hay nada que revisar ahora</h2>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Nueva direccion | Checkpol</title>
+    <title>Nueva dirección | Checkpol</title>
     <link rel="stylesheet" th:href="@{/app.css}">
     <script th:src="@{/address-form.js}" defer></script>
 </head>
@@ -18,11 +18,11 @@
 
         <div class="space-y-1">
             <h1 class="max-w-[16ch] text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl"
-                th:text="${pageTitle}">Nueva direccion</h1>
+                th:text="${pageTitle}">Nueva dirección</h1>
             <p class="text-xs font-semibold tracking-[0.12em] text-slate-500">
                 <span class="uppercase">Paso adicional</span>
                 <span aria-hidden="true" class="mx-1">·</span>
-                <span class="tracking-normal">Direccion habitual</span>
+                <span class="tracking-normal">Dirección habitual</span>
             </p>
         </div>
     </header>
@@ -42,15 +42,15 @@
             <section class="public-panel p-5 sm:p-6">
                 <div class="space-y-1 border-b border-slate-200/80 pb-5">
                     <p class="text-xs font-semibold tracking-[0.12em] text-slate-500">
-                        <span class="uppercase">Direccion habitual</span>
+                        <span class="uppercase">Dirección habitual</span>
                     </p>
                     <p class="text-sm leading-6 text-slate-500">Usa la dirección de residencia habitual para poder reutilizarla después.</p>
                 </div>
 
                 <div class="space-y-5 pt-5 sm:pt-6">
                     <label class="public-label">
-                        <span>Direccion</span>
-                        <input class="public-input" th:field="*{addressLine}" type="text" autocomplete="street-address" placeholder="Calle, numero y piso">
+                        <span>Dirección</span>
+                        <input class="public-input" th:field="*{addressLine}" type="text" autocomplete="street-address" placeholder="Calle, número y piso">
                         <small class="public-error" th:if="${#fields.hasErrors('addressLine')}" th:errors="*{addressLine}"></small>
                     </label>
 
@@ -61,7 +61,7 @@
                     </label>
 
                     <label class="public-label">
-                        <span>Pais</span>
+                        <span>País</span>
                         <select class="public-select" th:field="*{country}" data-country-field>
                             <option value="">Selecciona...</option>
                             <option th:each="country : ${countries}" th:value="${country.code}" th:text="${country.label + ' (' + country.code + ')'}"></option>
@@ -70,7 +70,7 @@
                     </label>
 
                     <label class="public-label">
-                        <span>Codigo postal</span>
+                        <span>Código postal</span>
                         <input class="public-input" th:field="*{postalCode}" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="28001" data-postal-code-field>
                         <small class="public-hint field-hint">En España, este código postal carga el municipio oficial.</small>
                         <small class="public-error" th:if="${#fields.hasErrors('postalCode')}" th:errors="*{postalCode}"></small>

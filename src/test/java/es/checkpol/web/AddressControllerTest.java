@@ -139,9 +139,9 @@ class AddressControllerTest {
             false,
             false,
             false,
-            "Faltan huespedes",
-            "Faltan huespedes",
-            List.of("Faltan huespedes")
+            "Faltan huéspedes",
+            "Faltan huéspedes",
+            List.of("Faltan huéspedes")
         );
     }
 

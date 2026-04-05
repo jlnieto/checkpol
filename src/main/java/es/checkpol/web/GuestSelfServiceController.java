@@ -355,9 +355,9 @@ public class GuestSelfServiceController {
 
     private String wizardTitle(Integer slot, boolean extra) {
         if (slot != null && slot > 0) {
-            return "Datos del huesped " + slot;
+            return "Datos del huésped " + slot;
         }
-        return extra ? "Datos de la persona adicional" : "Datos del huesped";
+        return extra ? "Datos de la persona adicional" : "Datos del huésped";
     }
 
     private String wizardHelp(Integer slot, boolean extra) {
@@ -365,7 +365,7 @@ public class GuestSelfServiceController {
             return "Introduce los datos tal como aparecen en el documento";
         }
         return extra
-            ? "Usa esta ficha solo si finalmente se aloja una persona mas de las previstas en la reserva."
+            ? "Usa esta ficha solo si finalmente se aloja una persona más de las previstas en la reserva."
             : "Introduce los datos tal como aparecen en el documento";
     }
 }

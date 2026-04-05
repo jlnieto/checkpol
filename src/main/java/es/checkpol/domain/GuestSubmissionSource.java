@@ -2,7 +2,7 @@ package es.checkpol.domain;
 
 public enum GuestSubmissionSource {
     MANUAL("Manual"),
-    SELF_SERVICE("Enlace huesped");
+    SELF_SERVICE("Enlace huésped");
 
     private final String label;
 

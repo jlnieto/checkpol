@@ -118,6 +118,16 @@ class GuestServiceTest {
     }
 
     @Test
+    void acceptsGuestWithoutNationalityAndSexWhenTheRestIsComplete() {
+        GuestForm form = new GuestForm(
+            "Ana", "Lopez", "Martin", es.checkpol.domain.DocumentType.NIF, "00000000T", "SUP123", LocalDate.now().minusYears(30),
+            "", null, 1L, "+34 600000000", "", "", ""
+        );
+
+        assertDoesNotThrow(() -> guestService.create(1L, form));
+    }
+
+    @Test
     void acceptsGuestWithOnlyPhone2AsContact() {
         GuestForm form = new GuestForm(
             "Ana", "Lopez", "Martin", es.checkpol.domain.DocumentType.NIF, "00000000T", "SUP123", LocalDate.now().minusYears(30),
@@ -135,6 +145,17 @@ class GuestServiceTest {
         );
 
         assertThrows(IllegalArgumentException.class, () -> guestService.create(1L, form));
+    }
+
+    @Test
+    void rejectsNameWithNonLatinCharacters() {
+        GuestForm form = new GuestForm(
+            "Анна", "Lopez", "Martin", es.checkpol.domain.DocumentType.NIF, "00000000T", "SUP123", LocalDate.now().minusYears(30),
+            "ESP", GuestSex.M, 1L, "+34 600000000", "", "", ""
+        );
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> guestService.create(1L, form));
+        org.junit.jupiter.api.Assertions.assertEquals("El nombre solo puede contener caracteres latinos.", exception.getMessage());
     }
 
     @Test

@@ -7,68 +7,77 @@
     <link rel="stylesheet" th:href="@{/app.css}">
 </head>
 <body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
-<main class="owner-shell-narrow">
+<main class="mx-auto flex min-h-screen w-full max-w-4xl flex-col px-3 py-5 sm:px-6 sm:py-8">
     <section class="owner-page">
-        <header class="owner-header">
+        <header class="space-y-2 md:space-y-3">
             <a class="public-back-link" th:href="@{/bookings}">
                 <span aria-hidden="true">←</span>
-                <span>Volver a estancias</span>
+                <span>Volver</span>
             </a>
 
-            <div class="space-y-2">
+            <div class="space-y-1">
                 <p class="owner-kicker">Viviendas</p>
-                <h1 class="owner-title" th:text="${formTitle}">Nueva vivienda</h1>
-                <p class="owner-copy">Para poder generar el XML necesitas completar primero los campos obligatorios.</p>
+                <h1 class="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl" th:text="${formTitle}">Nueva vivienda</h1>
+                <p class="text-sm leading-6 text-slate-600 sm:text-base">Guarda primero el nombre y el código SES.</p>
             </div>
         </header>
 
-        <section class="owner-form-shell">
-            <form th:action="${formAction}" th:object="${accommodationForm}" method="post" class="space-y-5" novalidate>
-                <div class="rounded-2xl border border-primary/10 bg-primary/6 px-4 py-4">
-                    <p class="owner-kicker">Obligatorio para guardar</p>
-                    <p class="mt-2 owner-copy">Completa el nombre con el que reconocerás la vivienda y el código SES del establecimiento.</p>
-                </div>
+        <section class="mx-auto w-full max-w-2xl">
+            <div class="owner-form-shell">
+                <form th:action="${formAction}" th:object="${accommodationForm}" method="post" class="space-y-6" novalidate>
+                    <section class="space-y-5 rounded-[28px] border border-primary/12 bg-linear-to-br from-sky-50 via-white to-white px-5 py-5 ring-1 ring-white/60">
+                        <div class="space-y-2">
+                            <p class="owner-kicker">Obligatorio para guardar</p>
+                            <h2 class="text-2xl font-extrabold tracking-tight text-slate-900">Lo mínimo para dejarla lista</h2>
+                        </div>
 
-                <div class="space-y-5">
-                    <label class="owner-label">
-                        <span>Nombre de la vivienda *</span>
-                        <input class="owner-input" th:field="*{name}" type="text" autocomplete="off" maxlength="120" required placeholder="Casa del Puerto">
-                        <small class="public-hint">Este nombre lo verás en tus estancias. Usa uno corto y fácil de reconocer.</small>
-                        <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></small>
-                    </label>
+                        <div class="space-y-5">
+                            <label class="owner-label">
+                                <span>Nombre de la vivienda *</span>
+                                <input class="owner-input" th:field="*{name}" type="text" autocomplete="off" maxlength="120" required placeholder="Casa del Puerto">
+                                <small class="public-hint">El nombre con el que la reconocerás en tus estancias.</small>
+                                <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></small>
+                            </label>
 
-                    <label class="owner-label">
-                        <span>Código SES del establecimiento *</span>
-                        <input class="owner-input" th:field="*{sesEstablishmentCode}" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="10" required placeholder="H123456789">
-                        <small class="public-hint">Es el código oficial que te muestra SES Hospedajes para esta vivienda. Debe tener 10 caracteres.</small>
-                        <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('sesEstablishmentCode')}" th:errors="*{sesEstablishmentCode}"></small>
-                    </label>
-                </div>
+                            <label class="owner-label">
+                                <span>Código SES del establecimiento *</span>
+                                <input class="owner-input" th:field="*{sesEstablishmentCode}" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="10" required placeholder="H123456789">
+                                <small class="public-hint">El código oficial de SES para esta vivienda. Debe tener 10 caracteres.</small>
+                                <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('sesEstablishmentCode')}" th:errors="*{sesEstablishmentCode}"></small>
+                            </label>
+                        </div>
+                    </section>
 
-                <div class="rounded-2xl border border-slate-200/80 bg-white px-4 py-4">
-                    <p class="owner-kicker">Opcional por ahora</p>
-                    <p class="mt-2 owner-copy">Estos datos no bloquean el alta de la vivienda en el flujo actual.</p>
-                </div>
+                    <section class="space-y-4 border-t border-slate-200/80 pt-4">
+                        <div class="space-y-1">
+                            <p class="owner-kicker">Opcional por ahora</p>
+                            <p class="text-sm leading-6 text-slate-500">Solo si te ayuda a tener la vivienda mejor organizada.</p>
+                        </div>
 
-                <label class="owner-label">
-                    <span>Número de registro turístico</span>
-                    <input class="owner-input" th:field="*{registrationNumber}" type="text" autocomplete="off" maxlength="40" placeholder="VT-1234-A">
-                    <small class="public-hint">Guárdalo si quieres tener a mano la licencia o registro turístico oficial.</small>
-                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('registrationNumber')}" th:errors="*{registrationNumber}"></small>
-                </label>
+                        <div class="space-y-5">
+                            <label class="owner-label">
+                                <span>Número de registro turístico</span>
+                                <input class="owner-input" th:field="*{registrationNumber}" type="text" autocomplete="off" maxlength="40" placeholder="VT-1234-A">
+                                <small class="public-hint">Licencia o registro turístico.</small>
+                                <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('registrationNumber')}" th:errors="*{registrationNumber}"></small>
+                            </label>
 
-                <label class="owner-label">
-                    <span>Número de habitaciones</span>
-                    <input class="owner-input" th:field="*{roomCount}" type="number" min="1" max="50" inputmode="numeric" placeholder="2">
-                    <small class="public-hint">Solo te hará falta si quieres guardar también ese dato interno de la vivienda.</small>
-                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('roomCount')}" th:errors="*{roomCount}"></small>
-                </label>
+                            <label class="owner-label">
+                                <span>Número de habitaciones</span>
+                                <input class="owner-input" th:field="*{roomCount}" type="number" min="1" max="50" inputmode="numeric" placeholder="2">
+                                <small class="public-hint">Dato interno opcional.</small>
+                                <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('roomCount')}" th:errors="*{roomCount}"></small>
+                            </label>
+                        </div>
+                    </section>
 
-                <div class="owner-form-actions">
-                    <a class="owner-button-secondary" th:href="@{/bookings}">Cancelar</a>
-                    <button class="owner-button-primary" type="submit" th:text="${submitLabel}">Guardar vivienda</button>
-                </div>
-            </form>
+                    <div class="space-y-3 border-t border-slate-200/80 pt-6">
+                        <p class="text-sm leading-6 text-slate-500">Después podrás registrar tu primera estancia.</p>
+                        <button class="owner-button-primary w-full justify-center" type="submit" th:text="${submitLabel}">Guardar vivienda</button>
+                        <a class="inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-semibold text-slate-500 transition duration-150 hover:text-slate-900" th:href="@{/bookings}">Cancelar</a>
+                    </div>
+                </form>
+            </div>
         </section>
     </section>
 </main>

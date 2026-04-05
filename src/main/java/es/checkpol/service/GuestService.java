@@ -26,6 +26,7 @@ public class GuestService {
     private static final Pattern NIF_PATTERN = Pattern.compile("^\\d{8}[A-Za-z]$");
     private static final Pattern NIE_PATTERN = Pattern.compile("^[XYZxyz]\\d{7}[A-Za-z]$");
     private static final Pattern INTERNATIONAL_PHONE_PATTERN = Pattern.compile("^\\+\\d[\\d\\s().-]{5,19}$");
+    private static final Pattern LATIN_TEXT_PATTERN = Pattern.compile("^[\\p{IsLatin}][\\p{IsLatin} .'-]*$");
     private final AddressRepository addressRepository;
     private final GuestRepository guestRepository;
     private final BookingRepository bookingRepository;
@@ -54,10 +55,10 @@ public class GuestService {
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa estancia."));
 
         validateContact(form);
+        validateNameFields(form);
         validateDocumentSupport(form);
         validateNationality(form);
         validateDocumentData(form, booking);
-        validateSex(form);
         validateMinorRelationship(form, booking.getCheckInDate());
         validateRelationshipCode(form);
         validatePhoneNumbers(form);
@@ -114,10 +115,10 @@ public class GuestService {
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa persona."));
 
         validateContact(form);
+        validateNameFields(form);
         validateDocumentSupport(form);
         validateNationality(form);
         validateDocumentData(form, guest.getBooking());
-        validateSex(form);
         validateMinorRelationship(form, guest.getBooking().getCheckInDate());
         validateRelationshipCode(form);
         validatePhoneNumbers(form);
@@ -148,10 +149,10 @@ public class GuestService {
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa estancia."));
 
         validateContact(form);
+        validateNameFields(form);
         validateDocumentSupport(form);
         validateNationality(form);
         validateDocumentData(form, booking);
-        validateSex(form);
         validateMinorRelationship(form, booking.getCheckInDate());
         validateRelationshipCode(form);
         validatePhoneNumbers(form);
@@ -186,10 +187,10 @@ public class GuestService {
             .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa persona."));
 
         validateContact(form);
+        validateNameFields(form);
         validateDocumentSupport(form);
         validateNationality(form);
         validateDocumentData(form, guest.getBooking());
-        validateSex(form);
         validateMinorRelationship(form, guest.getBooking().getCheckInDate());
         validateRelationshipCode(form);
         validatePhoneNumbers(form);
@@ -246,26 +247,28 @@ public class GuestService {
 
     private void validateContact(GuestForm form) {
         if (isBlank(form.phone()) && isBlank(form.phone2()) && isBlank(form.email())) {
-            throw new IllegalArgumentException("Escribe al menos un telefono o un correo.");
+            throw new IllegalArgumentException("Escribe al menos un teléfono o un correo.");
         }
     }
 
-    private void validateSex(GuestForm form) {
-        if (form.sex() == null) {
-            throw new IllegalArgumentException("Selecciona el sexo.");
+    private void validateNameFields(GuestForm form) {
+        validateLatinText(form.firstName(), "El nombre solo puede contener caracteres latinos.");
+        validateLatinText(form.lastName1(), "El primer apellido solo puede contener caracteres latinos.");
+        if (!isBlank(form.lastName2())) {
+            validateLatinText(form.lastName2(), "El segundo apellido solo puede contener caracteres latinos.");
         }
     }
 
     private void validateDocumentSupport(GuestForm form) {
         if ((form.documentType() == DocumentType.NIF || form.documentType() == DocumentType.NIE)
             && isBlank(form.documentSupport())) {
-            throw new IllegalArgumentException("Si el documento es DNI o NIE, indica tambien el numero de soporte.");
+            throw new IllegalArgumentException("Si el documento es DNI o NIE, indica también el número de soporte.");
         }
     }
 
     private void validateNationality(GuestForm form) {
         if (isBlank(form.nationality())) {
-            throw new IllegalArgumentException("Selecciona la nacionalidad.");
+            return;
         }
         if (!ISO3_PATTERN.matcher(form.nationality().trim()).matches()) {
             throw new IllegalArgumentException("La nacionalidad debe escribirse con 3 letras, por ejemplo ESP.");
@@ -282,31 +285,31 @@ public class GuestService {
         }
 
         if (hasType != hasNumber) {
-            throw new IllegalArgumentException("Rellena juntos el tipo y el numero del documento.");
+            throw new IllegalArgumentException("Rellena juntos el tipo y el número del documento.");
         }
 
         if (form.documentType() == DocumentType.NIF) {
             if (!NIF_PATTERN.matcher(form.documentNumber().trim()).matches() || !hasValidNifLetter(form.documentNumber().trim())) {
-                throw new IllegalArgumentException("El DNI no tiene un formato valido.");
+                throw new IllegalArgumentException("El DNI no tiene un formato válido.");
             }
             if (isBlank(form.lastName2())) {
-                throw new IllegalArgumentException("Si usas DNI, escribe tambien el segundo apellido.");
+                throw new IllegalArgumentException("Si usas DNI, escribe también el segundo apellido.");
             }
         }
 
         if (form.documentType() == DocumentType.NIE) {
             if (!NIE_PATTERN.matcher(form.documentNumber().trim()).matches() || !hasValidNieLetter(form.documentNumber().trim())) {
-                throw new IllegalArgumentException("El NIE no tiene un formato valido.");
+                throw new IllegalArgumentException("El NIE no tiene un formato válido.");
             }
         }
     }
 
     private void validatePhoneNumbers(GuestForm form) {
         if (!isBlank(form.phone()) && !INTERNATIONAL_PHONE_PATTERN.matcher(form.phone().trim()).matches()) {
-            throw new IllegalArgumentException("El telefono debe incluir prefijo internacional. Ejemplo: +34 600 123 123.");
+            throw new IllegalArgumentException("El teléfono debe incluir prefijo internacional. Ejemplo: +34 600 123 123.");
         }
         if (!isBlank(form.phone2()) && !INTERNATIONAL_PHONE_PATTERN.matcher(form.phone2().trim()).matches()) {
-            throw new IllegalArgumentException("El segundo telefono debe incluir prefijo internacional. Ejemplo: +34 600 123 123.");
+            throw new IllegalArgumentException("El segundo teléfono debe incluir prefijo internacional. Ejemplo: +34 600 123 123.");
         }
     }
 
@@ -321,7 +324,16 @@ public class GuestService {
 
     private void validateRelationshipCode(GuestForm form) {
         if (!isBlank(form.relationship()) && !GuestRelationship.isValidCode(form.relationship().trim().toUpperCase())) {
-            throw new IllegalArgumentException("El parentesco no tiene un codigo valido.");
+            throw new IllegalArgumentException("El parentesco no tiene un código válido.");
+        }
+    }
+
+    private void validateLatinText(String value, String message) {
+        if (isBlank(value)) {
+            return;
+        }
+        if (!LATIN_TEXT_PATTERN.matcher(value.trim()).matches()) {
+            throw new IllegalArgumentException(message);
         }
     }
 
@@ -344,18 +356,18 @@ public class GuestService {
 
     private Address getBookingAddress(Long bookingId, Long addressId) {
         if (addressId == null) {
-            throw new IllegalArgumentException("Selecciona una direccion.");
+            throw new IllegalArgumentException("Selecciona una dirección.");
         }
         return addressRepository.findByIdAndBookingIdAndBookingOwnerId(addressId, bookingId, currentAppUserService.requireCurrentUserId())
-            .orElseThrow(() -> new IllegalArgumentException("La direccion seleccionada no pertenece a esta estancia."));
+            .orElseThrow(() -> new IllegalArgumentException("La dirección seleccionada no pertenece a esta estancia."));
     }
 
     private Address getBookingAddressForSelfService(Long bookingId, Long addressId) {
         if (addressId == null) {
-            throw new IllegalArgumentException("Selecciona una direccion.");
+            throw new IllegalArgumentException("Selecciona una dirección.");
         }
         return addressRepository.findByIdAndBookingId(addressId, bookingId)
-            .orElseThrow(() -> new IllegalArgumentException("La direccion seleccionada no pertenece a esta estancia."));
+            .orElseThrow(() -> new IllegalArgumentException("La dirección seleccionada no pertenece a esta estancia."));
     }
 
     private boolean isDocumentRequired(GuestForm form, LocalDate checkInDate) {

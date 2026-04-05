@@ -115,7 +115,7 @@ public class AddressController {
         model.addAttribute("countries", GuestFormOptions.countries());
         model.addAttribute("formAction", "/bookings/" + bookingId + "/addresses");
         model.addAttribute("guestId", guestId);
-        model.addAttribute("pageTitle", "Nueva direccion");
+        model.addAttribute("pageTitle", "Nueva dirección");
         model.addAttribute("backUrl", guestId != null
             ? "/bookings/" + bookingId + "/guests/" + guestId + "/edit?step=3"
             : "/bookings/" + bookingId + "/guests/new?step=3");
@@ -131,7 +131,7 @@ public class AddressController {
         model.addAttribute("guestId", guestId);
         model.addAttribute("slot", slot);
         model.addAttribute("extra", extra);
-        model.addAttribute("pageTitle", "Nueva direccion");
+        model.addAttribute("pageTitle", "Nueva dirección");
         model.addAttribute("backUrl", redirectToPublicGuestForm(token, guestId, slot, extra, null).replace("redirect:", ""));
         return "public/address-form";
     }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Nuevo huesped | Checkpol</title>
+    <title>Nuevo huésped | Checkpol</title>
     <link rel="stylesheet" th:href="@{/app.css}">
     <script th:src="@{/wizard-form.js}" defer></script>
 </head>
@@ -43,7 +43,7 @@
                     </div>
 
                     <div class="pt-5 sm:pt-6">
-                        <section class="space-y-5" data-step-panel data-step-title="Datos personales" data-step-count="Paso 1 de 4" data-step-help="">
+                        <section class="space-y-5" data-step-panel data-step-title="Datos personales" data-step-count="Paso 1 de 4" data-step-help="" data-step-note="Escribe el nombre igual que en el documento. Si conoces la nacionalidad, añádela con 3 letras.">
                             <div class="owner-error-box error-box" data-panel-errors hidden></div>
 
                             <div class="grid gap-4 md:grid-cols-2">
@@ -76,7 +76,7 @@
                                     <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></small>
                                 </label>
                                 <label class="owner-label">
-                                    <span>Nacionalidad</span>
+                                    <span>Nacionalidad <span class="text-slate-400">(opcional)</span></span>
                                     <input type="hidden" th:field="*{nationality}">
                                     <input class="owner-input" type="text" list="nationality-options-admin" data-country-display="nationality" name="nationalityDisplay" placeholder="España (ESP)" autocomplete="country-name">
                                     <datalist id="nationality-options-admin">
@@ -93,7 +93,7 @@
                             </div>
                         </section>
 
-                        <section class="space-y-5" data-step-panel hidden data-step-title="Documento" data-step-count="Paso 2 de 4" data-step-help="">
+                        <section class="space-y-5" data-step-panel hidden data-step-title="Documento" data-step-count="Paso 2 de 4" data-step-help="El documento solo es obligatorio para personas adultas o para españoles de más de 14 años.">
                             <div class="owner-error-box error-box" data-panel-errors hidden></div>
 
                             <div class="grid gap-4 md:grid-cols-2">
@@ -118,12 +118,12 @@
                                 <label class="owner-label" data-document-support-group hidden>
                                     <span>Soporte del documento</span>
                                     <input class="owner-input" th:field="*{documentSupport}" type="text" autocomplete="off" data-document-support-field>
-                                    <small class="public-hint field-hint" data-document-support-help>Número del documento</small>
+                                    <small class="public-hint field-hint" data-document-support-help>Obligatorio si el documento es DNI o NIE</small>
                                     <small class="owner-error error" data-client-error-for="documentSupport"></small>
                                     <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('documentSupport')}" th:errors="*{documentSupport}"></small>
                                 </label>
                                 <label class="owner-label">
-                                    <span>Sexo</span>
+                                    <span>Sexo <span class="text-slate-400">(opcional)</span></span>
                                     <select class="owner-select" th:field="*{sex}">
                                         <option value="">Selecciona...</option>
                                         <option th:each="sex : ${sexes}" th:value="${sex}" th:text="${sex.label}"></option>
@@ -134,7 +134,7 @@
                             </div>
 
                             <label class="owner-label" data-relationship-field hidden>
-                                <span>Parentesco con la persona adulta que hace la reserva</span>
+                                <span>Parentesco con una persona adulta de la estancia</span>
                                 <select class="owner-select" th:field="*{relationship}">
                                     <option value="">Selecciona...</option>
                                     <option th:each="relationship : ${relationships}" th:value="${relationship}" th:text="${relationship.label}"></option>
@@ -150,7 +150,7 @@
                             </div>
                         </section>
 
-                        <section class="space-y-5" data-step-panel hidden data-step-title="Direccion habitual" data-step-count="Paso 3 de 4" data-step-help="">
+                        <section class="space-y-5" data-step-panel hidden data-step-title="Dirección habitual" data-step-count="Paso 3 de 4" data-step-help="">
                             <div class="owner-error-box error-box" data-panel-errors hidden></div>
 
                             <div class="space-y-4" data-address-choice-shell>

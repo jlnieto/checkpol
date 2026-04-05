@@ -88,7 +88,7 @@ class MunicipalityCatalogImportServiceTest {
             )
         );
 
-        assertEquals("El CSV de municipios contiene un codigo repetido: 28079", exception.getMessage());
+        assertEquals("El CSV de municipios contiene un código repetido: 28079", exception.getMessage());
     }
 
     @Test

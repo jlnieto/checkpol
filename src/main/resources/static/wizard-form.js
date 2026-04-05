@@ -144,14 +144,14 @@ function validateBookingPanel(form, panel) {
 
         requireValue(errors, accommodationId, "Selecciona una vivienda.");
         requireTrimmedValue(errors, referenceCode, "Escribe la referencia de Airbnb.");
-        requireTrimmedValue(errors, personCount, "Indica cuantas personas vienen en la reserva.");
+        requireTrimmedValue(errors, personCount, "Indica cuántas personas vienen en la reserva.");
 
         if (personCount && personCount.value.trim() !== "") {
             const value = Number(personCount.value);
             if (Number.isNaN(value) || value < 1) {
                 addFieldError(errors, "personCount", "Indica al menos 1 persona.");
             } else if (value > 20) {
-                addFieldError(errors, "personCount", "El numero de personas no puede superar 20.");
+                addFieldError(errors, "personCount", "El número de personas no puede superar 20.");
             }
         }
     }
@@ -188,14 +188,13 @@ function validateGuestPanel(form, panel) {
         requireTrimmedValue(errors, form.querySelector("[name='firstName']"), "Escribe el nombre.");
         requireTrimmedValue(errors, form.querySelector("[name='lastName1']"), "Escribe el primer apellido.");
         requireValue(errors, form.querySelector("[name='birthDate']"), "Indica la fecha de nacimiento.");
-        requireTrimmedValue(errors, form.querySelector("[name='nationality']"), "Selecciona la nacionalidad.");
 
         const birthDate = parseDateValue(form.querySelector("[name='birthDate']")?.value);
         if (birthDate) {
             const today = parseDateValue(todayIsoDate());
             const age = calculateAge(birthDate, today);
             if (compareDates(birthDate, today) >= 0 || age < 0) {
-                addFieldError(errors, "birthDate", "La fecha de nacimiento no es valida.");
+            addFieldError(errors, "birthDate", "La fecha de nacimiento no es válida.");
             } else if (age > 120) {
                 addFieldError(errors, "birthDate", "Revisa la fecha de nacimiento.");
             }
@@ -203,8 +202,12 @@ function validateGuestPanel(form, panel) {
 
         const nationality = form.querySelector("[name='nationality']");
         if (nationality && nationality.value.trim() !== "" && !/^[A-Z]{3}$/.test(nationality.value.trim().toUpperCase())) {
-            addFieldError(errors, "nationality", "Selecciona una nacionalidad valida.");
+            addFieldError(errors, "nationality", "Selecciona una nacionalidad válida.");
         }
+
+        validateLatinField(errors, form.querySelector("[name='firstName']"), "firstName", "El nombre solo puede contener caracteres latinos.");
+        validateLatinField(errors, form.querySelector("[name='lastName1']"), "lastName1", "El primer apellido solo puede contener caracteres latinos.");
+        validateLatinField(errors, form.querySelector("[name='lastName2']"), "lastName2", "El segundo apellido solo puede contener caracteres latinos.");
     }
 
     if (panelIndex === 1) {
@@ -221,24 +224,21 @@ function validateGuestPanel(form, panel) {
             addFieldError(errors, "documentType", "Selecciona el tipo de documento.");
         }
         if (requiresDocument && !hasDocumentNumber) {
-            addFieldError(errors, "documentNumber", "Escribe el numero del documento.");
+            addFieldError(errors, "documentNumber", "Escribe el número del documento.");
         }
         if (hasDocumentType !== hasDocumentNumber) {
             if (hasDocumentType) {
-                addFieldError(errors, "documentNumber", "Rellena tambien el numero del documento.");
+                addFieldError(errors, "documentNumber", "Rellena también el número del documento.");
             } else {
-                addFieldError(errors, "documentType", "Selecciona tambien el tipo de documento.");
+                addFieldError(errors, "documentType", "Selecciona también el tipo de documento.");
             }
         }
         if (documentError) {
             addFieldError(errors, "documentNumber", documentError);
         }
-        if ((form.querySelector("[name='sex']")?.value || "") === "") {
-            addFieldError(errors, "sex", "Selecciona el sexo.");
-        }
         if (documentTypeField && documentSupportField && (documentTypeField.value === "NIF" || documentTypeField.value === "NIE")
             && documentSupportField.value.trim() === "") {
-            addFieldError(errors, "documentSupport", "Indica el numero de soporte.");
+            addFieldError(errors, "documentSupport", "Indica el número de soporte.");
         }
         if (isMinorAtCheckIn(form) && relationshipField && relationshipField.value === "") {
             addFieldError(errors, "relationship", "Selecciona el parentesco.");
@@ -248,7 +248,7 @@ function validateGuestPanel(form, panel) {
     if (panelIndex === 2) {
         const selectedAddress = form.querySelector("input[name='addressId']:checked");
         if (!selectedAddress) {
-            addFieldError(errors, "addressId", "Selecciona una direccion o crea una nueva.");
+            addFieldError(errors, "addressId", "Selecciona una dirección o crea una nueva.");
         }
     }
 
@@ -261,19 +261,19 @@ function validateGuestPanel(form, panel) {
         const hasEmail = hasTrimmedValue(emailField);
 
         if (!hasPhone && !hasPhone2 && !hasEmail) {
-            addFieldError(errors, "phone", "Indica telefono o email.");
-            addFieldError(errors, "phone2", "Indica telefono o email.");
-            addFieldError(errors, "email", "Indica telefono o email.");
+            addFieldError(errors, "phone", "Indica teléfono o email.");
+            addFieldError(errors, "phone2", "Indica teléfono o email.");
+            addFieldError(errors, "email", "Indica teléfono o email.");
         }
 
         if (hasPhone && !isValidPhone(phoneField.value)) {
-            addFieldError(errors, "phone", "Escribe un telefono valido.");
+            addFieldError(errors, "phone", "Escribe un teléfono válido.");
         }
         if (hasPhone2 && !isValidPhone(phone2Field.value)) {
-            addFieldError(errors, "phone2", "Escribe un telefono valido.");
+            addFieldError(errors, "phone2", "Escribe un teléfono válido.");
         }
         if (hasEmail && !isValidEmail(emailField.value)) {
-            addFieldError(errors, "email", "Escribe un correo valido.");
+            addFieldError(errors, "email", "Escribe un correo válido.");
         }
     }
 
@@ -351,6 +351,15 @@ function renderFieldErrors(panel, errors) {
             label.classList.toggle("field-valid", eligibleForValidState);
         }
     });
+}
+
+function validateLatinField(errors, field, fieldName, message) {
+    if (!field || field.value.trim() === "") {
+        return;
+    }
+    if (!/^[\p{Script=Latin}][\p{Script=Latin} .'-]*$/u.test(field.value.trim())) {
+        addFieldError(errors, fieldName, message);
+    }
 }
 
 function focusFirstFieldWithError(panel, fieldName) {
@@ -524,7 +533,7 @@ function syncGuestFormState(form) {
 
     if (documentSupportHelp) {
         documentSupportHelp.textContent = supportRequired
-            ? "Numero que aparece en el documento"
+            ? "Número que aparece en el documento"
             : "";
     }
 
@@ -630,7 +639,7 @@ function validateDocumentValue(documentType, documentNumber) {
 
     if (documentType === "NIF") {
         if (!/^\d{8}[A-Z]$/.test(value)) {
-            return "Introduce un DNI valido (8 numeros y letra)";
+            return "Introduce un DNI válido (8 números y letra)";
         }
         if (!hasValidSpanishLetter(value)) {
             return "La letra del DNI no coincide";
@@ -639,7 +648,7 @@ function validateDocumentValue(documentType, documentNumber) {
 
     if (documentType === "NIE") {
         if (!/^[XYZ]\d{7}[A-Z]$/.test(value)) {
-            return "Introduce un NIE valido";
+            return "Introduce un NIE válido";
         }
         if (!hasValidSpanishLetter(value.replace("X", "0").replace("Y", "1").replace("Z", "2"))) {
             return "La letra del NIE no coincide";
@@ -664,7 +673,7 @@ function documentPlaceholder(documentType) {
         return "AA1234567";
     }
     if (documentType === "OTRO") {
-        return "Numero del documento";
+        return "Número del documento";
     }
     return "12345678Z";
 }
@@ -849,7 +858,7 @@ function autoDetectDocumentType(documentTypeField, documentNumberField) {
 
 function positiveStatusCopy(fieldName) {
     if (fieldName === "documentNumber") {
-        return "Documento valido";
+        return "Documento válido";
     }
     return "Correcto";
 }
@@ -859,7 +868,7 @@ function documentHint(documentType) {
         return "Empieza por X, Y o Z, sin espacios ni guiones";
     }
     if (documentType === "NIF") {
-        return "8 numeros y una letra, sin espacios ni guiones";
+        return "8 números y una letra, sin espacios ni guiones";
     }
     return "Sin espacios ni guiones";
 }

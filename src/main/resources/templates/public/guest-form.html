@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Completar datos de huesped | Checkpol</title>
+    <title>Completar datos de huésped | Checkpol</title>
     <link rel="stylesheet" th:href="@{/app.css}">
     <script th:src="@{/wizard-form.js}" defer></script>
 </head>
@@ -18,7 +18,7 @@
 
         <div class="space-y-1">
             <h1 class="max-w-[16ch] text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl"
-                th:text="${guestWizardTitle}">Datos del huesped 1</h1>
+                th:text="${guestWizardTitle}">Datos del huésped 1</h1>
         </div>
     </header>
 
@@ -64,7 +64,7 @@
                              data-step-title="Datos personales"
                              data-step-count="Paso 1 de 4"
                              data-step-help=""
-                             data-step-note="Escribe el nombre igual que en el documento.">
+                             data-step-note="Escribe el nombre igual que en el documento. Si conoces la nacionalidad, añádela con 3 letras.">
                         <div class="public-error-box" data-panel-errors hidden></div>
 
                         <div class="grid gap-4 md:grid-cols-2">
@@ -100,7 +100,7 @@
                                 <small class="public-error error" data-server-error th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></small>
                             </label>
                             <label class="public-label">
-                                <span>Nacionalidad</span>
+                                <span>Nacionalidad <span class="text-slate-400">(opcional)</span></span>
                                 <input type="hidden" th:field="*{nationality}">
                                 <input class="public-input" type="text" list="nationality-options-public" data-country-display="nationality"
                                        name="nationalityDisplay" placeholder="Espana (ESP)" autocomplete="country-name">
@@ -120,8 +120,8 @@
                     <section class="space-y-5" data-step-panel hidden
                              data-step-title="Documento"
                              data-step-count="Paso 2 de 4"
-                             data-step-help=""
-                             data-step-note="Escribe el numero sin espacios ni guiones.">
+                             data-step-help="El documento solo es obligatorio para personas adultas o para españoles de más de 14 años."
+                             data-step-note="Escribe el número sin espacios ni guiones.">
                         <div class="public-error-box" data-panel-errors hidden></div>
 
                         <div class="grid gap-4 md:grid-cols-2">
@@ -134,7 +134,7 @@
                                 <small class="public-error error" data-client-error-for="documentType"></small>
                             </label>
                             <label class="public-label">
-                                <span>Numero de documento</span>
+                                <span>Número de documento</span>
                                 <input class="public-input" th:field="*{documentNumber}" type="text" autocomplete="off"
                                        placeholder="12345678Z" data-document-number-field data-next-field="documentSupport">
                                 <small class="public-hint field-hint" data-document-number-hint>Sin espacios ni guiones</small>
@@ -147,12 +147,12 @@
                             <label class="public-label" data-document-support-group hidden>
                                 <span>Soporte del documento</span>
                                 <input class="public-input" th:field="*{documentSupport}" type="text" autocomplete="off" data-document-support-field>
-                                <small class="public-hint field-hint" data-document-support-help>Numero del documento</small>
+                                <small class="public-hint field-hint" data-document-support-help>Obligatorio si el documento es DNI o NIE</small>
                                 <small class="public-error error" data-client-error-for="documentSupport"></small>
                                 <small class="public-error error" data-server-error th:if="${#fields.hasErrors('documentSupport')}" th:errors="*{documentSupport}"></small>
                             </label>
                             <label class="public-label">
-                                <span>Sexo</span>
+                                <span>Sexo <span class="text-slate-400">(opcional)</span></span>
                                 <select class="public-select" th:field="*{sex}">
                                     <option value="">Selecciona...</option>
                                     <option th:each="sex : ${sexes}" th:value="${sex}" th:text="${sex.label}"></option>
@@ -163,12 +163,12 @@
                         </div>
 
                         <label class="public-label" data-relationship-field hidden>
-                            <span>Parentesco con la persona adulta que hace la reserva</span>
+                            <span>Parentesco con una persona adulta de la estancia</span>
                             <select class="public-select" th:field="*{relationship}">
                                 <option value="">Selecciona...</option>
                                 <option th:each="relationship : ${relationships}" th:value="${relationship}" th:text="${relationship.label}"></option>
                             </select>
-                            <small class="public-hint">Solo se pide si la persona sera menor de edad el dia de entrada.</small>
+                            <small class="public-hint">Solo se pide si la persona será menor de edad el día de entrada.</small>
                             <small class="public-error error" data-client-error-for="relationship"></small>
                             <small class="public-error error" data-server-error th:if="${#fields.hasErrors('relationship')}" th:errors="*{relationship}"></small>
                         </label>
@@ -180,10 +180,10 @@
                     </section>
 
                     <section class="space-y-5" data-step-panel hidden
-                             data-step-title="Direccion habitual"
+                             data-step-title="Dirección habitual"
                              data-step-count="Paso 3 de 4"
                              data-step-help=""
-                             data-step-note="Si no ves tu direccion, creala y volveras a este punto.">
+                             data-step-note="Si no ves tu dirección, créala y volverás a este punto.">
                         <div class="public-error-box" data-panel-errors hidden></div>
 
                         <div class="space-y-4" data-address-choice-shell>
@@ -197,7 +197,7 @@
                                             <span class="block text-base font-semibold text-slate-900" th:text="${address.displayLine1}">Calle Mayor 1</span>
                                             <span class="mt-1 block text-sm leading-6 text-slate-500" th:text="${address.displayLine2}">28001 · Madrid · ESP</span>
                                         </span>
-                                        <span class="public-pill-muted address-choice-tag">Usar esta direccion</span>
+                                        <span class="public-pill-muted address-choice-tag">Usar esta dirección</span>
                                     </span>
                                 </label>
 
@@ -208,7 +208,7 @@
                                         formmethod="post"
                                         data-skip-panel-validation>
                                     <span>
-                                        <span class="block text-base font-semibold text-slate-900">Introducir nueva direccion</span>
+                                        <span class="block text-base font-semibold text-slate-900">Introducir nueva dirección</span>
                                         <span class="mt-1 block text-sm leading-6 text-slate-500">Se guardará y volverás al flujo del huésped.</span>
                                     </span>
                                     <span class="public-pill-primary address-choice-tag">Crear</span>
@@ -229,18 +229,18 @@
                              data-step-title="Contacto"
                              data-step-count="Paso 4 de 4"
                              data-step-help=""
-                             data-step-note="Basta con un telefono o un correo validos.">
+                             data-step-note="Basta con un teléfono o un correo válidos.">
                         <div class="public-error-box" data-panel-errors hidden></div>
 
                         <div class="grid gap-4 md:grid-cols-2">
                             <label class="public-label">
-                                <span>Telefono</span>
+                                <span>Teléfono</span>
                                 <input class="public-input" th:field="*{phone}" type="tel" autocomplete="tel" inputmode="tel" placeholder="+34 600 123 123" data-phone-primary>
                                 <small class="public-error error" data-client-error-for="phone"></small>
                                 <small class="public-error error" data-server-error th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></small>
                             </label>
                             <label class="public-label">
-                                <span>Otro telefono</span>
+                                <span>Otro teléfono</span>
                                 <input class="public-input" th:field="*{phone2}" type="tel" autocomplete="tel-national" inputmode="tel" placeholder="+34 600 123 123">
                                 <small class="public-error error" data-client-error-for="phone2"></small>
                                 <small class="public-error error" data-server-error th:if="${#fields.hasErrors('phone2')}" th:errors="*{phone2}"></small>

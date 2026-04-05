@@ -83,7 +83,7 @@ public class GuestController {
             .filter(draft -> resumingDraft)
             .map(draft -> selectedAddressId == null ? draft : draft.withAddressId(selectedAddressId))
             .orElseGet(() -> selectedAddressId == null ? new GuestForm() : new GuestForm().withAddressId(selectedAddressId));
-        return populateForm(model, bookingId, form, "/bookings/" + bookingId + "/guests", "Nuevo huesped", "Guardar", null, step);
+        return populateForm(model, bookingId, form, "/bookings/" + bookingId + "/guests", "Nuevo huésped", "Guardar", null, step);
     }
 
     @PostMapping("/bookings/{bookingId}/guests")
@@ -96,18 +96,18 @@ public class GuestController {
         RedirectAttributes redirectAttributes
     ) {
         if (bindingResult.hasErrors()) {
-            return populateForm(model, bookingId, form, "/bookings/" + bookingId + "/guests", "Nuevo huesped", "Guardar", null, 3);
+            return populateForm(model, bookingId, form, "/bookings/" + bookingId + "/guests", "Nuevo huésped", "Guardar", null, 3);
         }
 
         try {
             guestService.create(bookingId, form);
         } catch (IllegalArgumentException exception) {
             bindingResult.reject("guest.invalid", exception.getMessage());
-            return populateForm(model, bookingId, form, "/bookings/" + bookingId + "/guests", "Nuevo huesped", "Guardar", null, 3);
+            return populateForm(model, bookingId, form, "/bookings/" + bookingId + "/guests", "Nuevo huésped", "Guardar", null, 3);
         }
 
         guestWizardDraftStore.clearBookingDraft(session, bookingId, null);
-        redirectAttributes.addFlashAttribute("flashMessage", "Datos del huesped guardados.");
+        redirectAttributes.addFlashAttribute("flashMessage", "Datos del huésped guardados.");
         redirectAttributes.addFlashAttribute("flashKind", "success");
         return "redirect:/bookings/" + bookingId;
     }
@@ -146,7 +146,7 @@ public class GuestController {
             bookingId,
             form,
             "/bookings/" + bookingId + "/guests/" + guestId,
-            "Editar huesped",
+            "Editar huésped",
             "Guardar cambios",
             guestId,
             step
@@ -185,18 +185,18 @@ public class GuestController {
         RedirectAttributes redirectAttributes
     ) {
         if (bindingResult.hasErrors()) {
-            return populateForm(model, bookingId, form, "/bookings/" + bookingId + "/guests/" + guestId, "Editar huesped", "Guardar cambios", guestId, 3);
+            return populateForm(model, bookingId, form, "/bookings/" + bookingId + "/guests/" + guestId, "Editar huésped", "Guardar cambios", guestId, 3);
         }
 
         try {
             guestService.update(guestId, form);
         } catch (IllegalArgumentException exception) {
             bindingResult.reject("guest.invalid", exception.getMessage());
-            return populateForm(model, bookingId, form, "/bookings/" + bookingId + "/guests/" + guestId, "Editar huesped", "Guardar cambios", guestId, 3);
+            return populateForm(model, bookingId, form, "/bookings/" + bookingId + "/guests/" + guestId, "Editar huésped", "Guardar cambios", guestId, 3);
         }
 
         guestWizardDraftStore.clearBookingDraft(session, bookingId, guestId);
-        redirectAttributes.addFlashAttribute("flashMessage", "Datos del huesped actualizados.");
+        redirectAttributes.addFlashAttribute("flashMessage", "Datos del huésped actualizados.");
         redirectAttributes.addFlashAttribute("flashKind", "success");
         return "redirect:/bookings/" + bookingId;
     }
@@ -341,9 +341,11 @@ public class GuestController {
             .path("/guest-access/{token}")
             .buildAndExpand(access.token())
             .toUriString();
-        String message = "Hola. Para completar los datos de los huespedes de la estancia en "
+        String message = "Hola.\n\n"
+            + "Necesitamos que completes los datos de las personas que se alojan en "
             + details.booking().getAccommodation().getName()
-            + ", usa este enlace: "
+            + ". Solo tarda 1-2 minutos.\n\n"
+            + "Hazlo desde aquí:\n"
             + linkUrl;
 
         redirectAttributes.addFlashAttribute(

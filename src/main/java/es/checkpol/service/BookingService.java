@@ -192,7 +192,7 @@ public class BookingService {
             throw new IllegalArgumentException("La fecha de entrada no puede ser de hace mas de un ano.");
         }
         if (form.checkOutDate().isAfter(LocalDate.now().plusYears(5))) {
-            throw new IllegalArgumentException("La fecha de salida no puede ir mas alla de cinco anos desde hoy.");
+            throw new IllegalArgumentException("La fecha de salida no puede ir más allá de cinco años desde hoy.");
         }
     }
 
@@ -357,34 +357,34 @@ public class BookingService {
 
         if (bookingDataBlocked) {
             if (booking.getAccommodation() == null || isBlank(booking.getAccommodation().getSesEstablishmentCode())) {
-                reasons.add("Falta el codigo SES de la vivienda. Añadelo en la ficha de la vivienda antes de generar el archivo.");
+                reasons.add("Falta el código SES de la vivienda. Añádelo en la ficha de la vivienda antes de generar el archivo.");
             } else {
-                reasons.add("Faltan datos basicos de la estancia para generar el archivo. Revisa la fecha de contrato y el tipo de pago.");
+                reasons.add("Faltan datos básicos de la estancia para generar el archivo. Revisa la fecha de contrato y el tipo de pago.");
             }
         }
 
         if (guestCountMismatch) {
-            reasons.add("No se puede generar el XML porque el numero de huespedes registrados no coincide con el numero de personas de la estancia. Ahora mismo hay "
-                + guestCount + " huespedes dados de alta y la estancia esta configurada para " + expectedGuestCount
-                + " personas. Revisa los huespedes registrados y, si son correctos, ajusta el numero de personas de la estancia para poder generar el XML.");
+            reasons.add("No se puede generar el XML porque el número de huéspedes registrados no coincide con el número de personas de la estancia. Ahora mismo hay "
+                + guestCount + " huéspedes dados de alta y la estancia está configurada para " + expectedGuestCount
+                + " personas. Revisa los huéspedes registrados y, si son correctos, ajusta el número de personas de la estancia para poder generar el XML.");
         }
 
         if (blockedByPendingReview) {
             reasons.add(pendingReviewGuestCount == 1
-                ? "Todavia hay 1 huesped pendiente de revision. Revisalo antes de generar el archivo."
-                : "Todavia hay " + pendingReviewGuestCount + " huespedes pendientes de revision. Revisalos antes de generar el archivo.");
+                ? "Todavía hay 1 huésped pendiente de revisión. Revísalo antes de generar el archivo."
+                : "Todavía hay " + pendingReviewGuestCount + " huéspedes pendientes de revisión. Revísalos antes de generar el archivo.");
         }
 
         if (blockedByAddressExport) {
-            reasons.add("Hay al menos una direccion en España sin un codigo de municipio exportable. Revisa la direccion y vuelve a seleccionar el municipio correcto antes de generar el archivo.");
+            reasons.add("Hay al menos una dirección en España sin un código de municipio exportable. Revisa la dirección y vuelve a seleccionar el municipio correcto antes de generar el archivo.");
         }
 
         if (blockedByGuestData) {
-            reasons.add("Faltan datos obligatorios en uno o varios huespedes. Completa documento, parentesco, nacionalidad, sexo y contacto antes de generar el archivo.");
+            reasons.add("Faltan datos obligatorios en uno o varios huéspedes. Completa el documento cuando corresponda, el parentesco de los menores y un dato de contacto antes de generar el archivo.");
         }
 
         if (reasons.isEmpty() && guestCount == 0) {
-            reasons.add("Todavia no hay huespedes registrados. Añade a las personas de la estancia antes de generar el archivo.");
+            reasons.add("Todavía no hay huéspedes registrados. Añade a las personas de la estancia antes de generar el archivo.");
         }
 
         return reasons;
@@ -401,24 +401,24 @@ public class BookingService {
         boolean blockedByAddressExport
     ) {
         if (guestCount == 0) {
-            return "Falta anadir a las personas de la estancia";
+            return "Falta añadir a las personas de la estancia";
         }
         if (guestCountMismatch) {
-            return guestCount + " huespedes registrados · " + expectedGuestCount + " personas esperadas";
+            return guestCount + " huéspedes registrados · " + expectedGuestCount + " personas esperadas";
         }
         if (blockedByPendingReview) {
             return pendingReviewGuestCount == 1
-                ? "1 huesped pendiente de revision"
-                : pendingReviewGuestCount + " huespedes pendientes de revision";
+                ? "1 huésped pendiente de revisión"
+                : pendingReviewGuestCount + " huéspedes pendientes de revisión";
         }
         if (blockedByAddressExport) {
-            return "Hay una direccion sin codigo de municipio";
+            return "Hay una dirección sin código de municipio";
         }
         if (blockedByGuestData) {
             return "Faltan datos obligatorios de viajeros";
         }
         if (bookingDataBlocked) {
-            return "Faltan datos basicos de la estancia";
+            return "Faltan datos básicos de la estancia";
         }
         return "Lista para descargar el archivo SES";
     }
@@ -427,10 +427,7 @@ public class BookingService {
         if (!guest.hasMinimumDataForTravelerPart()) {
             return false;
         }
-        if (isBlank(guest.getNationality()) || !ISO3_PATTERN.matcher(guest.getNationality().trim()).matches()) {
-            return false;
-        }
-        if (guest.getSex() == null) {
+        if (!isBlank(guest.getNationality()) && !ISO3_PATTERN.matcher(guest.getNationality().trim()).matches()) {
             return false;
         }
         if (isMinorAtCheckIn(guest) && (isBlank(guest.getRelationship()) || !GuestRelationship.isValidCode(guest.getRelationship().trim().toUpperCase()))) {

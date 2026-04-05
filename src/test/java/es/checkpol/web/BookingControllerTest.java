@@ -27,6 +27,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -99,7 +100,7 @@ class BookingControllerTest {
             .andExpect(view().name("bookings/list"))
             .andExpect(model().attribute("countReady", 1))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("ABC123")))
-            .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("No hay estancias todavia"))));
+            .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("No hay estancias todavía"))));
     }
 
     @Test
@@ -130,7 +131,7 @@ class BookingControllerTest {
             BookingOperationalStatus.GUEST_COUNT_MISMATCH,
             0,
             true,
-            "4 huespedes registrados · 2 personas esperadas",
+            "4 huéspedes registrados · 2 personas esperadas",
             null
         );
 
@@ -142,7 +143,7 @@ class BookingControllerTest {
 
         mockMvc.perform(get("/bookings"))
             .andExpect(status().isOk())
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("4 huespedes registrados · 2 personas esperadas")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("4 huéspedes registrados · 2 personas esperadas")))
             .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Lista para descargar"))));
     }
 
@@ -179,7 +180,26 @@ class BookingControllerTest {
                 .param("checkInDate", format(LocalDate.now().plusDays(3)))
                 .param("checkOutDate", format(LocalDate.now().plusDays(5))))
             .andExpect(status().is3xxRedirection())
-            .andExpect(redirectedUrl("/bookings"));
+            .andExpect(redirectedUrl("/bookings"))
+            .andExpect(flash().attribute("flashKind", "success"));
+    }
+
+    @Test
+    @WithMockUser(username = "owner", roles = "OWNER")
+    void showsSingleFirstBookingStepWhenOwnerHasAccommodationButNoBookings() throws Exception {
+        when(accommodationService.findAll()).thenReturn(List.of(new Accommodation("Casa Olivo", "H123456789", "VT-123")));
+        when(bookingService.findAll()).thenReturn(List.of());
+        when(bookingService.findAll(BookingFilter.INCOMPLETE)).thenReturn(List.of());
+        when(bookingService.findAll(BookingFilter.READY)).thenReturn(List.of());
+        when(bookingService.findAll(BookingFilter.TODAY)).thenReturn(List.of());
+        when(bookingService.findAll(BookingFilter.UPCOMING)).thenReturn(List.of());
+
+        mockMvc.perform(get("/bookings"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Tu vivienda ya está lista")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Crear primera estancia")))
+            .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Crear nueva estancia"))))
+            .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("No hay nada que revisar ahora"))));
     }
 
     @Test

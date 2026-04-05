@@ -250,7 +250,7 @@ public class MunicipalityCatalogImportService {
         Set<String> seenMunicipalityCodes = new LinkedHashSet<>();
         for (MunicipalityRow row : municipalityRows) {
             if (!seenMunicipalityCodes.add(row.municipalityCode())) {
-                throw new IllegalArgumentException("El CSV de municipios contiene un codigo repetido: " + row.municipalityCode());
+                throw new IllegalArgumentException("El CSV de municipios contiene un código repetido: " + row.municipalityCode());
             }
         }
         return seenMunicipalityCodes;

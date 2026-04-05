@@ -84,11 +84,17 @@ class GuestSelfServiceControllerTest {
             .andExpect(view().name("public/guest-form"))
             .andExpect(model().attributeExists("guestForm"))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
-                .string(org.hamcrest.Matchers.containsString("Datos del huesped 2")))
+                .string(org.hamcrest.Matchers.containsString("Datos del huésped 2")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                 .string(org.hamcrest.Matchers.containsString("name=\"phone2\"")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
-                .string(org.hamcrest.Matchers.containsString("Selecciona...")));
+                .string(org.hamcrest.Matchers.containsString("Selecciona...")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("Nacionalidad <span class=\"text-slate-400\">(opcional)</span>")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("Sexo <span class=\"text-slate-400\">(opcional)</span>")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("Parentesco con una persona adulta de la estancia")));
     }
 
     @Test

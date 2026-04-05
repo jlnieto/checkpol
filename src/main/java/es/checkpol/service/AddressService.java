@@ -43,7 +43,7 @@ public class AddressService {
     @Transactional(readOnly = true)
     public Address getByIdAndBookingId(Long addressId, Long bookingId) {
         return addressRepository.findByIdAndBookingIdAndBookingOwnerId(addressId, bookingId, currentAppUserService.requireCurrentUserId())
-            .orElseThrow(() -> new IllegalArgumentException("La direccion seleccionada no pertenece a esta estancia."));
+            .orElseThrow(() -> new IllegalArgumentException("La dirección seleccionada no pertenece a esta estancia."));
     }
 
     @Transactional
@@ -88,10 +88,10 @@ public class AddressService {
 
     private void validate(AddressForm form) {
         if (!ISO3_PATTERN.matcher(form.country().trim()).matches()) {
-            throw new IllegalArgumentException("El pais debe escribirse con 3 letras, por ejemplo ESP.");
+            throw new IllegalArgumentException("El país debe escribirse con 3 letras, por ejemplo ESP.");
         }
         if ("ESP".equalsIgnoreCase(form.country()) && !SPANISH_POSTAL_CODE_PATTERN.matcher(form.postalCode().trim()).matches()) {
-            throw new IllegalArgumentException("Si el pais es ESP, el codigo postal debe tener 5 numeros.");
+            throw new IllegalArgumentException("Si el país es ESP, el código postal debe tener 5 números.");
         }
         if ("ESP".equalsIgnoreCase(form.country())) {
             if (!municipalityCatalogService.hasSpanishCatalogData()) {
@@ -101,7 +101,7 @@ public class AddressService {
                 throw new IllegalArgumentException("Selecciona un municipio para ese código postal.");
             }
             if (form.municipalityCode() != null && !form.municipalityCode().isBlank() && !form.municipalityCode().trim().matches("\\d{5}")) {
-                throw new IllegalArgumentException("El codigo de municipio debe tener 5 numeros.");
+                throw new IllegalArgumentException("El código de municipio debe tener 5 números.");
             }
             return;
         }

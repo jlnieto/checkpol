@@ -84,6 +84,7 @@ public class BookingController {
         }
 
         redirectAttributes.addFlashAttribute("flashMessage", "Estancia guardada correctamente.");
+        redirectAttributes.addFlashAttribute("flashKind", "success");
         return "redirect:/bookings";
     }
 
@@ -112,6 +113,7 @@ public class BookingController {
         }
 
         redirectAttributes.addFlashAttribute("flashMessage", "Estancia actualizada correctamente.");
+        redirectAttributes.addFlashAttribute("flashKind", "success");
         return "redirect:/bookings/" + id;
     }
 

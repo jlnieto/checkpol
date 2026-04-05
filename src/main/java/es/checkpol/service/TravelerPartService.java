@@ -116,7 +116,7 @@ public class TravelerPartService {
     @Transactional
     public String getGeneratedXml(Long bookingId, Long communicationId) {
         GeneratedCommunication communication = generatedCommunicationRepository.findByIdAndBookingIdAndBookingOwnerId(communicationId, bookingId, currentAppUserService.requireCurrentUserId())
-            .orElseThrow(() -> new IllegalArgumentException("La comunicacion solicitada no existe para esta estancia."))
+            .orElseThrow(() -> new IllegalArgumentException("La comunicación solicitada no existe para esta estancia."))
             ;
         communication.registerDownload(OffsetDateTime.now());
         return communication.getXmlContent();
@@ -126,7 +126,7 @@ public class TravelerPartService {
         BookingDetails details = bookingService.getDetails(bookingId);
         if (!details.readyForTravelerPart()) {
             throw new IllegalStateException(details.blockingMessage() == null
-                ? "La estancia no esta lista para generar el archivo SES."
+                ? "La estancia no está lista para generar el archivo SES."
                 : details.blockingMessage());
         }
         String xml = xmlGenerator.generate(details);

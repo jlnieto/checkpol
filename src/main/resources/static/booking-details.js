@@ -22,17 +22,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             await navigator.clipboard.writeText(messageNode.textContent.trim());
-            copyButton.classList.add("button-link-copied");
-            copyButton.textContent = "Copiado";
             copyButton.copyResetTimeoutId = window.setTimeout(() => {
-                copyButton.classList.remove("button-link-copied");
                 copyButton.textContent = originalLabel;
             }, 1800);
-            showFeedback("Mensaje copiado.", "success");
+            showCopyFeedback("Copiado. Ya puedes pegarlo donde quieras.", "success");
         } catch (error) {
-            copyButton.classList.remove("button-link-copied");
             copyButton.textContent = originalLabel;
-            showFeedback("No se pudo copiar el mensaje. Copialo manualmente.", "error");
+            showCopyFeedback("No se pudo copiar. Pégalo manualmente.", "error");
         }
     });
 
@@ -133,6 +129,26 @@ document.addEventListener("DOMContentLoaded", () => {
             feedbackNode.hidden = true;
             feedbackNode.textContent = "";
             feedbackNode.className = "detail-inline-feedback";
+        }, 2600);
+    }
+
+    function showCopyFeedback(message, kind) {
+        const copyFeedbackNode = detailRoot.querySelector("[data-copy-feedback]");
+        if (!copyFeedbackNode) {
+            return;
+        }
+
+        copyFeedbackNode.hidden = false;
+        copyFeedbackNode.textContent = message;
+        copyFeedbackNode.classList.toggle("text-slate-500", kind === "success");
+        copyFeedbackNode.classList.toggle("text-rose-700", kind === "error");
+
+        window.clearTimeout(showCopyFeedback.timeoutId);
+        showCopyFeedback.timeoutId = window.setTimeout(() => {
+            copyFeedbackNode.hidden = true;
+            copyFeedbackNode.textContent = "";
+            copyFeedbackNode.classList.remove("text-rose-700");
+            copyFeedbackNode.classList.add("text-slate-500");
         }, 2600);
     }
 });

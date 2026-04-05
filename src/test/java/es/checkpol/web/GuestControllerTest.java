@@ -88,7 +88,13 @@ class GuestControllerTest {
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                 .string(org.hamcrest.Matchers.containsString("España (ESP)")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
-                .string(org.hamcrest.Matchers.containsString("Guía rápida")));
+                .string(org.hamcrest.Matchers.containsString("Guía rápida")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("Nacionalidad <span class=\"text-slate-400\">(opcional)</span>")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("Sexo <span class=\"text-slate-400\">(opcional)</span>")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("El documento solo es obligatorio para personas adultas o para españoles de más de 14 años.")));
     }
 
     @Test
@@ -100,11 +106,15 @@ class GuestControllerTest {
             .andExpect(status().isOk())
             .andExpect(view().name("bookings/details"))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
-                .string(org.hamcrest.Matchers.containsString("Falta 1 huésped para completar esta estancia")))
+                .string(org.hamcrest.Matchers.containsString("Faltan los datos de los huéspedes")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
-                .string(org.hamcrest.Matchers.containsString("1 de 2 huéspedes registrados en esta estancia.")))
+                .string(org.hamcrest.Matchers.containsString("Envíales el enlace para que completen sus datos. Si no pueden, puedes añadirlos tú.")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
-                .string(org.hamcrest.Matchers.containsString("Enviar enlace a los huéspedes")))
+                .string(org.hamcrest.Matchers.containsString("Enviar enlace")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("Añadir huésped manualmente")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Archivo para SES"))))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                 .string(org.hamcrest.Matchers.containsString("data-review-feedback")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
@@ -162,7 +172,7 @@ class GuestControllerTest {
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                 .string(org.hamcrest.Matchers.containsString("28001")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
-                .string(not(org.hamcrest.Matchers.containsString("Enlace huesped"))))
+                .string(not(org.hamcrest.Matchers.containsString("Enlace huésped"))))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                 .string(not(org.hamcrest.Matchers.containsString("Solo revisa esto"))));
     }
@@ -222,7 +232,7 @@ class GuestControllerTest {
     void keepsFormWhenServiceValidationFails() throws Exception {
         when(bookingService.getDetails(1L)).thenReturn(sampleDetails());
         when(addressService.findByBookingId(1L)).thenReturn(List.of(sampleAddress(sampleDetails().booking())));
-        doThrow(new IllegalArgumentException("Indica al menos un telefono o un correo."))
+        doThrow(new IllegalArgumentException("Indica al menos un teléfono o un correo."))
             .when(guestService).create(any(), any());
 
         mockMvc.perform(post("/bookings/1/guests")
@@ -242,13 +252,13 @@ class GuestControllerTest {
     @Test
     @WithMockUser(username = "owner", roles = "OWNER")
     void redirectsBackToDetailWithFlashWhenXmlDownloadIsBlocked() throws Exception {
-        doThrow(new IllegalStateException("No se puede generar el XML porque el numero de huespedes registrados no coincide con el numero de personas de la estancia."))
+        doThrow(new IllegalStateException("No se puede generar el XML porque el número de huéspedes registrados no coincide con el número de personas de la estancia."))
             .when(travelerPartService).generateXml(1L);
 
         mockMvc.perform(get("/bookings/1/traveler-part.xml"))
             .andExpect(status().is3xxRedirection())
             .andExpect(redirectedUrl("/bookings/1"))
-            .andExpect(flash().attribute("flashMessage", "No se puede generar el XML porque el numero de huespedes registrados no coincide con el numero de personas de la estancia."));
+            .andExpect(flash().attribute("flashMessage", "No se puede generar el XML porque el número de huéspedes registrados no coincide con el número de personas de la estancia."));
     }
 
     @Test
@@ -360,9 +370,9 @@ class GuestControllerTest {
             false,
             false,
             false,
-            "1 huesped registrado · 2 personas esperadas",
-            "No se puede generar el XML porque el numero de huespedes registrados no coincide con el numero de personas de la estancia.",
-            List.of("No se puede generar el XML porque el numero de huespedes registrados no coincide con el numero de personas de la estancia.")
+            "1 huésped registrado · 2 personas esperadas",
+            "No se puede generar el XML porque el número de huéspedes registrados no coincide con el número de personas de la estancia.",
+            List.of("No se puede generar el XML porque el número de huéspedes registrados no coincide con el número de personas de la estancia.")
         );
     }
 
@@ -436,9 +446,9 @@ class GuestControllerTest {
             false,
             true,
             false,
-            "2 huespedes pendientes de revision",
-            "Todavia hay 2 huespedes pendientes de revision. Revisalos antes de generar el archivo.",
-            List.of("Todavia hay 2 huespedes pendientes de revision. Revisalos antes de generar el archivo.")
+            "2 huéspedes pendientes de revisión",
+            "Todavía hay 2 huéspedes pendientes de revisión. Revísalos antes de generar el archivo.",
+            List.of("Todavía hay 2 huéspedes pendientes de revisión. Revísalos antes de generar el archivo.")
         );
     }
 
@@ -490,9 +500,9 @@ class GuestControllerTest {
             false,
             true,
             false,
-            "1 huesped pendiente de revision",
-            "Todavia hay 1 huesped pendiente de revision. Revisalo antes de generar el archivo.",
-            List.of("Todavia hay 1 huesped pendiente de revision. Revisalo antes de generar el archivo.")
+            "1 huésped pendiente de revisión",
+            "Todavía hay 1 huésped pendiente de revisión. Revísalo antes de generar el archivo.",
+            List.of("Todavía hay 1 huésped pendiente de revisión. Revísalo antes de generar el archivo.")
         );
     }
 

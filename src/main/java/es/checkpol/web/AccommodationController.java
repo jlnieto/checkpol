@@ -39,6 +39,7 @@ public class AccommodationController {
 
         accommodationService.create(form);
         redirectAttributes.addFlashAttribute("flashMessage", "Vivienda guardada correctamente.");
+        redirectAttributes.addFlashAttribute("flashKind", "success");
         return "redirect:/bookings";
     }
 
@@ -62,6 +63,7 @@ public class AccommodationController {
 
         accommodationService.update(id, form);
         redirectAttributes.addFlashAttribute("flashMessage", "Vivienda actualizada correctamente.");
+        redirectAttributes.addFlashAttribute("flashKind", "success");
         return "redirect:/bookings";
     }
 
@@ -80,12 +82,12 @@ public class AccommodationController {
 
         String sesCode = form.sesEstablishmentCode();
         if (sesCode == null || sesCode.isBlank()) {
-            bindingResult.rejectValue("sesEstablishmentCode", "sesEstablishmentCode.blank", "Indica el codigo SES de la vivienda.");
+            bindingResult.rejectValue("sesEstablishmentCode", "sesEstablishmentCode.blank", "Indica el código SES de la vivienda.");
             return;
         }
 
         if (sesCode.trim().length() != 10) {
-            bindingResult.rejectValue("sesEstablishmentCode", "sesEstablishmentCode.length", "El codigo SES debe tener exactamente 10 caracteres.");
+            bindingResult.rejectValue("sesEstablishmentCode", "sesEstablishmentCode.length", "El código SES debe tener exactamente 10 caracteres.");
         }
     }
 }

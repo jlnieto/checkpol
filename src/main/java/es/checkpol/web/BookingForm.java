@@ -16,9 +16,9 @@ public record BookingForm(
     @Size(min = 3, max = 80, message = "La referencia debe tener entre 3 y 80 caracteres.")
     String referenceCode,
 
-    @NotNull(message = "Indica cuantas personas vienen en la reserva.")
+    @NotNull(message = "Indica cuántas personas vienen en la reserva.")
     @Min(value = 1, message = "Indica al menos 1 persona.")
-    @Max(value = 20, message = "El numero de personas no puede superar 20.")
+    @Max(value = 20, message = "El número de personas no puede superar 20.")
     Integer personCount,
 
     @NotNull(message = "Indica la fecha en la que cerraste la estancia.")

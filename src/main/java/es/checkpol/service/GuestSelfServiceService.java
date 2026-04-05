@@ -75,7 +75,7 @@ public class GuestSelfServiceService {
         GuestSelfServiceDetails details = getByToken(token);
         boolean allowed = details.guests().stream().anyMatch(guest -> guest.getId().equals(guestId));
         if (!allowed) {
-            throw new IllegalArgumentException("El huesped indicado no pertenece a este enlace.");
+            throw new IllegalArgumentException("El huésped indicado no pertenece a este enlace.");
         }
         return guestService.getForm(guestId);
     }
@@ -85,7 +85,7 @@ public class GuestSelfServiceService {
         GuestSelfServiceDetails details = getByToken(token);
         boolean allowed = details.guests().stream().anyMatch(guest -> guest.getId().equals(guestId));
         if (!allowed) {
-            throw new IllegalArgumentException("El huesped indicado no pertenece a este enlace.");
+            throw new IllegalArgumentException("El huésped indicado no pertenece a este enlace.");
         }
         guestService.updateFromSelfService(guestId, form);
     }
