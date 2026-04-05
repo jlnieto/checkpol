@@ -31,6 +31,7 @@ public class BookingController {
     @GetMapping("/bookings")
     public String list(@RequestParam(name = "filter", required = false) String filter, Model model) {
         BookingFilter selectedFilter = BookingFilter.fromParam(filter);
+        List<es.checkpol.domain.Accommodation> accommodations = accommodationService.findAll();
         List<es.checkpol.service.BookingListItem> allItems = bookingService.findAll();
         List<es.checkpol.service.BookingListItem> incompleteItems = bookingService.findAll(BookingFilter.INCOMPLETE);
         List<es.checkpol.service.BookingListItem> readyItems = bookingService.findAll(BookingFilter.READY);
@@ -50,6 +51,7 @@ public class BookingController {
         model.addAttribute("reviewQueue", reviewQueue);
         model.addAttribute("nextBooking", incompleteItems.isEmpty() ? null : incompleteItems.getFirst());
         model.addAttribute("selectedFilter", selectedFilter.name());
+        model.addAttribute("hasAccommodations", !accommodations.isEmpty());
         model.addAttribute("countAll", allItems.size());
         model.addAttribute("countIncomplete", incompleteItems.size());
         model.addAttribute("countReady", readyItems.size());

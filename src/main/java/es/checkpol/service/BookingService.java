@@ -55,17 +55,20 @@ public class BookingService {
         Long currentUserId = currentAppUserService.requireCurrentUserId();
         for (Booking booking : bookingRepository.findAllForList(currentUserId)) {
             List<Guest> guests = guestRepository.findAllByBookingIdAndBookingOwnerIdOrderByIdAsc(booking.getId(), currentUserId);
-            int generatedCount = generatedCommunicationRepository.findAllByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(booking.getId(), currentUserId).size();
+            List<GeneratedCommunication> communications = generatedCommunicationRepository.findAllByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(booking.getId(), currentUserId);
+            int generatedCount = communications.size();
             ReadinessAssessment assessment = assessReadiness(booking, guests);
             items.add(new BookingListItem(
                 booking,
                 guests.size(),
                 booking.getPersonCount() == null ? 0 : booking.getPersonCount(),
                 assessment.readyForTravelerPart(),
+                booking.getOwner() != null && booking.getOwner().hasSesWebServiceConfiguration(),
                 calculateOperationalStatus(assessment, generatedCount),
                 assessment.pendingReviewGuestCount(),
                 assessment.guestCountMismatch(),
-                assessment.blockingSummary()
+                assessment.blockingSummary(),
+                buildCommunicationStatusSummary(communications.isEmpty() ? null : communications.getFirst())
             ));
         }
         return items;
@@ -158,6 +161,7 @@ public class BookingService {
             booking.getPersonCount() == null ? 0 : booking.getPersonCount(),
             assessment.guestCountMismatch(),
             assessment.readyForTravelerPart(),
+            booking.getOwner() != null && booking.getOwner().hasSesWebServiceConfiguration(),
             communications.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(communications.getFirst()),
             communications.size(),
             communications,
@@ -241,6 +245,26 @@ public class BookingService {
                 || item.operationalStatus() == BookingOperationalStatus.XML_GENERATED;
             case TODAY -> item.booking().getCheckInDate().isEqual(today);
             case UPCOMING -> item.booking().getCheckInDate().isAfter(today);
+        };
+    }
+
+    private String buildCommunicationStatusSummary(GeneratedCommunication communication) {
+        if (communication == null) {
+            return null;
+        }
+        return switch (communication.getDispatchStatus()) {
+            case XML_READY -> "XML preparado para descargar.";
+            case SUBMITTED_TO_SES -> "Enviada a SES. Falta consultar el lote.";
+            case SES_PROCESSED -> communication.getSesCommunicationCode() == null || communication.getSesCommunicationCode().isBlank()
+                ? "SES la ha procesado correctamente."
+                : "SES la ha procesado. Código: " + communication.getSesCommunicationCode() + ".";
+            case SES_PROCESSING_ERROR -> communication.getSesProcessingErrorDescription() == null || communication.getSesProcessingErrorDescription().isBlank()
+                ? "SES ha devuelto un error de procesamiento."
+                : communication.getSesProcessingErrorDescription();
+            case SES_CANCELLED -> "Comunicación anulada en SES.";
+            case SUBMISSION_FAILED -> communication.getSesResponseDescription() == null || communication.getSesResponseDescription().isBlank()
+                ? "El envío a SES no se pudo completar."
+                : communication.getSesResponseDescription();
         };
     }
 

@@ -5,6 +5,7 @@ import es.checkpol.domain.AppUser;
 import es.checkpol.domain.AppUserRole;
 import es.checkpol.domain.Booking;
 import es.checkpol.domain.BookingChannel;
+import es.checkpol.domain.CommunicationDispatchStatus;
 import es.checkpol.domain.GeneratedCommunication;
 import es.checkpol.domain.Guest;
 import es.checkpol.domain.PaymentType;
@@ -29,11 +30,13 @@ class TravelerPartServiceTest {
     private final TravelerPartXmlGenerator xmlGenerator = Mockito.mock(TravelerPartXmlGenerator.class);
     private final GeneratedCommunicationRepository generatedCommunicationRepository = Mockito.mock(GeneratedCommunicationRepository.class);
     private final CurrentAppUserService currentAppUserService = Mockito.mock(CurrentAppUserService.class);
+    private final SesCommunicationGateway sesCommunicationGateway = Mockito.mock(SesCommunicationGateway.class);
     private final TravelerPartService travelerPartService = new TravelerPartService(
         bookingService,
         xmlGenerator,
         generatedCommunicationRepository,
-        currentAppUserService
+        currentAppUserService,
+        sesCommunicationGateway
     );
 
     @Test
@@ -73,6 +76,70 @@ class TravelerPartServiceTest {
         assertTrue(communication.getDownloadCount() == 1);
     }
 
+    @Test
+    void submitsTravelerPartWhenOwnerHasSesConfiguration() {
+        BookingDetails details = sampleDetails(true);
+        AppUser owner = details.booking().getOwner();
+        owner.updateSesWsConfiguration("A123456789", "ws-user", "encrypted");
+        Mockito.when(bookingService.getDetails(1L)).thenReturn(details);
+        Mockito.when(xmlGenerator.generate(details)).thenReturn("<xml/>");
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(currentAppUserService.requireCurrentUserEntity()).thenReturn(owner);
+        Mockito.when(generatedCommunicationRepository.findFirstByBookingIdAndBookingOwnerIdOrderByVersionDesc(1L, 7L)).thenReturn(Optional.empty());
+        Mockito.when(generatedCommunicationRepository.save(Mockito.any(GeneratedCommunication.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        Mockito.when(sesCommunicationGateway.submitTravelerPart(owner, "<xml/>"))
+            .thenReturn(new SesSubmissionResult(0, "ok", "lote-1"));
+
+        SesSubmissionResult result = travelerPartService.submitTravelerPart(1L);
+
+        assertEquals("lote-1", result.loteCode());
+        ArgumentCaptor<GeneratedCommunication> captor = ArgumentCaptor.forClass(GeneratedCommunication.class);
+        Mockito.verify(generatedCommunicationRepository).save(captor.capture());
+        assertEquals(CommunicationDispatchStatus.SUBMITTED_TO_SES, captor.getValue().getDispatchStatus());
+        assertEquals("lote-1", captor.getValue().getSesLoteCode());
+    }
+
+    @Test
+    void refreshesSesSubmissionStatusFromLote() {
+        BookingDetails details = sampleDetails(true);
+        AppUser owner = details.booking().getOwner();
+        owner.updateSesWsConfiguration("A123456789", "ws-user", "encrypted");
+        GeneratedCommunication communication = new GeneratedCommunication(details.booking(), 1, OffsetDateTime.now(), "<xml/>");
+        communication.registerSesSubmission(OffsetDateTime.now(), "lote-1", 0, "ok");
+        Mockito.when(currentAppUserService.requireCurrentUserEntity()).thenReturn(owner);
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(generatedCommunicationRepository.findByIdAndBookingIdAndBookingOwnerId(9L, 1L, 7L))
+            .thenReturn(Optional.of(communication));
+        Mockito.when(sesCommunicationGateway.queryLoteStatus(owner, "lote-1"))
+            .thenReturn(new SesLoteStatusResult(0, "ok", "lote-1", 0, "Procesado", "com-1", null, null, OffsetDateTime.now()));
+
+        SesLoteStatusResult result = travelerPartService.refreshSesSubmissionStatus(1L, 9L);
+
+        assertEquals("com-1", result.communicationCode());
+        assertEquals(CommunicationDispatchStatus.SES_PROCESSED, communication.getDispatchStatus());
+        assertEquals("com-1", communication.getSesCommunicationCode());
+    }
+
+    @Test
+    void cancelsSesSubmissionByLote() {
+        BookingDetails details = sampleDetails(true);
+        AppUser owner = details.booking().getOwner();
+        owner.updateSesWsConfiguration("A123456789", "ws-user", "encrypted");
+        GeneratedCommunication communication = new GeneratedCommunication(details.booking(), 1, OffsetDateTime.now(), "<xml/>");
+        communication.registerSesSubmission(OffsetDateTime.now(), "lote-1", 0, "ok");
+        Mockito.when(currentAppUserService.requireCurrentUserEntity()).thenReturn(owner);
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(generatedCommunicationRepository.findByIdAndBookingIdAndBookingOwnerId(9L, 1L, 7L))
+            .thenReturn(Optional.of(communication));
+        Mockito.when(sesCommunicationGateway.cancelLote(owner, "lote-1"))
+            .thenReturn(new SesSubmissionResult(0, "ok", null));
+
+        SesSubmissionResult result = travelerPartService.cancelSesSubmission(1L, 9L);
+
+        assertEquals(0, result.responseCode());
+        assertEquals(CommunicationDispatchStatus.SES_CANCELLED, communication.getDispatchStatus());
+    }
+
     private BookingDetails sampleDetails(boolean ready) {
         AppUser owner = new AppUser("owner", "hash", "Owner", AppUserRole.OWNER, true, OffsetDateTime.now(), OffsetDateTime.now());
         org.springframework.test.util.ReflectionTestUtils.setField(owner, "id", 7L);
@@ -99,6 +166,7 @@ class TravelerPartServiceTest {
             2,
             false,
             ready,
+            false,
             Optional.empty(),
             0,
             List.of(),

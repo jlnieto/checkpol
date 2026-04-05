@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Conexión SES | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
+<main class="owner-shell-narrow">
+    <section class="owner-page">
+        <header class="owner-header">
+            <a class="public-back-link" th:href="@{/bookings}">
+                <span aria-hidden="true">←</span>
+                <span>Volver a estancias</span>
+            </a>
+
+            <div class="space-y-2">
+                <p class="owner-kicker">Presentación automática</p>
+                <h1 class="owner-title">Conexión con SES</h1>
+                <p class="owner-copy">Si completas estos 3 datos podrás presentar automáticamente. Si no, seguirás descargando el XML para subirlo en la web de SES.</p>
+            </div>
+        </header>
+
+        <div th:if="${flashMessage}"
+             th:class="${flashKind == 'success'} ? 'owner-success-box' : (${flashKind == 'warning'} ? 'owner-warning-box' : 'owner-error-box error-box')"
+             th:text="${flashMessage}"></div>
+
+        <section class="owner-form-shell">
+            <form th:action="@{/bookings/ses-settings}" th:object="${ownerSesSettingsForm}" method="post" class="space-y-5" novalidate>
+                <div class="rounded-2xl border border-slate-200/80 bg-white px-4 py-4">
+                    <div class="space-y-3">
+                        <p class="owner-kicker">Estado actual</p>
+                        <div class="space-y-2">
+                            <h2 class="text-2xl font-extrabold tracking-tight text-slate-900"
+                                th:text="${connectionTestStatus.name() == 'OK'
+                                    ? 'Conexión correcta'
+                                    : (connectionTestStatus.name() == 'ACCESS_ERROR'
+                                        ? 'Revisa los datos de acceso'
+                                        : (connectionTestStatus.name() == 'TECHNICAL_ERROR'
+                                            ? 'No se ha podido comprobar la conexión'
+                                            : (sesReady ? 'Pendiente de comprobación' : 'Solo presentación manual')))}">Solo presentación manual</h2>
+                            <p class="owner-copy"
+                               th:text="${connectionMessage != null
+                                   ? connectionMessage
+                                   : (sesReady
+                                       ? 'Todavía no has lanzado la prueba. Guarda y prueba la conexión para confirmar que SES responde.'
+                                       : 'Mientras falte algún dato, Checkpol seguirá funcionando en modo manual: descargar XML y presentarlo en la web de SES.')}">
+                                Mientras falte algún dato, Checkpol seguirá funcionando en modo manual.
+                            </p>
+                            <p class="public-hint" th:if="${connectionTestedAt != null}" th:text="${'Última prueba: ' + #temporals.format(connectionTestedAt, 'dd/MM/yyyy HH:mm')}">Última prueba</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rounded-2xl border border-primary/10 bg-primary/6 px-4 py-4">
+                    <p class="owner-kicker">Datos para conectar</p>
+                    <p class="mt-2 owner-copy">Estos datos son opcionales. Solo hacen falta si quieres que Checkpol presente automáticamente.</p>
+                </div>
+
+                <label class="owner-label">
+                    <span>Código de entidad / arrendador SES</span>
+                    <input class="owner-input" th:field="*{sesArrendadorCode}" type="text" autocomplete="off" maxlength="10" placeholder="0000260833">
+                    <small class="public-hint">Usa el código numérico que aparece al seleccionar la entidad en SES.</small>
+                    <small class="owner-error" th:if="${#fields.hasErrors('sesArrendadorCode')}" th:errors="*{sesArrendadorCode}"></small>
+                </label>
+
+                <label class="owner-label">
+                    <span>Usuario servicio web SES</span>
+                    <input class="owner-input" th:field="*{sesWsUsername}" type="text" autocomplete="off" maxlength="50" placeholder="usuario-ws-ses">
+                    <small class="public-hint">Usa el valor que SES muestra en “Datos del usuario”.</small>
+                    <small class="owner-error" th:if="${#fields.hasErrors('sesWsUsername')}" th:errors="*{sesWsUsername}"></small>
+                </label>
+
+                <label class="owner-label">
+                    <span>Clave servicio web SES</span>
+                    <input class="owner-input" th:field="*{sesWsPassword}" type="password" autocomplete="new-password"
+                           th:placeholder="${sesPasswordStored ? 'Déjala vacía si quieres mantener la actual' : 'Escribe la clave del servicio web'}">
+                    <small class="public-hint" th:if="${sesPasswordStored}">Ya hay una clave guardada. Solo escríbela si quieres cambiarla.</small>
+                    <small class="owner-error" th:if="${#fields.hasErrors('sesWsPassword')}" th:errors="*{sesWsPassword}"></small>
+                </label>
+
+                <div class="owner-form-actions">
+                    <a class="owner-button-secondary" th:href="@{/bookings}">Cancelar</a>
+                    <button class="owner-button-secondary" type="submit">Guardar sin probar</button>
+                    <button class="owner-button-primary" type="submit" name="afterSaveAction" value="test">Guardar y probar conexión</button>
+                </div>
+            </form>
+        </section>
+    </section>
+</main>
+</body>
+</html>

@@ -279,6 +279,42 @@ class GuestControllerTest {
             .andExpect(flash().attribute("flashMessage", "Datos guardados. La estancia ya está lista para descargar el archivo para SES."));
     }
 
+    @Test
+    @WithMockUser(username = "owner", roles = "OWNER")
+    void submitsTravelerPartToSesWhenConfigured() throws Exception {
+        when(travelerPartService.submitTravelerPart(1L))
+            .thenReturn(new es.checkpol.service.SesSubmissionResult(0, "ok", "lote-1"));
+
+        mockMvc.perform(post("/bookings/1/submit-to-ses").with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/bookings/1"))
+            .andExpect(flash().attribute("flashMessage", "Envío enviado a SES. Lote: lote-1."));
+    }
+
+    @Test
+    @WithMockUser(username = "owner", roles = "OWNER")
+    void refreshesSesSubmissionStatus() throws Exception {
+        when(travelerPartService.refreshSesSubmissionStatus(1L, 9L))
+            .thenReturn(new es.checkpol.service.SesLoteStatusResult(0, "ok", "lote-1", 0, "Procesado", "com-1", null, null, OffsetDateTime.now()));
+
+        mockMvc.perform(post("/bookings/1/communications/9/refresh-ses-status").with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/bookings/1"))
+            .andExpect(flash().attribute("flashMessage", "SES ya ha procesado la comunicación. Código: com-1."));
+    }
+
+    @Test
+    @WithMockUser(username = "owner", roles = "OWNER")
+    void cancelsSesSubmission() throws Exception {
+        when(travelerPartService.cancelSesSubmission(1L, 9L))
+            .thenReturn(new es.checkpol.service.SesSubmissionResult(0, "ok", null));
+
+        mockMvc.perform(post("/bookings/1/communications/9/cancel-ses").with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/bookings/1"))
+            .andExpect(flash().attribute("flashMessage", "Lote anulado en SES."));
+    }
+
     private BookingDetails sampleDetails() {
         Accommodation accommodation = new Accommodation("Casa Olivo", "H123456789", "VT-123");
         Booking booking = new Booking(accommodation, "ABC123", 2,
@@ -311,6 +347,7 @@ class GuestControllerTest {
             1,
             2,
             true,
+            false,
             false,
             Optional.empty(),
             0,
@@ -387,6 +424,7 @@ class GuestControllerTest {
             2,
             false,
             false,
+            false,
             Optional.empty(),
             0,
             List.of(),
@@ -438,6 +476,7 @@ class GuestControllerTest {
             List.of(guest),
             1,
             1,
+            false,
             false,
             false,
             Optional.empty(),
@@ -492,6 +531,7 @@ class GuestControllerTest {
             1,
             false,
             true,
+            false,
             Optional.empty(),
             0,
             List.of(),

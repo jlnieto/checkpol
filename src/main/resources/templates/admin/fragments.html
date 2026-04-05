@@ -25,6 +25,14 @@
             <span class="mono-nav-text">Propietarios</span>
         </a>
         <a class="mono-nav-link"
+           th:classappend="${activeSection == 'ses' ? ' mono-nav-link-active' : ''}"
+           th:href="@{/admin/ses}">
+            <svg class="mono-nav-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path d="M4 4h12v3H4V4Zm0 4.5h12V16H4V8.5Zm2 2V14h3v-3.5H6Zm5 0V14h3v-3.5h-3Z"/>
+            </svg>
+            <span class="mono-nav-text">SES</span>
+        </a>
+        <a class="mono-nav-link"
            th:classappend="${activeSection == 'catalog' ? ' mono-nav-link-active' : ''}"
            th:href="@{/admin/municipalities}">
             <svg class="mono-nav-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

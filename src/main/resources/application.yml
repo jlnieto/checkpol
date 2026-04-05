@@ -32,3 +32,12 @@ checkpol:
         cron: ${CHECKPOL_MUNICIPALITY_ADMIN_VERIFICATION_CRON:0 0 6 * * *}
         zone: ${CHECKPOL_MUNICIPALITY_ADMIN_VERIFICATION_ZONE:Europe/Madrid}
         triggered-by: ${CHECKPOL_MUNICIPALITY_ADMIN_VERIFICATION_TRIGGERED_BY:system-verifier}
+  ses:
+    credentials:
+      secret: ${CHECKPOL_SES_CREDENTIALS_SECRET:checkpol-dev-ses-secret-change-me}
+    ws:
+      url: ${CHECKPOL_SES_WS_URL:https://hospedajes.ses.mir.es/hospedajes-web/ws/v1/comunicacion}
+      application-name: ${CHECKPOL_SES_WS_APPLICATION_NAME:checkpol}
+      truststore-path: ${CHECKPOL_SES_WS_TRUSTSTORE_PATH:}
+      truststore-password: ${CHECKPOL_SES_WS_TRUSTSTORE_PASSWORD:}
+      truststore-type: ${CHECKPOL_SES_WS_TRUSTSTORE_TYPE:PKCS12}

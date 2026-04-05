@@ -38,14 +38,21 @@
 
         <nav class="owner-drawer-nav" aria-label="Gestiones principales">
             <a class="owner-drawer-link" th:href="@{/bookings}" @click="ownerMenuOpen = false">Inicio</a>
-            <a class="owner-drawer-link" th:href="@{/bookings(filter='incomplete')}" @click="ownerMenuOpen = false">Estancias</a>
-            <a class="owner-drawer-link" th:href="@{/bookings/new}" @click="ownerMenuOpen = false">Nueva estancia</a>
-            <a class="owner-drawer-link" th:href="@{/accommodations/new}" @click="ownerMenuOpen = false">Viviendas</a>
+            <a class="owner-drawer-link" th:if="${hasAccommodations}" th:href="@{/bookings(filter='incomplete')}" @click="ownerMenuOpen = false">Estancias</a>
+            <a class="owner-drawer-link" th:if="${hasAccommodations}" th:href="@{/bookings/new}" @click="ownerMenuOpen = false">Nueva estancia</a>
+            <a class="owner-drawer-link" th:if="${hasAccommodations}" th:href="@{/accommodations/new}" @click="ownerMenuOpen = false">Viviendas</a>
+            <a class="owner-drawer-link" th:unless="${hasAccommodations}" th:href="@{/accommodations/new}" @click="ownerMenuOpen = false">Crear primera vivienda</a>
+            <a class="owner-drawer-link" th:href="@{/bookings/ses-settings}" @click="ownerMenuOpen = false">Conexión SES</a>
+            <form th:action="@{/logout}" method="post" @submit="ownerMenuOpen = false">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button type="submit" class="owner-drawer-link w-full text-left">Cerrar sesión</button>
+            </form>
         </nav>
 
         <div class="owner-drawer-note">
             <p class="owner-kicker">Orden recomendado</p>
-            <p class="mt-1 text-sm leading-6 text-slate-600">Primero revisa las pendientes. Después, registra nuevas reservas.</p>
+            <p class="mt-1 text-sm leading-6 text-slate-600" th:if="${hasAccommodations}">Primero revisa las pendientes. Después, registra nuevas reservas.</p>
+            <p class="mt-1 text-sm leading-6 text-slate-600" th:unless="${hasAccommodations}">Empieza creando una vivienda. Después podrás registrar tu primera estancia.</p>
         </div>
     </aside>
 
@@ -59,8 +66,9 @@
 
                 <div class="owner-home-actions">
                     <div class="owner-quick-links">
-                        <a class="owner-quick-link" th:href="@{/bookings(filter='incomplete')}">Estancias</a>
-                        <a class="owner-quick-link" th:href="@{/bookings/new}">Nueva estancia</a>
+                        <a class="owner-quick-link" th:if="${hasAccommodations}" th:href="@{/bookings(filter='incomplete')}">Estancias</a>
+                        <a class="owner-quick-link" th:if="${hasAccommodations}" th:href="@{/bookings/new}">Nueva estancia</a>
+                        <a class="owner-quick-link" th:unless="${hasAccommodations}" th:href="@{/accommodations/new}">Primera vivienda</a>
                     </div>
                     <button type="button" class="owner-icon-button" @click="ownerMenuOpen = true" aria-label="Abrir menú">
                         <span aria-hidden="true">&#9776;</span>
@@ -75,7 +83,22 @@
 
         <section class="owner-grid-main">
             <div class="owner-stack">
-                <section class="owner-priority-card" th:if="${nextBooking != null}">
+                <section class="owner-priority-card" th:unless="${hasAccommodations}">
+                    <div class="owner-banner-row">
+                        <div class="space-y-3">
+                            <p class="owner-priority-eyebrow">Siguiente paso</p>
+                            <div class="space-y-2">
+                                <h2 class="text-3xl font-extrabold tracking-tight text-slate-900">Crea tu primera vivienda</h2>
+                                <p class="owner-copy">Empieza por aquí. En cuanto guardes una vivienda, podrás registrar tu primera estancia.</p>
+                            </div>
+                        </div>
+                        <div class="owner-banner-actions">
+                            <a class="owner-button-primary" th:href="@{/accommodations/new}">Crear primera vivienda</a>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="owner-priority-card" th:if="${hasAccommodations and nextBooking != null}">
                     <div class="owner-banner-row">
                         <div class="space-y-3">
                             <p class="owner-priority-eyebrow">Siguiente paso</p>
@@ -92,7 +115,7 @@
                     </div>
                 </section>
 
-                <section class="owner-priority-card" th:if="${nextBooking == null}">
+                <section class="owner-priority-card" th:if="${hasAccommodations and nextBooking == null}">
                     <div class="owner-banner-row">
                         <div class="space-y-3">
                             <p class="owner-priority-eyebrow">Siguiente paso</p>
@@ -107,7 +130,7 @@
                     </div>
                 </section>
 
-                <section class="owner-card" th:if="${!#lists.isEmpty(reviewQueue)}">
+                <section class="owner-card" th:if="${hasAccommodations and !#lists.isEmpty(reviewQueue)}">
                     <div class="space-y-1">
                         <p class="owner-kicker">Para revisar ahora</p>
                         <h2 class="text-xl font-extrabold tracking-tight text-slate-900">Estas son las siguientes</h2>
@@ -134,7 +157,7 @@
                     </div>
                 </section>
 
-                <section class="owner-card" th:if="${#lists.isEmpty(reviewQueue)}">
+                <section class="owner-card" th:if="${hasAccommodations and #lists.isEmpty(reviewQueue)}">
                     <div class="space-y-2">
                         <p class="owner-kicker">Pendientes</p>
                         <h2 class="text-2xl font-extrabold tracking-tight text-slate-900">No hay nada que revisar ahora</h2>
@@ -156,16 +179,19 @@
                         <article class="owner-queue-card" th:each="item : ${bookings}">
                             <div class="owner-booking-badge-row">
                                 <span class="owner-status-ready"
-                                      th:if="${item.readyForTravelerPart}">Lista</span>
+                                      th:if="${item.communicationStatusSummary != null}"
+                                      th:text="${item.communicationStatusSummary.contains('anulada') ? 'Anulada' : (item.communicationStatusSummary.contains('procesado') or item.communicationStatusSummary.contains('Código:') ? 'SES ok' : (item.communicationStatusSummary.contains('Enviada a SES') ? 'En SES' : (item.readyForTravelerPart ? 'Lista' : 'Pendiente')))}">Lista</span>
+                                <span class="owner-status-ready"
+                                      th:if="${item.communicationStatusSummary == null and item.readyForTravelerPart}">Lista</span>
                                 <span class="owner-status-pending"
-                                      th:unless="${item.readyForTravelerPart}"
+                                      th:unless="${item.communicationStatusSummary != null or item.readyForTravelerPart}"
                                       th:text="${item.operationalStatus.name() == 'REVIEW_PENDING' ? 'Pendiente' : 'Bloqueada'}">Pendiente</span>
                                 <span class="public-pill-muted" th:text="${item.booking.channel.label}">Airbnb</span>
                             </div>
                             <h3 class="mt-3 text-xl font-extrabold tracking-tight text-slate-900" th:text="${item.booking.accommodation.name}">Casa Olivo</h3>
                             <p class="owner-queue-meta" th:text="${item.booking.referenceCode + ' · Entrada ' + #temporals.format(item.booking.checkInDate, 'dd/MM/yyyy')}">ABC123 · Entrada 27/03/2026</p>
                             <p class="mt-3 owner-copy"
-                               th:text="${item.readyForTravelerPart ? 'Lista para descargar el XML.' : item.blockingSummary}">Lista para descargar el XML.</p>
+                               th:text="${item.communicationStatusSummary != null ? item.communicationStatusSummary : (item.readyForTravelerPart ? (item.sesSubmissionAvailable ? 'Lista para presentar en SES o descargar el XML.' : 'Lista para descargar el XML.') : item.blockingSummary)}">Lista para descargar el XML.</p>
                             <div class="mt-4 owner-actions">
                                 <a class="owner-button-primary w-full justify-center sm:w-auto" th:href="@{|/bookings/${item.booking.id}|}">Abrir estancia</a>
                             </div>
@@ -174,7 +200,7 @@
                 </section>
             </div>
 
-            <aside class="owner-side-stack hidden xl:block">
+            <aside class="owner-side-stack hidden xl:block" th:if="${hasAccommodations}">
                 <section class="owner-banner-soft">
                     <p class="owner-kicker">Resumen rápido</p>
                     <div class="mt-4 owner-helper-list">

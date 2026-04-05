@@ -4,3 +4,8 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:checkpol_user}
     password: ${SPRING_DATASOURCE_PASSWORD:checkpol_dev_password}
     driver-class-name: org.postgresql.Driver
+
+checkpol:
+  ses:
+    ws:
+      url: ${CHECKPOL_SES_WS_URL:https://hospedajes.pre-ses.mir.es/hospedajes-web/ws/v1/comunicacion}

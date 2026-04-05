@@ -45,6 +45,16 @@
             </nav>
         </div>
 
+        <div class="mono-alert-success" th:if="${flashMessage != null and flashKind == 'success'}">
+            <p th:text="${flashMessage}">Conexión correcta.</p>
+        </div>
+        <div class="mono-alert-warning" th:if="${flashMessage != null and flashKind == 'warning'}">
+            <p th:text="${flashMessage}">Revisa la configuración.</p>
+        </div>
+        <div class="mono-alert-error" th:if="${flashMessage != null and flashKind == 'error'}">
+            <p th:text="${flashMessage}">Error técnico.</p>
+        </div>
+
         <section class="mono-layout">
             <div class="mono-main">
                 <section class="mono-form-panel">
@@ -57,7 +67,18 @@
                             <p th:each="error : ${#fields.globalErrors()}" th:text="${error}">Error</p>
                         </div>
 
-                        <p class="mono-compact-copy">Usa un nombre visible reconocible y deja la contraseña en blanco solo cuando quieras mantener la actual en una edición.</p>
+                        <p class="mono-compact-copy">Edita el acceso del owner. Si completas SES, también podrá presentar automáticamente; si no, seguirá trabajando con XML descargable.</p>
+
+                        <div class="mono-field md:col-span-2">
+                            <span class="mono-field-label">Acceso del owner</span>
+                            <p class="mono-compact-copy">Primero deja claro quién es el owner y si puede entrar.</p>
+                        </div>
+
+                        <label class="mono-field md:col-span-2">
+                            <span class="mono-field-label">Nombre visible</span>
+                            <input class="mono-field-input" th:field="*{displayName}" type="text" autocomplete="name">
+                            <small class="mono-field-error" th:if="${#fields.hasErrors('displayName')}" th:errors="*{displayName}"></small>
+                        </label>
 
                         <label class="mono-field">
                             <span class="mono-field-label">Usuario</span>
@@ -66,57 +87,119 @@
                         </label>
 
                         <label class="mono-field">
-                            <span class="mono-field-label">Nombre visible</span>
-                            <input class="mono-field-input" th:field="*{displayName}" type="text" autocomplete="name">
-                            <small class="mono-field-error" th:if="${#fields.hasErrors('displayName')}" th:errors="*{displayName}"></small>
-                        </label>
-
-                        <label class="mono-field">
                             <span class="mono-field-label">Contraseña</span>
-                            <input class="mono-field-input" th:field="*{password}" type="password" autocomplete="new-password" placeholder="Solo rellena si quieres definir o cambiar la contraseña">
+                            <input class="mono-field-input" th:field="*{password}" type="password" autocomplete="new-password"
+                                   th:placeholder="${sesPasswordStored ? 'Déjala vacía si no quieres cambiarla' : 'Escríbela solo si quieres definirla o cambiarla'}">
+                            <small class="mono-field-help" th:if="${sesPasswordStored}">Ya hay una clave guardada para este owner.</small>
                             <small class="mono-field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></small>
                         </label>
 
-                        <label class="mono-checkbox">
+                        <label class="mono-checkbox md:col-span-2">
                             <input th:field="*{active}" type="checkbox">
                             <span>Usuario activo</span>
                         </label>
 
+                        <div class="mono-field md:col-span-2">
+                            <span class="mono-field-label">Presentación automática en SES</span>
+                            <div class="mono-status-list mt-3">
+                                <div class="mono-status-row">
+                                    <div class="mono-status-main">
+                                        <span class="mono-status-dot" th:classappend="${sesReady ? ' mono-status-dot-green' : ' mono-status-dot-amber'}"></span>
+                                        <div>
+                                            <p class="mono-status-label"
+                                               th:text="${sesReady ? 'Listo para presentación automática'
+                                                   : (sesManualOnly ? 'Solo descarga manual' : 'Faltan datos para el envío automático')}">
+                                                Solo descarga manual
+                                            </p>
+                                            <p class="mono-status-copy"
+                                               th:text="${sesReady
+                                                   ? 'Este owner ya puede presentar partes de viajeros por servicio web.'
+                                                   : (sesManualOnly
+                                                       ? 'Si no completas SES, el owner seguirá trabajando solo con XML descargable.'
+                                                       : 'Hasta completar SES, este owner trabajará en modo manual: descargar XML y presentarlo en la web de SES.')}">
+                                                Si no completas SES, el owner seguirá trabajando solo con XML descargable.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span class="mono-status-value"
+                                          th:text="${sesReady ? 'LISTO' : 'MANUAL'}">MANUAL</span>
+                                </div>
+                                <div class="mono-status-row">
+                                    <div class="mono-status-main">
+                                        <span class="mono-status-dot"
+                                              th:classappend="${connectionTestStatus.name() == 'OK'
+                                                  ? ' mono-status-dot-green'
+                                                  : (connectionTestStatus.name() == 'TECHNICAL_ERROR'
+                                                      ? ' mono-status-dot-red'
+                                                      : (connectionTestStatus.name() == 'NOT_TESTED' ? '' : ' mono-status-dot-amber'))}"></span>
+                                        <div>
+                                            <p class="mono-status-label"
+                                               th:text="${connectionTestStatus.name() == 'OK'
+                                                   ? 'Última prueba correcta'
+                                                   : (connectionTestStatus.name() == 'ACCESS_ERROR'
+                                                       ? 'Última prueba: revisar acceso'
+                                                       : (connectionTestStatus.name() == 'TECHNICAL_ERROR'
+                                                           ? 'Última prueba: error técnico'
+                                                           : (connectionTestStatus.name() == 'CONFIGURATION_INCOMPLETE'
+                                                               ? 'Última prueba: faltan datos'
+                                                               : 'Todavía sin prueba de conexión')))}">
+                                                Todavía sin prueba de conexión
+                                            </p>
+                                            <p class="mono-status-copy"
+                                               th:text="${connectionAdminMessage != null
+                                                   ? connectionAdminMessage
+                                                   : 'Guarda y prueba la conexión para comprobar rápidamente si el owner puede presentar por WS.'}">
+                                                Guarda y prueba la conexión para comprobar rápidamente si el owner puede presentar por WS.
+                                            </p>
+                                            <p class="mono-table-meta mt-1" th:if="${connectionTestedAt != null}" th:text="${'Última prueba: ' + #temporals.format(connectionTestedAt, 'dd/MM/yyyy HH:mm')}">Última prueba</p>
+                                            <p class="mono-table-meta mt-1" th:if="${connectionTestEndpoint != null}" th:text="${'Endpoint: ' + connectionTestEndpoint}">Endpoint</p>
+                                            <p class="mono-table-meta mt-1" th:if="${connectionTestHttpStatus != null or connectionTestErrorType != null}">
+                                                <span th:text="${connectionTestHttpStatus != null ? 'HTTP ' + connectionTestHttpStatus : 'Sin HTTP'}">HTTP 502</span>
+                                                <span th:if="${connectionTestErrorType != null}" th:text="${' · ' + connectionTestErrorType}"> · TECHNICAL_ERROR</span>
+                                            </p>
+                                            <details class="mt-2" th:if="${connectionTestRawDetail != null}">
+                                                <summary class="mono-panel-link">Ver detalle técnico</summary>
+                                                <div class="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-[12px] leading-6 text-slate-700 break-words" th:text="${connectionTestRawDetail}">Detalle</div>
+                                            </details>
+                                        </div>
+                                    </div>
+                                    <span class="mono-status-value"
+                                          th:text="${connectionTestStatus.name() == 'OK' ? 'OK' : (connectionTestStatus.name() == 'NOT_TESTED' ? 'PEND' : 'REVISAR')}">PEND</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <label class="mono-field">
+                            <span class="mono-field-label">Código de entidad / arrendador SES</span>
+                            <input class="mono-field-input" th:field="*{sesArrendadorCode}" type="text" autocomplete="off" maxlength="10" placeholder="0000260833">
+                            <small class="mono-field-help">Usa el código numérico que aparece al seleccionar la entidad en SES.</small>
+                            <small class="mono-field-error" th:if="${#fields.hasErrors('sesArrendadorCode')}" th:errors="*{sesArrendadorCode}"></small>
+                        </label>
+
+                        <label class="mono-field">
+                            <span class="mono-field-label">Usuario servicio web SES</span>
+                            <input class="mono-field-input" th:field="*{sesWsUsername}" type="text" autocomplete="off" maxlength="50" placeholder="usuario-ws-ses">
+                            <small class="mono-field-help">Usa el valor que SES muestra en el bloque "Datos del usuario".</small>
+                            <small class="mono-field-error" th:if="${#fields.hasErrors('sesWsUsername')}" th:errors="*{sesWsUsername}"></small>
+                        </label>
+
+                        <label class="mono-field md:col-span-2">
+                            <span class="mono-field-label">Clave servicio web SES</span>
+                            <input class="mono-field-input" th:field="*{sesWsPassword}" type="password" autocomplete="new-password"
+                                   th:placeholder="${sesPasswordStored ? 'Déjala vacía si quieres mantener la actual' : 'Completa la clave para activar SES'}">
+                            <small class="mono-field-help" th:if="${sesPasswordStored}">Hay una clave guardada. Solo escríbela si quieres sustituirla.</small>
+                            <small class="mono-field-error" th:if="${#fields.hasErrors('sesWsPassword')}" th:errors="*{sesWsPassword}"></small>
+                        </label>
+
                         <div class="mono-inline-actions">
                             <a class="mono-btn-secondary" th:href="@{/admin/users}">Cancelar</a>
-                            <button class="mono-btn-primary" type="submit" th:text="${submitLabel}">Guardar</button>
+                            <button class="mono-btn-secondary" type="submit">Guardar</button>
+                            <button class="mono-btn-primary" type="submit" name="afterSaveAction" value="test">Guardar y probar SES</button>
                         </div>
                     </form>
                     </div>
                 </section>
             </div>
-
-            <aside class="mono-rail">
-                <section class="mono-rail-panel">
-                    <div class="mono-panel-strip">
-                        <h2 class="mono-panel-title">Guía rápida</h2>
-                    </div>
-                    <div class="mono-panel-body">
-                        <div class="mono-compact-list">
-                            <article class="mono-compact-item">
-                                <p class="mono-compact-label">Usuario</p>
-                                <p class="mono-compact-value">Identificador de acceso</p>
-                                <p class="mono-compact-copy">Debe ser estable y reconocible para la operativa diaria.</p>
-                            </article>
-                            <article class="mono-compact-item">
-                                <p class="mono-compact-label">Contraseña</p>
-                                <p class="mono-compact-value">Solo cuando haga falta</p>
-                                <p class="mono-compact-copy">En edición, dejarla vacía conserva la contraseña actual.</p>
-                            </article>
-                            <article class="mono-compact-item">
-                                <p class="mono-compact-label">Estado</p>
-                                <p class="mono-compact-value">Activo o inactivo</p>
-                                <p class="mono-compact-copy">Determina si el owner puede entrar y trabajar con reservas, huéspedes y XML.</p>
-                            </article>
-                        </div>
-                    </div>
-                </section>
-            </aside>
         </section>
         </div>
     </section>

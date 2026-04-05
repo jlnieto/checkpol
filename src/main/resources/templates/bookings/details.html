@@ -28,7 +28,11 @@
                     </div>
                     <span class="owner-status-ready"
                           th:if="${details.readyForTravelerPart}"
-                          th:text="${'Lista para XML'}">Lista para XML</span>
+                          th:text="${details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SUBMITTED_TO_SES'
+                              ? 'Pendiente en SES'
+                              : (details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SES_PROCESSED'
+                                  ? 'Presentada en SES'
+                                  : (details.sesSubmissionAvailable ? 'Lista para presentar' : 'Lista para XML'))}">Lista para XML</span>
                     <span class="owner-status-pending"
                           th:unless="${details.readyForTravelerPart}"
                           th:text="${details.operationalStatus.label}">Pendiente</span>
@@ -48,13 +52,25 @@
                         <p class="owner-priority-eyebrow">Siguiente paso</p>
                         <div class="space-y-2">
                             <h2 class="text-3xl font-extrabold tracking-tight text-slate-900"
-                                th:text="${details.readyForTravelerPart ? 'Todo está listo para descargar el archivo' : (details.operationalStatus.name() == 'GUEST_COUNT_MISMATCH' and details.guestCount < details.expectedGuestCount ? 'Falta ' + (details.expectedGuestCount - details.guestCount) + ' huésped para completar esta estancia' : (details.operationalStatus.name() == 'REVIEW_PENDING' ? 'Hay datos pendientes de revisar' : 'Todavía no se puede descargar el archivo'))}">Todo está listo para descargar el archivo</h2>
+                                th:text="${details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SUBMITTED_TO_SES'
+                                    ? 'SES está procesando el envío'
+                                    : (details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SES_PROCESSED'
+                                        ? 'La comunicación ya está presentada en SES'
+                                        : (details.readyForTravelerPart
+                                            ? (details.sesSubmissionAvailable ? 'Todo está listo para presentar en SES' : 'Todo está listo para descargar el archivo')
+                                            : (details.operationalStatus.name() == 'GUEST_COUNT_MISMATCH' and details.guestCount < details.expectedGuestCount
+                                                ? 'Falta ' + (details.expectedGuestCount - details.guestCount) + ' huésped para completar esta estancia'
+                                                : (details.operationalStatus.name() == 'REVIEW_PENDING' ? 'Hay datos pendientes de revisar' : 'Todavía no se puede descargar el archivo'))))}">Todo está listo para descargar el archivo</h2>
                             <p class="owner-copy" th:if="${details.operationalStatus.name() == 'REVIEW_PENDING'}"
                                th:text="${details.pendingReviewGuestCount == 1 ? 'Hay 1 huésped pendiente de revisión.' : 'Hay ' + details.pendingReviewGuestCount + ' huéspedes pendientes de revisión.'}"></p>
                             <p class="owner-copy" th:if="${details.operationalStatus.name() == 'GUEST_COUNT_MISMATCH'}"
                                th:text="${details.guestCount + ' de ' + details.expectedGuestCount + ' huéspedes registrados en esta estancia.'}"></p>
                             <p class="owner-copy" th:if="${details.readyForTravelerPart}"
-                               th:text="${details.guestCount + ' de ' + details.expectedGuestCount + ' huéspedes ya están listos para SES.'}"></p>
+                               th:text="${details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SUBMITTED_TO_SES'
+                                   ? 'El envío ya salió hacia SES. Ahora conviene consultar el estado del lote.'
+                                   : (details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SES_PROCESSED'
+                                       ? 'SES ya ha devuelto un código de comunicación para esta estancia.'
+                                       : details.guestCount + ' de ' + details.expectedGuestCount + ' huéspedes ya están listos para ' + (details.sesSubmissionAvailable ? 'presentar en SES.' : 'SES.'))}"></p>
                             <p class="owner-copy"
                                th:if="${!details.readyForTravelerPart and details.operationalStatus.name() != 'GUEST_COUNT_MISMATCH' and details.operationalStatus.name() != 'REVIEW_PENDING' and details.blockingSummary != null}"
                                th:text="${details.blockingSummary}"></p>
@@ -73,7 +89,16 @@
                            th:if="${(details.operationalStatus.name() == 'GUEST_COUNT_MISMATCH' and details.guestCount < details.expectedGuestCount) or details.operationalStatus.name() == 'WAITING_GUESTS'}"
                            th:href="@{|/bookings/${details.booking.id}/guests/new|}">Añadir huésped manualmente</a>
                         <a class="owner-button-primary" th:if="${details.operationalStatus.name() == 'GUEST_COUNT_MISMATCH' and details.guestCount >= details.expectedGuestCount}" th:href="@{|/bookings/${details.booking.id}/edit|}">Revisar estancia</a>
-                        <a class="owner-button-primary" th:if="${details.readyForTravelerPart}" th:href="@{|/bookings/${details.booking.id}/traveler-part.xml|}">Descargar archivo para SES</a>
+                        <form th:if="${details.readyForTravelerPart and details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SUBMITTED_TO_SES'}"
+                              th:action="@{|/bookings/${details.booking.id}/communications/${details.lastGeneratedCommunication.get.id}/refresh-ses-status|}" method="post">
+                            <button type="submit" class="owner-button-primary">Consultar estado SES</button>
+                        </form>
+                        <form th:if="${details.readyForTravelerPart and details.sesSubmissionAvailable and (!details.lastGeneratedCommunication.present or (details.lastGeneratedCommunication.get.dispatchStatus.name() != 'SUBMITTED_TO_SES' and details.lastGeneratedCommunication.get.dispatchStatus.name() != 'SES_PROCESSED'))}"
+                              th:action="@{|/bookings/${details.booking.id}/submit-to-ses|}" method="post">
+                            <button type="submit" class="owner-button-primary">Presentar en SES</button>
+                        </form>
+                        <a class="owner-button-secondary" th:if="${details.readyForTravelerPart and details.sesSubmissionAvailable}" th:href="@{|/bookings/${details.booking.id}/traveler-part.xml|}">Descargar XML</a>
+                        <a class="owner-button-primary" th:if="${details.readyForTravelerPart and !details.sesSubmissionAvailable}" th:href="@{|/bookings/${details.booking.id}/traveler-part.xml|}">Descargar archivo para SES</a>
                         <a class="owner-button-primary" th:if="${!details.readyForTravelerPart and details.operationalStatus.name() != 'REVIEW_PENDING' and details.operationalStatus.name() != 'GUEST_COUNT_MISMATCH' and details.operationalStatus.name() != 'WAITING_GUESTS'}" th:href="@{|/bookings/${details.booking.id}/edit|}">Revisar estancia</a>
                     </div>
                 </div>
@@ -190,11 +215,38 @@
                                     <h3 class="owner-guest-name" th:text="${communication.version == details.generatedCommunicationCount ? 'Archivo actual v' + communication.version : 'Archivo v' + communication.version}">Archivo actual v2</h3>
                                     <p class="owner-guest-document" th:text="${#temporals.format(communication.generatedAt, 'dd/MM/yyyy HH:mm')}">01/04/2026 12:00</p>
                                 </div>
-                                <span class="owner-status-ready" th:text="${communication.downloadCount + ' descargas'}">2 descargas</span>
+                                <span class="owner-status-ready"
+                                      th:text="${communication.dispatchMode.name() == 'SES_WEB_SERVICE'
+                                          ? (communication.dispatchStatus.name() == 'SUBMITTED_TO_SES'
+                                              ? 'Pendiente en SES'
+                                              : (communication.dispatchStatus.name() == 'SES_PROCESSED'
+                                                  ? 'Procesada en SES'
+                                                  : 'Error en SES'))
+                                          : communication.downloadCount + ' descargas'}">2 descargas</span>
                             </div>
                             <p class="owner-muted-note" th:if="${communication.lastDownloadedAt != null}"
                                th:text="${'Última descarga: ' + #temporals.format(communication.lastDownloadedAt, 'dd/MM/yyyy HH:mm')}"></p>
+                            <p class="owner-muted-note" th:if="${communication.sesLoteCode != null}"
+                               th:text="${'Lote SES: ' + communication.sesLoteCode}"></p>
+                            <p class="owner-muted-note" th:if="${communication.sesCommunicationCode != null}"
+                               th:text="${'Código SES: ' + communication.sesCommunicationCode}"></p>
+                            <p class="owner-muted-note" th:if="${communication.sesLastStatusCheckedAt != null}"
+                               th:text="${'Última consulta: ' + #temporals.format(communication.sesLastStatusCheckedAt, 'dd/MM/yyyy HH:mm')}"></p>
+                            <p class="owner-muted-note" th:if="${communication.sesProcessingStateDescription != null}"
+                               th:text="${communication.sesProcessingStateDescription}"></p>
+                            <p class="owner-muted-note" th:if="${communication.dispatchStatus.name() == 'SUBMISSION_FAILED' and communication.sesResponseDescription != null}"
+                               th:text="${communication.sesResponseDescription}"></p>
+                            <p class="owner-muted-note" th:if="${communication.dispatchStatus.name() == 'SES_PROCESSING_ERROR' and communication.sesProcessingErrorDescription != null}"
+                               th:text="${communication.sesProcessingErrorDescription}"></p>
                             <div class="mt-4 owner-actions">
+                                <form th:if="${communication.sesLoteCode != null and communication.dispatchStatus.name() == 'SUBMITTED_TO_SES'}"
+                                      th:action="@{|/bookings/${details.booking.id}/communications/${communication.id}/refresh-ses-status|}" method="post">
+                                    <button type="submit" class="owner-button-primary">Consultar estado SES</button>
+                                </form>
+                                <form th:if="${communication.sesLoteCode != null and communication.dispatchStatus.name() != 'SES_CANCELLED'}"
+                                      th:action="@{|/bookings/${details.booking.id}/communications/${communication.id}/cancel-ses|}" method="post">
+                                    <button type="submit" class="owner-button-secondary">Anular en SES</button>
+                                </form>
                                 <a class="owner-button-secondary" th:href="@{|/bookings/${details.booking.id}/communications/${communication.id}.xml|}">Descargar este archivo</a>
                             </div>
                         </article>
@@ -205,10 +257,26 @@
             <aside class="owner-side-stack">
                 <section class="owner-banner-soft">
                     <p class="owner-kicker">Archivo para SES</p>
-                    <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">¿Está listo para descargar?</h2>
-                    <p class="mt-2 owner-copy" th:if="${details.readyForTravelerPart}">Sí. Ya puedes descargar el archivo y guardarlo como trazabilidad de la estancia.</p>
+                    <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-slate-900"
+                        th:text="${details.sesSubmissionAvailable ? '¿Está lista para presentar?' : '¿Está listo para descargar?'}">¿Está listo para descargar?</h2>
+                    <p class="mt-2 owner-copy" th:if="${details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SUBMITTED_TO_SES'}">Ya se ha enviado a SES. El siguiente paso es consultar el lote hasta que devuelva el código final.</p>
+                    <p class="mt-2 owner-copy" th:if="${details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SES_PROCESSED'}">SES ya ha confirmado esta comunicación. Conserva el XML y el código como trazabilidad.</p>
+                    <p class="mt-2 owner-copy" th:if="${details.readyForTravelerPart and details.sesSubmissionAvailable and (!details.lastGeneratedCommunication.present or (details.lastGeneratedCommunication.get.dispatchStatus.name() != 'SUBMITTED_TO_SES' and details.lastGeneratedCommunication.get.dispatchStatus.name() != 'SES_PROCESSED'))}">Sí. Ya puedes presentarla en SES y, si quieres, descargar el XML como copia.</p>
+                    <p class="mt-2 owner-copy" th:if="${details.readyForTravelerPart and !details.sesSubmissionAvailable}">Sí. Ya puedes descargar el archivo y guardarlo como trazabilidad de la estancia.</p>
                     <p class="mt-2 owner-copy" th:if="${!details.readyForTravelerPart}">Todavía no. Primero completa el paso indicado arriba y revisa lo pendiente.</p>
-                    <div class="mt-4 owner-actions" th:if="${details.readyForTravelerPart}">
+                    <div class="mt-4 owner-actions" th:if="${details.readyForTravelerPart and details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SUBMITTED_TO_SES'}">
+                        <form th:action="@{|/bookings/${details.booking.id}/communications/${details.lastGeneratedCommunication.get.id}/refresh-ses-status|}" method="post">
+                            <button type="submit" class="owner-button-primary">Consultar estado SES</button>
+                        </form>
+                        <a class="owner-button-secondary" th:href="@{|/bookings/${details.booking.id}/traveler-part.xml|}">Descargar XML</a>
+                    </div>
+                    <div class="mt-4 owner-actions" th:if="${details.readyForTravelerPart and details.sesSubmissionAvailable and (!details.lastGeneratedCommunication.present or (details.lastGeneratedCommunication.get.dispatchStatus.name() != 'SUBMITTED_TO_SES' and details.lastGeneratedCommunication.get.dispatchStatus.name() != 'SES_PROCESSED'))}">
+                        <form th:action="@{|/bookings/${details.booking.id}/submit-to-ses|}" method="post">
+                            <button type="submit" class="owner-button-primary">Presentar en SES</button>
+                        </form>
+                        <a class="owner-button-secondary" th:href="@{|/bookings/${details.booking.id}/traveler-part.xml|}">Descargar XML</a>
+                    </div>
+                    <div class="mt-4 owner-actions" th:if="${details.readyForTravelerPart and !details.sesSubmissionAvailable}">
                         <a class="owner-button-primary" th:href="@{|/bookings/${details.booking.id}/traveler-part.xml|}">Descargar archivo para SES</a>
                     </div>
                     <div class="mt-4 owner-helper-list" th:if="${!details.readyForTravelerPart}">
@@ -228,7 +296,7 @@
                         </div>
                         <div class="owner-helper-item">
                             <strong>Descarga al final</strong>
-                            <span>Cuando el estado pase a listo, la estancia ya estará preparada para SES.</span>
+                            <span th:text="${details.sesSubmissionAvailable ? 'Cuando el estado pase a listo, podrás presentarla en SES o descargar el XML.' : 'Cuando el estado pase a listo, la estancia ya estará preparada para SES.'}">Cuando el estado pase a listo, la estancia ya estará preparada para SES.</span>
                         </div>
                     </div>
                 </section>

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class AccommodationService {
@@ -33,7 +34,7 @@ public class AccommodationService {
         Accommodation accommodation = new Accommodation(
             currentUser,
             form.name().trim(),
-            form.sesEstablishmentCode().trim(),
+            normalizeSesCode(form.sesEstablishmentCode()),
             normalize(form.registrationNumber()),
             form.roomCount()
         );
@@ -58,11 +59,15 @@ public class AccommodationService {
             .orElseThrow(() -> new IllegalArgumentException("La vivienda seleccionada no existe."));
         accommodation.update(
             form.name().trim(),
-            form.sesEstablishmentCode().trim(),
+            normalizeSesCode(form.sesEstablishmentCode()),
             normalize(form.registrationNumber()),
             form.roomCount()
         );
         return accommodation;
+    }
+
+    private String normalizeSesCode(String value) {
+        return value == null ? null : value.trim().toUpperCase(Locale.ROOT);
     }
 
     private String normalize(String value) {

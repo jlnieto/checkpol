@@ -1,6 +1,6 @@
 # Checkpol
 
-Aplicacion MVP para pequenos propietarios o gestores de viviendas turisticas que necesitan registrar estancias, recoger datos de huespedes y preparar el XML de `parte de viajeros` para carga manual en SES Hospedajes.
+Aplicacion para pequenos propietarios o gestores de viviendas turisticas que necesitan registrar estancias, recoger datos de huespedes y preparar o presentar la comunicacion de `parte de viajeros` en SES Hospedajes.
 
 ## Proposito
 
@@ -10,8 +10,9 @@ Aplicacion MVP para pequenos propietarios o gestores de viviendas turisticas que
 2. completar los datos de los huespedes,
 3. validar la informacion esencial,
 4. generar un XML descargable,
-5. mantener trazabilidad operativa,
-6. reducir carga manual con un flujo publico de autoservicio para huespedes.
+5. presentar automaticamente por WS cuando el owner tenga configurado SES,
+6. mantener trazabilidad operativa,
+7. reducir carga manual con un flujo publico de autoservicio para huespedes.
 
 ## Estado actual
 
@@ -24,8 +25,9 @@ La aplicacion ya incluye:
 - alta y edicion de estancias,
 - alta y edicion de huespedes desde backoffice,
 - wizard interno para alta y edicion de huespedes,
-- generacion manual de XML de `parte de viajeros`,
+- generacion de XML de `parte de viajeros`,
 - historial de XML generados por estancia con version y descargas,
+- presentacion automatica opcional por servicio web de SES,
 - enlace publico por estancia para que los huespedes completen sus datos,
 - flujo publico guiado en varios pasos con seleccion o creacion de direccion,
 - revision interna de huespedes enviados por enlace,
@@ -33,8 +35,6 @@ La aplicacion ya incluye:
 
 Limitaciones importantes:
 
-- no existe integracion oficial con SES,
-- no se envia nada automaticamente al Ministerio,
 - solo se trabaja con la modalidad XML de `parte de viajeros`,
 - el enlace publico sigue siendo por estancia, no individual por huesped,
 - no hay notificaciones ni envio automatico del enlace,
@@ -42,10 +42,30 @@ Limitaciones importantes:
 - la carga administrativa del catálogo municipal depende de que las URLs oficiales sigan manteniendo el formato esperado,
 - la migracion visual a Tailwind aun no esta cerrada en todo `owner`.
 
+## SES por servicio web
+
+Para presentar automaticamente en SES no basta con usuario y clave del WS. La JVM debe confiar en el certificado remoto mediante un truststore configurado por entorno.
+
+Variables de entorno soportadas:
+
+- `CHECKPOL_SES_WS_URL`
+- `CHECKPOL_SES_WS_APPLICATION_NAME`
+- `CHECKPOL_SES_WS_TRUSTSTORE_PATH`
+- `CHECKPOL_SES_WS_TRUSTSTORE_PASSWORD`
+- `CHECKPOL_SES_WS_TRUSTSTORE_TYPE`
+
+Recomendacion operativa:
+
+- `dev`: usar `pre-ses` y un truststore de pruebas
+- `prod`: usar `ses` y un truststore de produccion
+- no guardar truststores ni claves en el repositorio
+
+Guia rapida local:
+
+- [docs/ses-ws-truststore-setup.md](/home/jose/IdeaProjects/checkpol/docs/ses-ws-truststore-setup.md)
+
 ## Restricciones clave
 
-- No integrar por ahora con la API oficial de SES.
-- No automatizar el envio al Ministerio.
 - No presentar como definitivo un formato XML no verificado.
 - No implementar la modalidad XML de `reserva de hospedaje`.
 - No convertir el producto en un PMS ni en una SPA compleja.

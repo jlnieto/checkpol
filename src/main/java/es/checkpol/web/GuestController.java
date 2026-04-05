@@ -252,6 +252,62 @@ public class GuestController {
         }
     }
 
+    @PostMapping("/bookings/{bookingId}/submit-to-ses")
+    public String submitTravelerPartToSes(@PathVariable Long bookingId, RedirectAttributes redirectAttributes) {
+        try {
+            var result = travelerPartService.submitTravelerPart(bookingId);
+            String lote = result.loteCode() == null || result.loteCode().isBlank() ? "sin lote devuelto" : result.loteCode();
+            redirectAttributes.addFlashAttribute("flashMessage", "Envío enviado a SES. Lote: " + lote + ".");
+            redirectAttributes.addFlashAttribute("flashKind", "success");
+        } catch (IllegalStateException | IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("flashMessage", exception.getMessage());
+            redirectAttributes.addFlashAttribute("flashKind", "error");
+        }
+        return "redirect:/bookings/" + bookingId;
+    }
+
+    @PostMapping("/bookings/{bookingId}/communications/{communicationId}/refresh-ses-status")
+    public String refreshSesSubmissionStatus(
+        @PathVariable Long bookingId,
+        @PathVariable Long communicationId,
+        RedirectAttributes redirectAttributes
+    ) {
+        try {
+            var result = travelerPartService.refreshSesSubmissionStatus(bookingId, communicationId);
+            if (result.communicationCode() != null && !result.communicationCode().isBlank()) {
+                redirectAttributes.addFlashAttribute("flashMessage", "SES ya ha procesado la comunicación. Código: " + result.communicationCode() + ".");
+                redirectAttributes.addFlashAttribute("flashKind", "success");
+            } else if (result.processingErrorDescription() != null && !result.processingErrorDescription().isBlank()) {
+                redirectAttributes.addFlashAttribute("flashMessage", result.processingErrorDescription());
+                redirectAttributes.addFlashAttribute("flashKind", "error");
+            } else {
+                redirectAttributes.addFlashAttribute("flashMessage", "SES todavía no ha devuelto un código final para este lote.");
+                redirectAttributes.addFlashAttribute("flashKind", "success");
+            }
+        } catch (IllegalStateException | IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("flashMessage", exception.getMessage());
+            redirectAttributes.addFlashAttribute("flashKind", "error");
+        }
+        return "redirect:/bookings/" + bookingId;
+    }
+
+    @PostMapping("/bookings/{bookingId}/communications/{communicationId}/cancel-ses")
+    public String cancelSesSubmission(
+        @PathVariable Long bookingId,
+        @PathVariable Long communicationId,
+        RedirectAttributes redirectAttributes
+    ) {
+        try {
+            var result = travelerPartService.cancelSesSubmission(bookingId, communicationId);
+            redirectAttributes.addFlashAttribute("flashMessage", "Lote anulado en SES.");
+            redirectAttributes.addFlashAttribute("flashKind", "success");
+        } catch (IllegalStateException | IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("flashMessage", exception.getMessage());
+            redirectAttributes.addFlashAttribute("flashKind", "error");
+        }
+        return "redirect:/bookings/" + bookingId;
+    }
+
     @GetMapping("/bookings/{bookingId}/communications/{communicationId}.xml")
     public ResponseEntity<String> downloadGeneratedCommunication(
         @PathVariable Long bookingId,

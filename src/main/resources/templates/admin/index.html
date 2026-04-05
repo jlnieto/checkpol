@@ -98,6 +98,70 @@
                 <div class="mono-main">
                     <section class="mono-panel">
                         <div class="mono-panel-strip">
+                            <h2 class="mono-panel-title">Control SES</h2>
+                            <a class="mono-panel-link" th:href="@{/admin/ses}">Abrir control</a>
+                        </div>
+                        <div class="mono-panel-body">
+                            <div class="mono-status-list">
+                                <div class="mono-status-row">
+                                    <div class="mono-status-main">
+                                        <span class="mono-status-dot" th:classappend="${sesSummary.submissionErrorCount + sesSummary.processingErrorCount > 0 ? ' mono-status-dot-red' : ' mono-status-dot-green'}"></span>
+                                        <div>
+                                            <p class="mono-status-label">Incidencias SES</p>
+                                            <p class="mono-status-copy">
+                                                <span th:text="${sesSummary.submissionErrorCount}">0</span> de envío ·
+                                                <span th:text="${sesSummary.processingErrorCount}">0</span> devueltas por SES
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span class="mono-status-value"
+                                          th:text="${sesSummary.submissionErrorCount + sesSummary.processingErrorCount > 0 ? 'REVISAR' : 'OK'}">OK</span>
+                                </div>
+                                <div class="mono-status-row">
+                                    <div class="mono-status-main">
+                                        <span class="mono-status-dot" th:classappend="${sesSummary.pendingCount > 0 ? ' mono-status-dot-amber' : ' mono-status-dot-green'}"></span>
+                                        <div>
+                                            <p class="mono-status-label">Lotes pendientes</p>
+                                            <p class="mono-status-copy" th:text="${sesSummary.pendingCount == 0 ? 'No hay lotes esperando respuesta.' : sesSummary.pendingCount + ' lotes siguen sin código final.'}">No hay lotes esperando respuesta.</p>
+                                        </div>
+                                    </div>
+                                    <span class="mono-status-value" th:text="${sesSummary.pendingCount}">0</span>
+                                </div>
+                                <div class="mono-status-row">
+                                    <div class="mono-status-main">
+                                        <span class="mono-status-dot" th:classappend="${sesSummary.ownersWithoutReadyWsCount > 0 ? ' mono-status-dot-amber' : ' mono-status-dot-green'}"></span>
+                                        <div>
+                                            <p class="mono-status-label">Owners listos para WS</p>
+                                            <p class="mono-status-copy" th:text="${sesSummary.ownersWithoutReadyWsCount == 0 ? 'Todos los owners activos ya pueden presentar automático.' : sesSummary.ownersWithoutReadyWsCount + ' owners activos siguen solo en modo manual.'}">Todos los owners activos ya pueden presentar automático.</p>
+                                        </div>
+                                    </div>
+                                    <span class="mono-status-value" th:text="${sesSummary.ownersWithoutReadyWsCount == 0 ? 'LISTO' : 'PEND'}">LISTO</span>
+                                </div>
+                                <div class="mono-status-row">
+                                    <div class="mono-status-main">
+                                        <span class="mono-status-dot" th:classappend="${sesSummary.technicalHealth.overallToneClass == 'mono-pill-danger' ? ' mono-status-dot-red' : (sesSummary.technicalHealth.overallToneClass == 'mono-pill-warning' ? ' mono-status-dot-amber' : ' mono-status-dot-green')}"></span>
+                                        <div>
+                                            <p class="mono-status-label">Estado técnico WS</p>
+                                            <p class="mono-status-copy"
+                                               th:text="${sesSummary.technicalHealth.truststore.detail}">Truststore cargado correctamente.</p>
+                                        </div>
+                                    </div>
+                                    <span class="mono-status-value" th:text="${sesSummary.technicalHealth.overallLabel}">Controlado</span>
+                                </div>
+                            </div>
+                            <div class="mono-panel-actions">
+                                <a class="mono-btn-primary" th:href="@{/admin/ses}">Abrir control SES</a>
+                                <a class="mono-btn-secondary" th:href="@{/admin/ses/owners}">Revisar owners</a>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </section>
+
+            <section class="mono-layout">
+                <div class="mono-main">
+                    <section class="mono-panel">
+                        <div class="mono-panel-strip">
                             <h2 class="mono-panel-title">Estado del sistema operativo</h2>
                             <a class="mono-panel-link" th:href="@{/admin/municipalities}">Ver detalles</a>
                         </div>
@@ -271,6 +335,12 @@
                                 </svg>
                                 Nuevo owner
                             </a>
+                            <a class="mono-link-item" th:href="@{/admin/ses}">
+                                <svg class="mono-link-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path d="M4 4h12v3H4V4Zm0 4.5h12V16H4V8.5Zm2 2V14h3v-3.5H6Zm5 0V14h3v-3.5h-3Z"/>
+                                </svg>
+                                Control SES
+                            </a>
                             <a class="mono-link-item" th:href="@{/admin/municipalities}">
                                 <svg class="mono-link-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path d="M4 3h9l3 3v11H4V3Zm2 2v10h8V7.2L12.8 5H6Z"/>
@@ -283,12 +353,14 @@
                     <section class="mono-message">
                         <p class="mono-message-label">Mensaje del sistema</p>
                         <p class="mono-message-copy"
-                           th:text="${sourceHealth.level == 'ok'
-                               ? 'El sistema está estable. Mantén trazabilidad de nuevas importaciones y revisa solo cambios de fuente.'
-                               : 'Hay señales operativas pendientes. Revisa el catálogo y verifica las fuentes antes de cualquier importación.'}">
+                           th:text="${sesSummary.alertCount > 0
+                               ? 'SES ya puede dar problemas operativos reales. Abre el control SES y corrige primero owners incompletos o envíos con error.'
+                               : (sourceHealth.level == 'ok'
+                                   ? 'El sistema está estable. Mantén trazabilidad de nuevas importaciones y revisa solo cambios de fuente.'
+                                   : 'Hay señales operativas pendientes. Revisa el catálogo y verifica las fuentes antes de cualquier importación.')}">
                             Hay señales operativas pendientes.
                         </p>
-                        <a class="mono-message-link" th:href="@{/admin/municipalities}">Saber más</a>
+                        <a class="mono-message-link" th:href="${sesSummary.alertCount > 0} ? @{/admin/ses} : @{/admin/municipalities}">Saber más</a>
                     </section>
                 </aside>
             </section>

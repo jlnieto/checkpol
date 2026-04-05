@@ -14,6 +14,7 @@ public record BookingDetails(
     int expectedGuestCount,
     boolean guestCountMismatch,
     boolean readyForTravelerPart,
+    boolean sesSubmissionAvailable,
     Optional<GeneratedCommunication> lastGeneratedCommunication,
     int generatedCommunicationCount,
     List<GeneratedCommunication> generatedCommunications,

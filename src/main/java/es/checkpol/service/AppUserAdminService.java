@@ -16,10 +16,16 @@ public class AppUserAdminService {
 
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AppUserSesService appUserSesService;
 
-    public AppUserAdminService(AppUserRepository appUserRepository, PasswordEncoder passwordEncoder) {
+    public AppUserAdminService(
+        AppUserRepository appUserRepository,
+        PasswordEncoder passwordEncoder,
+        AppUserSesService appUserSesService
+    ) {
         this.appUserRepository = appUserRepository;
         this.passwordEncoder = passwordEncoder;
+        this.appUserSesService = appUserSesService;
     }
 
     @Transactional(readOnly = true)
@@ -47,7 +53,7 @@ public class AppUserAdminService {
             throw new IllegalArgumentException("Ya existe un usuario con ese nombre.");
         }
         OffsetDateTime now = OffsetDateTime.now();
-        return appUserRepository.save(new AppUser(
+        AppUser owner = new AppUser(
             form.username().trim(),
             passwordEncoder.encode(form.password().trim()),
             form.displayName().trim(),
@@ -55,7 +61,9 @@ public class AppUserAdminService {
             form.active(),
             now,
             now
-        ));
+        );
+        appUserSesService.updateSesConfiguration(owner, form.sesArrendadorCode(), form.sesWsUsername(), form.sesWsPassword());
+        return appUserRepository.save(owner);
     }
 
     @Transactional(readOnly = true)
@@ -65,8 +73,22 @@ public class AppUserAdminService {
             user.getUsername(),
             user.getDisplayName(),
             "",
+            user.getSesArrendadorCode() == null ? "" : user.getSesArrendadorCode(),
+            user.getSesWsUsername() == null ? "" : user.getSesWsUsername(),
+            "",
             user.isActive()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public boolean ownerHasStoredSesPassword(Long userId) {
+        AppUser user = getOwner(userId);
+        return user.getSesWsPasswordEncrypted() != null && !user.getSesWsPasswordEncrypted().isBlank();
+    }
+
+    @Transactional(readOnly = true)
+    public AppUser getOwnerEntity(Long userId) {
+        return getOwner(userId);
     }
 
     @Transactional
@@ -79,10 +101,16 @@ public class AppUserAdminService {
         }
         user.updateUsername(newUsername);
         user.updateOwner(form.displayName().trim(), form.active());
+        appUserSesService.updateSesConfiguration(user, form.sesArrendadorCode(), form.sesWsUsername(), form.sesWsPassword());
         if (form.password() != null && !form.password().isBlank()) {
             user.updatePasswordHash(passwordEncoder.encode(form.password().trim()));
         }
         return user;
+    }
+
+    @Transactional
+    public SesConnectionTestResult testOwnerSesConnection(Long userId) {
+        return appUserSesService.testAndStore(getOwner(userId));
     }
 
     private AppUser getOwner(Long userId) {
@@ -113,4 +141,5 @@ public class AppUserAdminService {
             throw new IllegalArgumentException("Escribe un nombre visible.");
         }
     }
+
 }

@@ -1444,6 +1444,10 @@
         @apply mb-4 border border-rose-200 bg-rose-50 px-4 py-3 text-[12px] font-medium text-rose-800;
     }
 
+    .mono-alert-warning {
+        @apply mb-4 border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] font-medium text-amber-800;
+    }
+
     .mono-form-panel {
         @apply bg-white shadow-sm;
     }
@@ -1999,6 +2003,10 @@
 
     .owner-success-box {
         @apply rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-800;
+    }
+
+    .owner-warning-box {
+        @apply rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800;
     }
 
     .owner-button-primary {

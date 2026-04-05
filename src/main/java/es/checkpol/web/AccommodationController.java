@@ -32,6 +32,7 @@ public class AccommodationController {
         Model model,
         RedirectAttributes redirectAttributes
     ) {
+        validateSesEstablishmentCode(form, bindingResult);
         if (bindingResult.hasErrors()) {
             return populateForm(model, form, "/accommodations", "Nueva vivienda", "Guardar vivienda");
         }
@@ -54,6 +55,7 @@ public class AccommodationController {
         Model model,
         RedirectAttributes redirectAttributes
     ) {
+        validateSesEstablishmentCode(form, bindingResult);
         if (bindingResult.hasErrors()) {
             return populateForm(model, form, "/accommodations/" + id, "Editar vivienda", "Guardar cambios");
         }
@@ -69,5 +71,21 @@ public class AccommodationController {
         model.addAttribute("formTitle", title);
         model.addAttribute("submitLabel", submitLabel);
         return "accommodations/form";
+    }
+
+    private void validateSesEstablishmentCode(AccommodationForm form, BindingResult bindingResult) {
+        if (bindingResult.hasFieldErrors("sesEstablishmentCode")) {
+            return;
+        }
+
+        String sesCode = form.sesEstablishmentCode();
+        if (sesCode == null || sesCode.isBlank()) {
+            bindingResult.rejectValue("sesEstablishmentCode", "sesEstablishmentCode.blank", "Indica el codigo SES de la vivienda.");
+            return;
+        }
+
+        if (sesCode.trim().length() != 10) {
+            bindingResult.rejectValue("sesEstablishmentCode", "sesEstablishmentCode.length", "El codigo SES debe tener exactamente 10 caracteres.");
+        }
     }
 }

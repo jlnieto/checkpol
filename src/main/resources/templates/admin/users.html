@@ -47,6 +47,9 @@
             <div class="mono-alert-success" th:if="${flashMessage != null and flashKind == 'success'}">
                 <p th:text="${flashMessage}">Usuario guardado.</p>
             </div>
+            <div class="mono-alert-warning" th:if="${flashMessage != null and flashKind == 'warning'}">
+                <p th:text="${flashMessage}">Usuario guardado en modo manual.</p>
+            </div>
 
             <section class="mono-kpi-grid">
                 <article class="mono-kpi">

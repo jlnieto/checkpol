@@ -27,6 +27,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
@@ -50,6 +51,7 @@ class BookingControllerTest {
     @Test
     @WithMockUser(username = "owner", roles = "OWNER")
     void showsBookingList() throws Exception {
+        when(accommodationService.findAll()).thenReturn(List.of(new Accommodation("Casa Olivo", "H123456789", "VT-123")));
         when(bookingService.findAll()).thenReturn(List.of());
         when(bookingService.findAll(BookingFilter.ALL)).thenReturn(List.of());
         when(bookingService.findAll(BookingFilter.INCOMPLETE)).thenReturn(List.of());
@@ -61,13 +63,15 @@ class BookingControllerTest {
             .andExpect(status().isOk())
             .andExpect(view().name("bookings/list"))
             .andExpect(model().attributeExists("bookings"))
-            .andExpect(model().attributeExists("countAll"));
+            .andExpect(model().attributeExists("countAll"))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Cerrar sesión")));
     }
 
     @Test
     @WithMockUser(username = "owner", roles = "OWNER")
     void showsReadyBookingsWhenReadyFilterIsSelected() throws Exception {
         Accommodation accommodation = new Accommodation("Casa Olivo", "H123456789", "VT-123");
+        when(accommodationService.findAll()).thenReturn(List.of(accommodation));
         Booking booking = new Booking(
             accommodation,
             "ABC123",
@@ -82,7 +86,7 @@ class BookingControllerTest {
             null,
             null
         );
-        BookingListItem readyItem = new BookingListItem(booking, 2, 2, true, BookingOperationalStatus.READY_FOR_XML, 0, false, null);
+        BookingListItem readyItem = new BookingListItem(booking, 2, 2, true, false, BookingOperationalStatus.READY_FOR_XML, 0, false, null, null);
 
         when(bookingService.findAll()).thenReturn(List.of(readyItem));
         when(bookingService.findAll(BookingFilter.INCOMPLETE)).thenReturn(List.of());
@@ -102,6 +106,7 @@ class BookingControllerTest {
     @WithMockUser(username = "owner", roles = "OWNER")
     void showsBlockingSummaryInsteadOfReadyMessageWhenBookingIsNotReadyForXml() throws Exception {
         Accommodation accommodation = new Accommodation("Casa Olivo", "H123456789", "VT-123");
+        when(accommodationService.findAll()).thenReturn(List.of(accommodation));
         Booking booking = new Booking(
             accommodation,
             "ABC123",
@@ -121,10 +126,12 @@ class BookingControllerTest {
             4,
             2,
             false,
+            false,
             BookingOperationalStatus.GUEST_COUNT_MISMATCH,
             0,
             true,
-            "4 huespedes registrados · 2 personas esperadas"
+            "4 huespedes registrados · 2 personas esperadas",
+            null
         );
 
         when(bookingService.findAll()).thenReturn(List.of(blockedItem));
@@ -137,6 +144,25 @@ class BookingControllerTest {
             .andExpect(status().isOk())
             .andExpect(content().string(org.hamcrest.Matchers.containsString("4 huespedes registrados · 2 personas esperadas")))
             .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Lista para descargar"))));
+    }
+
+    @Test
+    @WithMockUser(username = "owner", roles = "OWNER")
+    void showsFirstAccommodationStepWhenOwnerHasNoAccommodations() throws Exception {
+        when(accommodationService.findAll()).thenReturn(List.of());
+        when(bookingService.findAll()).thenReturn(List.of());
+        when(bookingService.findAll(BookingFilter.ALL)).thenReturn(List.of());
+        when(bookingService.findAll(BookingFilter.INCOMPLETE)).thenReturn(List.of());
+        when(bookingService.findAll(BookingFilter.READY)).thenReturn(List.of());
+        when(bookingService.findAll(BookingFilter.TODAY)).thenReturn(List.of());
+        when(bookingService.findAll(BookingFilter.UPCOMING)).thenReturn(List.of());
+
+        mockMvc.perform(get("/bookings"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Crea tu primera vivienda")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Crear primera vivienda")))
+            .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("No hay nada bloqueado"))))
+            .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("0 estancias pendientes"))));
     }
 
     @Test
@@ -235,7 +261,8 @@ class BookingControllerTest {
     @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
     void blocksAdminAccessToOwnerArea() throws Exception {
         mockMvc.perform(get("/bookings"))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isForbidden())
+            .andExpect(forwardedUrl("/access-denied"));
     }
 
     private String format(LocalDate date) {

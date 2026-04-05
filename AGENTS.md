@@ -4,16 +4,22 @@ Este archivo define como debe trabajar un agente sobre `checkpol`.
 
 ## Objetivo del proyecto
 
-`checkpol` es una aplicacion para pequeños propietarios o gestores de viviendas turisticas que necesitan preparar la comunicacion obligatoria de huespedes a SES Hospedajes.
+`checkpol` es una aplicacion para pequeños propietarios o gestores de viviendas turisticas que necesitan preparar y, cuando sea posible, presentar la comunicacion obligatoria de huespedes a SES Hospedajes.
 
-El MVP no envia nada al Ministerio. Su objetivo es:
+El producto debe cubrir dos formas de trabajo:
+
+1. Presentacion automatica por servicio web de SES cuando el owner tenga configuradas sus credenciales.
+2. Generacion XML descargable para presentacion manual cuando no las tenga.
+
+Su objetivo es:
 
 1. Registrar una estancia o contrato.
 2. Registrar huespedes.
 3. Validar datos esenciales.
-4. Generar un XML descargable de parte de viajeros para carga manual en SES.
+4. Generar un XML descargable de parte de viajeros.
 5. Mantener trazabilidad del XML generado.
-6. Permitir una primera captura publica de huespedes por enlace con revision interna.
+6. Presentar automaticamente a SES cuando el owner tenga configurado el servicio web.
+7. Permitir una primera captura publica de huespedes por enlace con revision interna.
 
 ## Regla principal
 
@@ -26,8 +32,6 @@ Trabajar siempre con enfoque MVP-first.
 
 ## Restricciones no negociables
 
-- No integrar la API oficial de SES por ahora.
-- No automatizar el envio al Ministerio.
 - No inventar el formato XML oficial como si fuera definitivo.
 - No implementar el XML de reserva de hospedaje.
 - No anadir SPA ni frontend complejo.
@@ -92,6 +96,7 @@ Se permite:
 
 - definir una interfaz o puerto para generar XML,
 - definir un modelo de datos de entrada al generador,
+- definir una interfaz o puerto para presentar por servicio web,
 - crear una implementacion provisional claramente marcada cuando una fase lo requiera.
 
 No se permite:

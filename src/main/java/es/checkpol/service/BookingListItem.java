@@ -7,9 +7,11 @@ public record BookingListItem(
     long guestCount,
     int expectedGuestCount,
     boolean readyForTravelerPart,
+    boolean sesSubmissionAvailable,
     BookingOperationalStatus operationalStatus,
     long pendingReviewGuestCount,
     boolean guestCountMismatch,
-    String blockingSummary
+    String blockingSummary,
+    String communicationStatusSummary
 ) {
 }

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Control SES | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="mono-body antialiased">
+<main class="mono-app">
+    <aside class="mono-sidebar-shell" th:replace="~{admin/fragments :: sidebar('ses')}"></aside>
+
+    <section class="mono-content">
+        <header class="mono-topbar">
+            <div class="mono-topbar-left">
+                <button class="mono-topbar-button" type="button" aria-label="Navegación">
+                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M3 5h14v2H3V5Zm0 4h14v2H3V9Zm0 4h14v2H3v-2Z"/>
+                    </svg>
+                </button>
+                <label class="mono-search">
+                    <svg class="mono-search-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M8.5 3a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Zm0 1.5a4 4 0 1 0 2.6 7l3.2 3.2 1.1-1.1-3.2-3.2A4 4 0 0 0 8.5 4.5Z"/>
+                    </svg>
+                    <input class="mono-search-input" type="text" placeholder="Control de comunicaciones SES" readonly>
+                </label>
+            </div>
+            <div class="mono-topbar-right">
+                <span class="mono-topbar-meta">Catálogo:
+                    <strong th:text="${dashboard.currentSourceVersion != null ? dashboard.currentSourceVersion : 'SIN_VERSIÓN'}">SIN_VERSIÓN</strong>
+                </span>
+                <a class="mono-btn-ghost" th:href="@{/admin}">Resumen</a>
+                <a class="mono-btn-ghost" th:href="@{/admin/ses/owners}">Owners SES</a>
+            </div>
+        </header>
+
+        <div class="mono-page">
+            <div class="mono-page-head">
+                <h1 class="mono-page-title">Control SES</h1>
+                <nav class="mono-breadcrumb">
+                    <span>Admin</span>
+                    <span>/</span>
+                    <span class="mono-breadcrumb-active">SES</span>
+                </nav>
+            </div>
+
+            <div class="mono-alert-success" th:if="${flashMessage != null and flashKind == 'success'}">
+                <p th:text="${flashMessage}">Acción completada.</p>
+            </div>
+            <div class="mono-alert-error" th:if="${flashMessage != null and flashKind == 'error'}">
+                <p th:text="${flashMessage}">Ha ocurrido un error.</p>
+            </div>
+
+            <section class="mono-layout">
+                <div class="mono-main">
+                    <section class="mono-panel">
+                        <div class="mono-panel-strip">
+                            <h2 class="mono-panel-title">Qué mirar primero</h2>
+                            <a class="mono-panel-link" th:href="@{/admin/ses/owners}">Ir a owners</a>
+                        </div>
+                        <div class="mono-panel-body">
+                            <div class="mono-status-list">
+                                <div class="mono-status-row">
+                                    <div class="mono-status-main">
+                                        <span class="mono-status-dot" th:classappend="${sesSummary.submissionErrorCount > 0 ? ' mono-status-dot-red' : ' mono-status-dot-green'}"></span>
+                                        <div>
+                                            <p class="mono-status-label">Errores de envío</p>
+                                            <p class="mono-status-copy">Requieren acción inmediata antes de revisar lotes pendientes.</p>
+                                        </div>
+                                    </div>
+                                    <span class="mono-status-value" th:text="${sesSummary.submissionErrorCount}">0</span>
+                                </div>
+                                <div class="mono-status-row">
+                                    <div class="mono-status-main">
+                                        <span class="mono-status-dot" th:classappend="${sesSummary.processingErrorCount > 0 ? ' mono-status-dot-red' : ' mono-status-dot-green'}"></span>
+                                        <div>
+                                            <p class="mono-status-label">Errores devueltos por SES</p>
+                                            <p class="mono-status-copy">Suelen apuntar a datos incompletos o rechazados.</p>
+                                        </div>
+                                    </div>
+                                    <span class="mono-status-value" th:text="${sesSummary.processingErrorCount}">0</span>
+                                </div>
+                                <div class="mono-status-row">
+                                    <div class="mono-status-main">
+                                        <span class="mono-status-dot" th:classappend="${sesSummary.pendingCount > 0 ? ' mono-status-dot-amber' : ' mono-status-dot-green'}"></span>
+                                        <div>
+                                            <p class="mono-status-label">Lotes pendientes</p>
+                                            <p class="mono-status-copy">Si no hay errores, aquí el siguiente paso es solo reconsultar.</p>
+                                        </div>
+                                    </div>
+                                    <span class="mono-status-value" th:text="${sesSummary.pendingCount}">0</span>
+                                </div>
+                                <div class="mono-status-row">
+                                    <div class="mono-status-main">
+                                        <span class="mono-status-dot" th:classappend="${sesSummary.ownersWithoutReadyWsCount > 0 ? ' mono-status-dot-amber' : ' mono-status-dot-green'}"></span>
+                                        <div>
+                                            <p class="mono-status-label">Owners sin WS completo</p>
+                                            <p class="mono-status-copy">No podrán presentar automático hasta completar su configuración.</p>
+                                        </div>
+                                    </div>
+                                    <span class="mono-status-value" th:text="${sesSummary.ownersWithoutReadyWsCount}">0</span>
+                                </div>
+                            </div>
+                            <div class="mono-panel-actions">
+                                <a class="mono-btn-primary" th:href="@{/admin/ses/owners}">Revisar owners SES</a>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="mono-table-panel">
+                        <div class="mono-panel-strip">
+                            <div>
+                                <h2 class="mono-panel-title">Comunicaciones SES</h2>
+                                <p class="mono-compact-copy">Una fila por comunicación. Actúa solo donde haya error o lote pendiente.</p>
+                            </div>
+                            <a class="mono-panel-link" th:href="@{/admin/ses/owners}">Ver owners</a>
+                        </div>
+                        <div class="mono-panel-body">
+                            <form class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between" method="get" th:action="@{/admin/ses}">
+                                <div class="grid gap-3 sm:grid-cols-2">
+                                    <label class="block">
+                                        <span class="mono-table-meta block">Estado</span>
+                                        <select class="mono-field-input mt-1 min-w-48" name="status">
+                                            <option value="ALL" th:selected="${selectedStatus == 'ALL'}">Todos</option>
+                                            <option value="SUBMITTED_TO_SES" th:selected="${selectedStatus == 'SUBMITTED_TO_SES'}">Pendiente SES</option>
+                                            <option value="SUBMISSION_FAILED" th:selected="${selectedStatus == 'SUBMISSION_FAILED'}">Error envío</option>
+                                            <option value="SES_PROCESSING_ERROR" th:selected="${selectedStatus == 'SES_PROCESSING_ERROR'}">Error SES</option>
+                                            <option value="SES_PROCESSED" th:selected="${selectedStatus == 'SES_PROCESSED'}">SES ok</option>
+                                            <option value="SES_CANCELLED" th:selected="${selectedStatus == 'SES_CANCELLED'}">Anulada</option>
+                                            <option value="XML_READY" th:selected="${selectedStatus == 'XML_READY'}">Solo XML</option>
+                                        </select>
+                                    </label>
+                                    <label class="flex items-center gap-2 pt-5">
+                                        <input type="checkbox" name="problemOnly" value="true" th:checked="${problemOnly}">
+                                        <span class="mono-table-meta">Solo problemas</span>
+                                    </label>
+                                </div>
+                                <button class="mono-btn-secondary sm:w-auto" type="submit">Aplicar filtro</button>
+                            </form>
+                        </div>
+                        <div th:if="${!#lists.isEmpty(sesRows)}">
+                            <table class="mono-table">
+                                <thead>
+                                <tr>
+                                    <th>Estancia</th>
+                                    <th>Owner</th>
+                                    <th>Estado</th>
+                                    <th>Detalle</th>
+                                    <th>Última actividad</th>
+                                    <th>Acción</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="row : ${sesRows}">
+                                    <td>
+                                        <p class="mono-table-strong" th:text="${row.accommodationName}">Apartamento Centro</p>
+                                        <p class="mono-table-meta">
+                                            Ref <span th:text="${row.bookingReference}">CHK-1</span> · v<span th:text="${row.version}">1</span>
+                                        </p>
+                                    </td>
+                                    <td>
+                                        <p class="mono-table-strong" th:text="${row.ownerDisplayName}">Joana</p>
+                                        <p class="mono-table-meta" th:text="${row.ownerUsername}">joana</p>
+                                    </td>
+                                    <td>
+                                        <span class="mono-pill" th:classappend="${' ' + row.toneClass}" th:text="${row.statusLabel}">Pendiente SES</span>
+                                        <p class="mono-table-meta mt-1" th:text="${row.dispatchMode.name() == 'SES_WEB_SERVICE' ? 'WS' : 'Manual'}">WS</p>
+                                    </td>
+                                    <td>
+                                        <p class="mono-table-meta" th:text="${row.detail}">Sin detalle</p>
+                                        <p class="mono-table-meta mt-1" th:if="${row.loteCode != null}" th:text="${'Lote ' + row.loteCode}">Lote</p>
+                                        <p class="mono-table-meta mt-1" th:if="${row.sesCommunicationCode != null}" th:text="${'Código ' + row.sesCommunicationCode}">Código</p>
+                                    </td>
+                                    <td class="mono-table-meta"
+                                        th:text="${row.lastCheckedAt != null
+                                            ? #temporals.format(row.lastCheckedAt, 'dd/MM/yyyy HH:mm')
+                                            : (row.submittedAt != null
+                                                ? #temporals.format(row.submittedAt, 'dd/MM/yyyy HH:mm')
+                                                : #temporals.format(row.generatedAt, 'dd/MM/yyyy HH:mm'))}">
+                                        04/04/2026 11:10
+                                    </td>
+                                    <td class="mono-table-actions">
+                                        <form th:if="${row.canRefresh}" th:action="@{|/admin/ses/communications/${row.communicationId}/refresh|}" method="post">
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <button class="mono-panel-link" type="submit">Reconsultar</button>
+                                        </form>
+                                        <form th:if="${row.canRetry and row.ownerReadyForWs}" th:action="@{|/admin/ses/communications/${row.communicationId}/retry|}" method="post">
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <button class="mono-panel-link" type="submit">Reintentar</button>
+                                        </form>
+                                        <a class="mono-panel-link" th:href="@{|/admin/users/${row.ownerId}/edit|}">Ver owner</a>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mono-panel-body" th:if="${#lists.isEmpty(sesRows)}">
+                            <p class="mono-compact-copy">No hay comunicaciones que coincidan con el filtro actual.</p>
+                        </div>
+                    </section>
+                </div>
+
+                <aside class="mono-rail">
+                    <section class="mono-rail-panel">
+                        <div class="mono-panel-strip">
+                            <h2 class="mono-panel-title">Salud técnica SES</h2>
+                        </div>
+                        <div class="mono-panel-body">
+                            <div class="mono-compact-list">
+                                <article class="mono-compact-item">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <p class="mono-compact-label" th:text="${sesSummary.technicalHealth.endpoint.label}">Endpoint SES</p>
+                                        <span class="mono-pill" th:classappend="${' ' + sesSummary.technicalHealth.endpoint.toneClass}" th:text="${sesSummary.technicalHealth.endpoint.statusLabel}">OK</span>
+                                    </div>
+                                    <p class="mono-compact-copy" th:text="${sesSummary.technicalHealth.endpoint.detail}">Configurado</p>
+                                </article>
+                                <article class="mono-compact-item">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <p class="mono-compact-label" th:text="${sesSummary.technicalHealth.truststore.label}">Truststore</p>
+                                        <span class="mono-pill" th:classappend="${' ' + sesSummary.technicalHealth.truststore.toneClass}" th:text="${sesSummary.technicalHealth.truststore.statusLabel}">OK</span>
+                                    </div>
+                                    <p class="mono-compact-copy" th:text="${sesSummary.technicalHealth.truststore.detail}">Cargado</p>
+                                </article>
+                                <article class="mono-compact-item">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <p class="mono-compact-label" th:text="${sesSummary.technicalHealth.scheduler.label}">Scheduler</p>
+                                        <span class="mono-pill" th:classappend="${' ' + sesSummary.technicalHealth.scheduler.toneClass}" th:text="${sesSummary.technicalHealth.scheduler.statusLabel}">Activo</span>
+                                    </div>
+                                    <p class="mono-compact-copy" th:text="${sesSummary.technicalHealth.scheduler.detail}">Cada 60 s</p>
+                                </article>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="mono-message">
+                        <p class="mono-message-label">Criterio operativo</p>
+                        <p class="mono-message-copy">Si hay error de envío, corrígelo primero. Si hay error SES, revisa los datos del owner o de la estancia. Si está pendiente, solo reconsulta.</p>
+                        <a class="mono-message-link" th:href="@{/admin/ses/owners}">Revisar owners</a>
+                    </section>
+                </aside>
+            </section>
+        </div>
+    </section>
+</main>
+</body>
+</html>
