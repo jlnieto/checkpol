@@ -2,7 +2,6 @@ package es.checkpol.web;
 
 import es.checkpol.domain.DocumentType;
 import es.checkpol.domain.GuestRelationship;
-import es.checkpol.domain.GuestSex;
 import es.checkpol.domain.Guest;
 import es.checkpol.service.GuestSelfServiceService;
 import jakarta.servlet.http.HttpSession;
@@ -168,16 +167,23 @@ public class GuestSelfServiceController {
         @RequestParam(name = "selectedAddressId", required = false) Long selectedAddressId,
         @RequestParam(name = "step", required = false) Integer step,
         HttpSession session,
-        Model model
+        Model model,
+        RedirectAttributes redirectAttributes
     ) {
         var access = guestSelfServiceService.getByToken(token);
         boolean resumingDraft = step != null || selectedAddressId != null;
         if (!resumingDraft) {
             guestWizardDraftStore.clearPublicDraft(session, token, guestId, null, false);
         }
-        GuestForm form = guestWizardDraftStore.getPublicDraft(session, token, guestId, null, false)
-            .filter(draft -> resumingDraft)
-            .orElseGet(() -> guestSelfServiceService.getGuestForm(token, guestId));
+        GuestForm form;
+        try {
+            form = guestWizardDraftStore.getPublicDraft(session, token, guestId, null, false)
+                .filter(draft -> resumingDraft)
+                .orElseGet(() -> guestSelfServiceService.getGuestForm(token, guestId));
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("flashError", exception.getMessage());
+            return "redirect:/guest-access/" + token;
+        }
         if (selectedAddressId != null) {
             form = form.withAddressId(selectedAddressId);
         }
@@ -275,7 +281,6 @@ public class GuestSelfServiceController {
         model.addAttribute("documentTypes", DocumentType.values());
         model.addAttribute("countries", GuestFormOptions.countries());
         model.addAttribute("relationships", GuestRelationship.values());
-        model.addAttribute("sexes", GuestSex.values());
         model.addAttribute("addresses", access.addresses());
         model.addAttribute("guestWizardTitle", title);
         model.addAttribute("guestWizardHelp", help);

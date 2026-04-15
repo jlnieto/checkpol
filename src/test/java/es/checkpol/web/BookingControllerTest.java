@@ -65,7 +65,9 @@ class BookingControllerTest {
             .andExpect(view().name("bookings/list"))
             .andExpect(model().attributeExists("bookings"))
             .andExpect(model().attributeExists("countAll"))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("Cerrar sesión")));
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Cerrar sesión")))
+            .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("class=\"owner-drawer-link\" href=\"/bookings/new\""))))
+            .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("class=\"owner-quick-link\" href=\"/bookings/new\""))));
     }
 
     @Test
@@ -144,6 +146,7 @@ class BookingControllerTest {
         mockMvc.perform(get("/bookings"))
             .andExpect(status().isOk())
             .andExpect(content().string(org.hamcrest.Matchers.containsString("4 huéspedes registrados · 2 personas esperadas")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("class=\"owner-button-secondary justify-center\" href=\"/bookings/new\"")))
             .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Lista para descargar"))));
     }
 

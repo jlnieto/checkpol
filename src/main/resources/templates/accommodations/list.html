@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Viviendas | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
+<main class="owner-shell">
+    <div th:replace="~{fragments/owner-menu :: ownerMenu}"></div>
+
+    <section class="owner-page">
+        <header class="owner-header">
+            <a class="public-back-link" th:href="@{/bookings}">
+                <span aria-hidden="true">←</span>
+                <span>Volver al inicio</span>
+            </a>
+
+            <div class="owner-header-row">
+                <div class="space-y-2">
+                    <p class="owner-kicker">Viviendas</p>
+                    <h1 class="owner-title">Tus viviendas</h1>
+                    <p class="owner-copy"
+                       th:text="${#lists.isEmpty(accommodations) ? 'Empieza creando la vivienda que vas a usar en tus estancias.' : 'Aquí puedes añadir una vivienda nueva o corregir una existente.'}">
+                        Aquí puedes añadir una vivienda nueva o corregir una existente.
+                    </p>
+                </div>
+            </div>
+        </header>
+
+        <div th:if="${flashMessage}"
+             th:class="${flashKind == 'success'} ? 'owner-success-box' : 'owner-error-box error-box'"
+             th:text="${flashMessage}"></div>
+
+        <section class="owner-priority-card" th:if="${#lists.isEmpty(accommodations)}">
+            <div class="owner-banner-row">
+                <div class="space-y-3">
+                    <p class="owner-priority-eyebrow">Siguiente paso</p>
+                    <div class="space-y-2">
+                        <h2 class="text-3xl font-extrabold tracking-tight text-slate-900">Crea tu primera vivienda</h2>
+                        <p class="owner-copy">Necesitas una vivienda antes de registrar una estancia.</p>
+                    </div>
+                </div>
+                <div class="owner-banner-actions">
+                    <a class="owner-button-primary justify-center" th:href="@{/accommodations/new}">Crear primera vivienda</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="owner-card" th:unless="${#lists.isEmpty(accommodations)}">
+            <div class="owner-section-head">
+                <div class="space-y-1">
+                    <p class="owner-kicker">Guardadas</p>
+                    <h2 class="text-xl font-extrabold tracking-tight text-slate-900"
+                        th:text="${#lists.size(accommodations) == 1 ? '1 vivienda' : #lists.size(accommodations) + ' viviendas'}">2 viviendas</h2>
+                </div>
+                <a class="owner-button-primary justify-center" th:href="@{/accommodations/new}">Crear vivienda</a>
+            </div>
+
+            <div class="owner-list mt-5">
+                <article class="owner-queue-card" th:each="accommodation : ${accommodations}">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="min-w-0 space-y-2">
+                            <div>
+                                <h3 class="text-xl font-extrabold tracking-tight text-slate-900"
+                                    th:text="${accommodation.name}">Casa del Puerto</h3>
+                                <p class="owner-queue-meta"
+                                   th:text="${'Código SES: ' + accommodation.sesEstablishmentCode}">Código SES: H123456789</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="public-pill-muted"
+                                      th:text="${#strings.isEmpty(accommodation.registrationNumber) ? 'Sin registro turístico' : accommodation.registrationNumber}">
+                                    VT-1234-A
+                                </span>
+                                <span class="public-pill-muted"
+                                      th:text="${accommodation.roomCount == null ? 'Habitaciones sin indicar' : accommodation.roomCount + (accommodation.roomCount == 1 ? ' habitación' : ' habitaciones')}">
+                                    2 habitaciones
+                                </span>
+                            </div>
+                        </div>
+                        <a class="owner-button-secondary justify-center sm:w-auto"
+                           th:href="@{|/accommodations/${accommodation.id}/edit|}">Editar vivienda</a>
+                    </div>
+                </article>
+            </div>
+        </section>
+    </section>
+</main>
+<script defer th:src="@{/vendor/alpinejs.min.js}"></script>
+</body>
+</html>

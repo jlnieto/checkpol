@@ -92,9 +92,7 @@ class GuestControllerTest {
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                 .string(org.hamcrest.Matchers.containsString("Nacionalidad <span class=\"text-slate-400\">(opcional)</span>")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
-                .string(org.hamcrest.Matchers.containsString("Sexo <span class=\"text-slate-400\">(opcional)</span>")))
-            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
-                .string(org.hamcrest.Matchers.containsString("El documento solo es obligatorio para personas adultas o para españoles de más de 14 años.")));
+                .string(org.hamcrest.Matchers.containsString("Solo se pide a personas adultas o a españoles mayores de 14 años.")));
     }
 
     @Test

@@ -8,6 +8,8 @@
 </head>
 <body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
 <main class="owner-shell">
+    <div th:replace="~{fragments/owner-menu :: ownerMenu}"></div>
+
     <section class="owner-page">
         <header class="owner-header">
             <a class="public-back-link" th:href="${bookingUrl}">
@@ -62,10 +64,6 @@
                                 <div class="owner-review-row" th:if="${guest.nationality != null and !guest.nationality.isBlank()}">
                                     <span class="owner-review-label">Nacionalidad</span>
                                     <strong class="owner-review-value" th:text="${guest.nationality}">ESP</strong>
-                                </div>
-                                <div class="owner-review-row" th:if="${guest.sex != null}">
-                                    <span class="owner-review-label">Sexo</span>
-                                    <strong class="owner-review-value" th:text="${guest.sex.label}">Masculino</strong>
                                 </div>
                                 <div class="owner-review-row" th:if="${showRelationship}">
                                     <span class="owner-review-label">Parentesco</span>
@@ -123,5 +121,6 @@
         </section>
     </section>
 </main>
+<script defer th:src="@{/vendor/alpinejs.min.js}"></script>
 </body>
 </html>

@@ -20,6 +20,12 @@ public class AccommodationController {
         this.accommodationService = accommodationService;
     }
 
+    @GetMapping("/accommodations")
+    public String listAccommodations(Model model) {
+        model.addAttribute("accommodations", accommodationService.findAll());
+        return "accommodations/list";
+    }
+
     @GetMapping("/accommodations/new")
     public String newAccommodation(Model model) {
         return populateForm(model, new AccommodationForm(), "/accommodations", "Nueva vivienda", "Guardar vivienda");
@@ -40,7 +46,7 @@ public class AccommodationController {
         accommodationService.create(form);
         redirectAttributes.addFlashAttribute("flashMessage", "Vivienda guardada correctamente.");
         redirectAttributes.addFlashAttribute("flashKind", "success");
-        return "redirect:/bookings";
+        return "redirect:/accommodations";
     }
 
     @GetMapping("/accommodations/{id}/edit")
@@ -64,7 +70,7 @@ public class AccommodationController {
         accommodationService.update(id, form);
         redirectAttributes.addFlashAttribute("flashMessage", "Vivienda actualizada correctamente.");
         redirectAttributes.addFlashAttribute("flashKind", "success");
-        return "redirect:/bookings";
+        return "redirect:/accommodations";
     }
 
     private String populateForm(Model model, AccommodationForm form, String action, String title, String submitLabel) {

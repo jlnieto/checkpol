@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' | Checkpol'">Enlace no disponible | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
+<main class="public-shell public-shell-md justify-center py-8 sm:py-10">
+    <section class="public-panel-gradient p-6 sm:p-7">
+        <div class="inline-flex items-center rounded-full border border-amber-300/60 bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-700 shadow-sm">
+            Check-in huéspedes
+        </div>
+
+        <div class="mt-5 space-y-3">
+            <h1 class="max-w-[12ch] text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl" th:text="${title}">Enlace no disponible</h1>
+            <p class="max-w-2xl text-base leading-7 text-slate-600" th:text="${message}">No hemos podido encontrar este enlace de check-in.</p>
+        </div>
+
+        <div class="mt-6 rounded-[28px] border border-amber-300/60 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+            <strong class="block text-base text-amber-800">Siguiente paso</strong>
+            <span class="mt-1 block" th:text="${nextStep}">Pide a la persona responsable del alojamiento que te envíe un enlace nuevo.</span>
+        </div>
+    </section>
+</main>
+</body>
+</html>

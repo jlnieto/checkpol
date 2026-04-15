@@ -9,7 +9,7 @@
 </head>
 <body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
 <main class="public-shell public-shell-xl">
-    <header class="mb-5 space-y-3 md:mb-6">
+    <header class="mb-4 space-y-2 md:mb-5">
         <a class="public-back-link"
            th:href="@{|/guest-access/${access.booking.selfServiceToken}|}">
             <span aria-hidden="true">←</span>
@@ -17,18 +17,18 @@
         </a>
 
         <div class="space-y-1">
-            <h1 class="max-w-[16ch] text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl"
+            <h1 class="max-w-[16ch] text-[1.8rem] font-semibold tracking-tight text-slate-900 sm:text-3xl"
                 th:text="${guestWizardTitle}">Datos del huésped 1</h1>
         </div>
     </header>
 
     <div class="mb-4 public-error-box shadow-sm" th:if="${flashMessage}" th:text="${flashMessage}"></div>
 
-    <section class="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)]" data-wizard-root>
+    <section class="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)] lg:gap-5" data-wizard-root>
         <form th:action="${publicEditGuestId != null} ? @{|/guest-access/${access.booking.selfServiceToken}/guests/${publicEditGuestId}|} : @{|/guest-access/${access.booking.selfServiceToken}/guests|}"
               th:object="${guestForm}"
               method="post"
-              class="space-y-4"
+              class="space-y-3"
               data-wizard-form
               data-guest-form
               novalidate
@@ -40,34 +40,34 @@
                 <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
             </div>
 
-            <section class="public-panel overflow-hidden p-5 sm:p-6">
-                <div class="flex flex-col gap-4 border-b border-slate-200/80 pb-5">
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <section class="public-panel overflow-hidden p-4 sm:p-5">
+                <div class="flex flex-col gap-3 border-b border-slate-200/80 pb-4">
+                    <div class="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
                         <div class="space-y-1">
-                            <p class="text-xs font-semibold tracking-[0.12em] text-slate-500">
+                            <p class="text-[11px] font-semibold tracking-[0.12em] text-slate-500">
                                 <span class="uppercase" data-step-progress>Paso 1 de 4</span>
                                 <span aria-hidden="true" class="mx-1">·</span>
                                 <span class="tracking-normal" data-current-step-title>Datos personales</span>
                             </p>
-                            <p class="text-sm leading-6 text-slate-500" data-current-step-help></p>
+                            <p class="max-w-[28ch] text-xs leading-5 text-slate-400 sm:max-w-none sm:text-sm sm:text-slate-500" data-current-step-help></p>
                         </div>
                     </div>
 
-                    <div class="h-2 overflow-hidden rounded-full bg-primary/10" aria-hidden="true">
+                    <div class="h-1.5 overflow-hidden rounded-full bg-primary/10" aria-hidden="true">
                         <span class="block h-full w-1/4 rounded-full bg-linear-to-r from-primary to-sky-400 transition-[width] duration-200"
                               data-step-progress-bar></span>
                     </div>
                 </div>
 
-                <div class="pt-5 sm:pt-6">
-                    <section class="space-y-5" data-step-panel
+                <div class="pt-4 sm:pt-5">
+                    <section class="space-y-4" data-step-panel
                              data-step-title="Datos personales"
                              data-step-count="Paso 1 de 4"
                              data-step-help=""
                              data-step-note="Escribe el nombre igual que en el documento. Si conoces la nacionalidad, añádela con 3 letras.">
                         <div class="public-error-box" data-panel-errors hidden></div>
 
-                        <div class="grid gap-4 md:grid-cols-2">
+                        <div class="grid gap-3.5 md:grid-cols-2">
                             <label class="public-label">
                                 <span>Nombre</span>
                                 <input class="public-input" th:field="*{firstName}" type="text" autocomplete="given-name"
@@ -92,7 +92,7 @@
                             <small class="public-error error" data-server-error th:if="${#fields.hasErrors('lastName2')}" th:errors="*{lastName2}"></small>
                         </label>
 
-                        <div class="grid gap-4 md:grid-cols-2">
+                        <div class="grid gap-3.5 md:grid-cols-2">
                             <label class="public-label">
                                 <span>Fecha de nacimiento</span>
                                 <input class="public-input" th:field="*{birthDate}" type="date" autocomplete="bday" data-birth-date-field data-next-field="nationalityDisplay">
@@ -112,19 +112,19 @@
                             </label>
                         </div>
 
-                        <div class="flex justify-end">
+                        <div class="flex justify-end pt-1">
                             <button type="button" class="public-button-primary min-w-40" data-step-next>Continuar</button>
                         </div>
                     </section>
 
-                    <section class="space-y-5" data-step-panel hidden
+                    <section class="space-y-4" data-step-panel hidden
                              data-step-title="Documento"
                              data-step-count="Paso 2 de 4"
-                             data-step-help="El documento solo es obligatorio para personas adultas o para españoles de más de 14 años."
+                             data-step-help="Solo se pide a personas adultas o a españoles mayores de 14 años."
                              data-step-note="Escribe el número sin espacios ni guiones.">
                         <div class="public-error-box" data-panel-errors hidden></div>
 
-                        <div class="grid gap-4 md:grid-cols-2">
+                        <div class="grid gap-3.5 md:grid-cols-2">
                             <label class="public-label">
                                 <span>Tipo de documento</span>
                                 <select class="public-select" th:field="*{documentType}">
@@ -143,22 +143,13 @@
                             </label>
                         </div>
 
-                        <div class="grid gap-4 md:grid-cols-2">
+                        <div class="grid gap-3.5 md:grid-cols-2">
                             <label class="public-label" data-document-support-group hidden>
                                 <span>Soporte del documento</span>
                                 <input class="public-input" th:field="*{documentSupport}" type="text" autocomplete="off" data-document-support-field>
                                 <small class="public-hint field-hint" data-document-support-help>Obligatorio si el documento es DNI o NIE</small>
                                 <small class="public-error error" data-client-error-for="documentSupport"></small>
                                 <small class="public-error error" data-server-error th:if="${#fields.hasErrors('documentSupport')}" th:errors="*{documentSupport}"></small>
-                            </label>
-                            <label class="public-label">
-                                <span>Sexo <span class="text-slate-400">(opcional)</span></span>
-                                <select class="public-select" th:field="*{sex}">
-                                    <option value="">Selecciona...</option>
-                                    <option th:each="sex : ${sexes}" th:value="${sex}" th:text="${sex.label}"></option>
-                                </select>
-                                <small class="public-error error" data-client-error-for="sex"></small>
-                                <small class="public-error error" data-server-error th:if="${#fields.hasErrors('sex')}" th:errors="*{sex}"></small>
                             </label>
                         </div>
 
@@ -179,14 +170,14 @@
                         </div>
                     </section>
 
-                    <section class="space-y-5" data-step-panel hidden
+                    <section class="space-y-4" data-step-panel hidden
                              data-step-title="Dirección habitual"
                              data-step-count="Paso 3 de 4"
                              data-step-help=""
                              data-step-note="Si no ves tu dirección, créala y volverás a este punto.">
                         <div class="public-error-box" data-panel-errors hidden></div>
 
-                        <div class="space-y-4" data-address-choice-shell>
+                        <div class="space-y-3.5" data-address-choice-shell>
                             <div class="grid gap-3">
                                 <label class="public-choice-card address-choice-card"
                                        data-address-choice-card
@@ -225,14 +216,14 @@
                         </div>
                     </section>
 
-                    <section class="space-y-5" data-step-panel hidden
+                    <section class="space-y-4" data-step-panel hidden
                              data-step-title="Contacto"
                              data-step-count="Paso 4 de 4"
                              data-step-help=""
                              data-step-note="Basta con un teléfono o un correo válidos.">
                         <div class="public-error-box" data-panel-errors hidden></div>
 
-                        <div class="grid gap-4 md:grid-cols-2">
+                        <div class="grid gap-3.5 md:grid-cols-2">
                             <label class="public-label">
                                 <span>Teléfono</span>
                                 <input class="public-input" th:field="*{phone}" type="tel" autocomplete="tel" inputmode="tel" placeholder="+34 600 123 123" data-phone-primary>
@@ -263,7 +254,7 @@
             </section>
         </form>
 
-        <aside class="space-y-4 lg:sticky lg:top-6 lg:self-start">
+        <aside class="hidden space-y-4 lg:sticky lg:top-6 lg:block lg:self-start">
             <div class="public-panel-gradient p-5" data-step-note-shell hidden>
                 <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Recuerda</p>
                 <p class="mt-4 text-sm leading-6 text-slate-600" data-step-note-text></p>

@@ -159,6 +159,10 @@ class PublicGuestSelfServiceFlowIntegrationTest {
         assertEquals(address.getId(), guest.getAddressId());
         assertEquals(GuestSubmissionSource.SELF_SERVICE, guest.getSubmissionSource());
         assertEquals(GuestReviewStatus.PENDING_REVIEW, guest.getReviewStatus());
+
+        mockMvc.perform(get("/guest-access/public-token-1/guests/" + guest.getId() + "/edit"))
+            .andExpect(status().isOk())
+            .andExpect(view().name("public/guest-form"));
     }
 
     private Booking seedBookingWithPublicAccess(String token) {

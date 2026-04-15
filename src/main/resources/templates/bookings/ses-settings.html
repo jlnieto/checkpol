@@ -8,6 +8,8 @@
 </head>
 <body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
 <main class="owner-shell-narrow">
+    <div th:replace="~{fragments/owner-menu :: ownerMenu}"></div>
+
     <section class="owner-page">
         <header class="owner-header">
             <a class="public-back-link" th:href="@{/bookings}">
@@ -89,5 +91,6 @@
         </section>
     </section>
 </main>
+<script defer th:src="@{/vendor/alpinejs.min.js}"></script>
 </body>
 </html>

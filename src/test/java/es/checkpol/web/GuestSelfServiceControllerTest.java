@@ -27,6 +27,7 @@ import static org.hamcrest.Matchers.hasToString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -55,13 +56,27 @@ class GuestSelfServiceControllerTest {
             .andExpect(model().attributeExists("access"))
             .andExpect(model().attributeExists("guestCards"))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
-                .string(org.hamcrest.Matchers.containsString("Datos de los huéspedes")))
+                .string(org.hamcrest.Matchers.containsString("Datos de huéspedes")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                 .string(org.hamcrest.Matchers.containsString("Tu estancia")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                 .string(org.hamcrest.Matchers.containsString("Código de acceso: ABC123")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                 .string(org.hamcrest.Matchers.containsString("Editar datos")));
+    }
+
+    @Test
+    void showsClearPublicErrorWhenAccessTokenDoesNotExist() throws Exception {
+        when(guestSelfServiceService.getByToken("missing"))
+            .thenThrow(new IllegalArgumentException("El enlace indicado no existe."));
+
+        mockMvc.perform(get("/guest-access/missing"))
+            .andExpect(status().isNotFound())
+            .andExpect(view().name("public/guest-access-unavailable"))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("Enlace no disponible")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("Pide a la persona responsable")));
     }
 
     @Test
@@ -92,8 +107,6 @@ class GuestSelfServiceControllerTest {
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                 .string(org.hamcrest.Matchers.containsString("Nacionalidad <span class=\"text-slate-400\">(opcional)</span>")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
-                .string(org.hamcrest.Matchers.containsString("Sexo <span class=\"text-slate-400\">(opcional)</span>")))
-            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                 .string(org.hamcrest.Matchers.containsString("Parentesco con una persona adulta de la estancia")));
     }
 
@@ -106,6 +119,18 @@ class GuestSelfServiceControllerTest {
             .andExpect(status().isOk())
             .andExpect(view().name("public/guest-form"))
             .andExpect(model().attributeExists("publicEditGuestId"));
+    }
+
+    @Test
+    void redirectsToDashboardWhenPublicGuestEditLinkIsInvalid() throws Exception {
+        when(guestSelfServiceService.getByToken("abc")).thenReturn(sampleAccess());
+        when(guestSelfServiceService.getGuestForm("abc", 7L))
+            .thenThrow(new IllegalArgumentException("El huésped indicado no pertenece a este enlace."));
+
+        mockMvc.perform(get("/guest-access/abc/guests/7/edit"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/guest-access/abc"))
+            .andExpect(flash().attribute("flashError", "El huésped indicado no pertenece a este enlace."));
     }
 
     @Test

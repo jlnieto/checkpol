@@ -1,6 +1,7 @@
 package es.checkpol.service;
 
 import es.checkpol.domain.Booking;
+import es.checkpol.domain.Guest;
 import es.checkpol.repository.AddressRepository;
 import es.checkpol.repository.BookingRepository;
 import es.checkpol.repository.GuestRepository;
@@ -72,21 +73,12 @@ public class GuestSelfServiceService {
 
     @Transactional(readOnly = true)
     public GuestForm getGuestForm(String token, Long guestId) {
-        GuestSelfServiceDetails details = getByToken(token);
-        boolean allowed = details.guests().stream().anyMatch(guest -> guest.getId().equals(guestId));
-        if (!allowed) {
-            throw new IllegalArgumentException("El huésped indicado no pertenece a este enlace.");
-        }
-        return guestService.getForm(guestId);
+        return toGuestForm(findBookingGuest(token, guestId));
     }
 
     @Transactional
     public void updateGuest(String token, Long guestId, GuestForm form) {
-        GuestSelfServiceDetails details = getByToken(token);
-        boolean allowed = details.guests().stream().anyMatch(guest -> guest.getId().equals(guestId));
-        if (!allowed) {
-            throw new IllegalArgumentException("El huésped indicado no pertenece a este enlace.");
-        }
+        findBookingGuest(token, guestId);
         guestService.updateFromSelfService(guestId, form);
     }
 
@@ -109,5 +101,32 @@ public class GuestSelfServiceService {
         if (booking.getSelfServiceExpiresAt() == null || booking.getSelfServiceExpiresAt().isBefore(OffsetDateTime.now())) {
             throw new IllegalArgumentException("El enlace ha caducado.");
         }
+    }
+
+    private Guest findBookingGuest(String token, Long guestId) {
+        Booking booking = bookingRepository.findBySelfServiceToken(token)
+            .orElseThrow(() -> new IllegalArgumentException("El enlace indicado no existe."));
+        validateToken(booking);
+        return guestRepository.findByIdAndBookingId(guestId, booking.getId())
+            .orElseThrow(() -> new IllegalArgumentException("El huésped indicado no pertenece a este enlace."));
+    }
+
+    private GuestForm toGuestForm(Guest guest) {
+        return new GuestForm(
+            guest.getFirstName(),
+            guest.getLastName1(),
+            guest.getLastName2() == null ? "" : guest.getLastName2(),
+            guest.getDocumentType(),
+            guest.getDocumentNumber() == null ? "" : guest.getDocumentNumber(),
+            guest.getDocumentSupport() == null ? "" : guest.getDocumentSupport(),
+            guest.getBirthDate(),
+            guest.getNationality() == null ? "" : guest.getNationality(),
+            guest.getSex(),
+            guest.getAddressId(),
+            guest.getPhone() == null ? "" : guest.getPhone(),
+            guest.getPhone2() == null ? "" : guest.getPhone2(),
+            guest.getEmail() == null ? "" : guest.getEmail(),
+            guest.getRelationship() == null ? "" : guest.getRelationship()
+        );
     }
 }

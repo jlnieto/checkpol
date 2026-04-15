@@ -8,9 +8,11 @@
 </head>
 <body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
 <main class="mx-auto flex min-h-screen w-full max-w-4xl flex-col px-3 py-5 sm:px-6 sm:py-8">
+    <div th:replace="~{fragments/owner-menu :: ownerMenu}"></div>
+
     <section class="owner-page">
         <header class="space-y-2 md:space-y-3">
-            <a class="public-back-link" th:href="@{/bookings}">
+            <a class="public-back-link" th:href="@{/accommodations}">
                 <span aria-hidden="true">←</span>
                 <span>Volver</span>
             </a>
@@ -72,14 +74,15 @@
                     </section>
 
                     <div class="space-y-3 border-t border-slate-200/80 pt-6">
-                        <p class="text-sm leading-6 text-slate-500">Después podrás registrar tu primera estancia.</p>
+                        <p class="text-sm leading-6 text-slate-500">Después podrás registrar una estancia.</p>
                         <button class="owner-button-primary w-full justify-center" type="submit" th:text="${submitLabel}">Guardar vivienda</button>
-                        <a class="inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-semibold text-slate-500 transition duration-150 hover:text-slate-900" th:href="@{/bookings}">Cancelar</a>
+                        <a class="inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-semibold text-slate-500 transition duration-150 hover:text-slate-900" th:href="@{/accommodations}">Cancelar</a>
                     </div>
                 </form>
             </div>
         </section>
     </section>
 </main>
+<script defer th:src="@{/vendor/alpinejs.min.js}"></script>
 </body>
 </html>

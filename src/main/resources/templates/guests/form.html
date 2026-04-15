@@ -9,6 +9,8 @@
 </head>
 <body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
 <main class="owner-shell">
+    <div th:replace="~{fragments/owner-menu :: ownerMenu}"></div>
+
     <section class="owner-page">
         <header class="owner-header">
             <a class="public-back-link" th:href="${bookingUrl}">
@@ -93,7 +95,7 @@
                             </div>
                         </section>
 
-                        <section class="space-y-5" data-step-panel hidden data-step-title="Documento" data-step-count="Paso 2 de 4" data-step-help="El documento solo es obligatorio para personas adultas o para españoles de más de 14 años.">
+                        <section class="space-y-5" data-step-panel hidden data-step-title="Documento" data-step-count="Paso 2 de 4" data-step-help="Solo se pide a personas adultas o a españoles mayores de 14 años.">
                             <div class="owner-error-box error-box" data-panel-errors hidden></div>
 
                             <div class="grid gap-4 md:grid-cols-2">
@@ -121,15 +123,6 @@
                                     <small class="public-hint field-hint" data-document-support-help>Obligatorio si el documento es DNI o NIE</small>
                                     <small class="owner-error error" data-client-error-for="documentSupport"></small>
                                     <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('documentSupport')}" th:errors="*{documentSupport}"></small>
-                                </label>
-                                <label class="owner-label">
-                                    <span>Sexo <span class="text-slate-400">(opcional)</span></span>
-                                    <select class="owner-select" th:field="*{sex}">
-                                        <option value="">Selecciona...</option>
-                                        <option th:each="sex : ${sexes}" th:value="${sex}" th:text="${sex.label}"></option>
-                                    </select>
-                                    <small class="owner-error error" data-client-error-for="sex"></small>
-                                    <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('sex')}" th:errors="*{sex}"></small>
                                 </label>
                             </div>
 
@@ -247,5 +240,6 @@
         </section>
     </section>
 </main>
+<script defer th:src="@{/vendor/alpinejs.min.js}"></script>
 </body>
 </html>

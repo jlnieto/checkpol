@@ -4,7 +4,6 @@ import es.checkpol.domain.DocumentType;
 import es.checkpol.domain.Guest;
 import es.checkpol.domain.GuestReviewStatus;
 import es.checkpol.domain.GuestRelationship;
-import es.checkpol.domain.GuestSex;
 import es.checkpol.service.AddressService;
 import es.checkpol.service.BookingDetails;
 import es.checkpol.service.BookingService;
@@ -383,7 +382,6 @@ public class GuestController {
         model.addAttribute("documentTypes", DocumentType.values());
         model.addAttribute("countries", GuestFormOptions.countries());
         model.addAttribute("relationships", GuestRelationship.values());
-        model.addAttribute("sexes", GuestSex.values());
         model.addAttribute("addresses", addressService.findByBookingId(bookingId));
         model.addAttribute("formAction", action);
         model.addAttribute("formTitle", title);
@@ -451,9 +449,6 @@ public class GuestController {
         }
         if (guest.getAddress() == null || isBlank(guest.getAddressLine()) || isBlank(guest.getPostalCode())) {
             issues.add("Falta revisar la dirección.");
-        }
-        if (guest.getSex() == null) {
-            issues.add("Falta indicar el sexo.");
         }
         if (isMinorAtCheckIn(guest, checkInDate) && isBlank(guest.getRelationship())) {
             issues.add("Falta indicar el parentesco.");
