@@ -323,6 +323,19 @@ class GuestControllerTest {
             .andExpect(flash().attribute("flashMessage", "Lote anulado en SES."));
     }
 
+    @Test
+    @WithMockUser(username = "owner", roles = "OWNER")
+    void showsErrorWhenSesCancellationIsRejected() throws Exception {
+        when(travelerPartService.cancelSesSubmission(1L, 9L))
+            .thenReturn(new es.checkpol.service.SesSubmissionResult(12, "Lote no anulable", null));
+
+        mockMvc.perform(post("/bookings/1/communications/9/cancel-ses").with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/bookings/1"))
+            .andExpect(flash().attribute("flashKind", "error"))
+            .andExpect(flash().attribute("flashMessage", "SES no ha confirmado la anulación. Código 12: Lote no anulable"));
+    }
+
     private BookingDetails sampleDetails() {
         Accommodation accommodation = new Accommodation("Casa Olivo", "H123456789", "VT-123");
         Booking booking = new Booking(accommodation, "ABC123", 2,

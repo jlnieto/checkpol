@@ -298,8 +298,13 @@ public class GuestController {
     ) {
         try {
             var result = travelerPartService.cancelSesSubmission(bookingId, communicationId);
-            redirectAttributes.addFlashAttribute("flashMessage", "Lote anulado en SES.");
-            redirectAttributes.addFlashAttribute("flashKind", "success");
+            if (result.responseCode() == 0) {
+                redirectAttributes.addFlashAttribute("flashMessage", "Lote anulado en SES.");
+                redirectAttributes.addFlashAttribute("flashKind", "success");
+            } else {
+                redirectAttributes.addFlashAttribute("flashMessage", buildSesCancellationRejectedMessage(result));
+                redirectAttributes.addFlashAttribute("flashKind", "error");
+            }
         } catch (IllegalStateException | IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("flashMessage", exception.getMessage());
             redirectAttributes.addFlashAttribute("flashKind", "error");
@@ -320,6 +325,13 @@ public class GuestController {
                 .build()
                 .toString())
             .body(xml);
+    }
+
+    private String buildSesCancellationRejectedMessage(es.checkpol.service.SesSubmissionResult result) {
+        String description = result.responseDescription() == null || result.responseDescription().isBlank()
+            ? "SES no ha confirmado la anulación."
+            : result.responseDescription().trim();
+        return "SES no ha confirmado la anulación. Código " + result.responseCode() + ": " + description;
     }
 
     @PostMapping("/bookings/{bookingId}/self-service-link")
