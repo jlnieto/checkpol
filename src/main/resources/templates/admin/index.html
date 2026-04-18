@@ -11,29 +11,7 @@
     <aside class="mono-sidebar-shell" th:replace="~{admin/fragments :: sidebar('overview')}"></aside>
 
     <section class="mono-content">
-        <header class="mono-topbar">
-            <div class="mono-topbar-left">
-                <button class="mono-topbar-button" type="button" aria-label="Navegación">
-                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path d="M3 5h14v2H3V5Zm0 4h14v2H3V9Zm0 4h14v2H3v-2Z"/>
-                    </svg>
-                </button>
-                <label class="mono-search">
-                    <svg class="mono-search-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path d="M8.5 3a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Zm0 1.5a4 4 0 1 0 2.6 7l3.2 3.2 1.1-1.1-3.2-3.2A4 4 0 0 0 8.5 4.5Z"/>
-                    </svg>
-                    <input class="mono-search-input" type="text" placeholder="Buscar en catálogo oficial..." readonly>
-                </label>
-            </div>
-            <div class="mono-topbar-right">
-                <span class="mono-topbar-meta">Catálogo:
-                    <strong th:text="${dashboard.currentSourceVersion != null ? dashboard.currentSourceVersion : 'SIN_VERSIÓN'}">SIN_VERSIÓN</strong>
-                </span>
-                <span class="mono-topbar-divider"></span>
-                <span class="mono-topbar-user">Admin Central</span>
-                <div class="mono-topbar-avatar flex items-center justify-center text-[11px] font-bold text-white">A</div>
-            </div>
-        </header>
+        <header th:replace="~{admin/fragments :: topbar('Buscar en catálogo oficial...')}"></header>
 
         <div class="mono-page">
             <div class="mono-page-head">
@@ -43,6 +21,25 @@
                     <span>/</span>
                     <span class="mono-breadcrumb-active">Dashboard</span>
                 </nav>
+            </div>
+
+            <div class="mono-alert-error" th:if="${sesProblemCount > 0}">
+                <div class="mono-alert-row">
+                    <p>
+                        <strong th:text="${sesProblemCount}">1</strong>
+                        <span> incidencia(s) SES activas. Revisa primero los envíos fallidos y respuestas rechazadas.</span>
+                    </p>
+                    <a class="mono-panel-link" th:href="@{/admin/ses(problemOnly=true)}">Ver problemas SES</a>
+                </div>
+            </div>
+            <div class="mono-alert-error" th:if="${incidentSummary.activeCount > 0}">
+                <div class="mono-alert-row">
+                    <p>
+                        <strong th:text="${incidentSummary.activeCount}">1</strong>
+                        <span> incidencia(s) de aplicación activas. Revisa primero las abiertas de owner y huéspedes.</span>
+                    </p>
+                    <a class="mono-panel-link" th:href="@{/admin/incidents(status='ACTIVE')}">Ver incidencias</a>
+                </div>
             </div>
 
             <section class="mono-kpi-grid">
@@ -74,22 +71,74 @@
                     <p class="mono-kpi-value text-[1.65rem]" th:text="${dashboard.currentSourceVersion != null ? dashboard.currentSourceVersion : 'Sin carga'}">Sin carga</p>
                     <p class="mono-kpi-copy mono-kpi-copy-amber" th:text="${dashboard.currentSource != null ? dashboard.currentSource : 'Todavía no hay catálogo activo'}">ine-open-data</p>
                 </article>
-                <article class="mono-kpi mono-kpi-red">
+                <a class="mono-kpi mono-kpi-red mono-kpi-link"
+                   th:href="${incidentSummary.activeCount > 0}
+                        ? @{/admin/incidents(status='ACTIVE')}
+                        : (${sesProblemCount > 0}
+                            ? @{/admin/ses(problemOnly=true)}
+                            : (${!dashboard.catalogLoaded or sourceHealth.level != 'ok'} ? @{/admin/municipalities} : @{/admin}))">
                     <div class="mono-kpi-head">
                         <span class="mono-kpi-label">Alertas sistema</span>
                         <span class="mono-kpi-chip mono-kpi-chip-red" th:text="${adminAlertCount == 0 ? 'OK' : 'ACT'}">ACT</span>
                     </div>
                     <p class="mono-kpi-value" th:text="${adminAlertCount}">0</p>
-                    <p class="mono-kpi-copy mono-kpi-copy-red" th:text="${sourceHealth.level == 'ok' ? 'Operación estable' : 'Acción requerida inmediata'}">Acción requerida inmediata</p>
-                </article>
+                    <p class="mono-kpi-copy mono-kpi-copy-red"
+                       th:text="${incidentSummary.activeCount > 0
+                            ? incidentSummary.activeCount + ' incidencias de aplicación'
+                            : (sesProblemCount > 0
+                                ? sesProblemCount + ' incidencias SES activas'
+                                : (sourceHealth.level == 'ok' ? 'Operación estable' : 'Acción requerida inmediata'))}">Acción requerida inmediata</p>
+                    <span class="mono-kpi-action mono-kpi-copy-red"
+                          th:text="${adminAlertCount > 0 ? 'Revisar ahora' : 'Ver estado'}">Revisar ahora</span>
+                </a>
             </section>
 
             <section class="mono-layout">
                 <div class="mono-main">
                     <section class="mono-panel">
                         <div class="mono-panel-strip">
+                            <h2 class="mono-panel-title">Incidencias de aplicación</h2>
+                            <a class="mono-panel-link"
+                               th:href="${incidentSummary.activeCount > 0} ? @{/admin/incidents(status='ACTIVE')} : @{/admin/incidents(status='ALL')}"
+                               th:text="${incidentSummary.activeCount > 0 ? 'Revisar ahora' : 'Ver histórico'}">Revisar ahora</a>
+                        </div>
+                        <div class="mono-panel-body">
+                            <div class="mono-status-list">
+                                <div class="mono-status-row">
+                                    <div class="mono-status-main">
+                                        <span class="mono-status-dot" th:classappend="${incidentSummary.openCount > 0 ? ' mono-status-dot-red' : ' mono-status-dot-green'}"></span>
+                                        <div>
+                                            <p class="mono-status-label">Errores abiertos</p>
+                                            <p class="mono-status-copy" th:text="${incidentSummary.openCount == 0 ? 'No hay errores nuevos pendientes de revisar.' : 'Hay errores nuevos de owner, huéspedes o admin.'}">No hay errores nuevos.</p>
+                                        </div>
+                                    </div>
+                                    <span class="mono-status-value" th:text="${incidentSummary.openCount}">0</span>
+                                </div>
+                                <div class="mono-status-row">
+                                    <div class="mono-status-main">
+                                        <span class="mono-status-dot" th:classappend="${incidentSummary.activeCount > 0 ? ' mono-status-dot-amber' : ' mono-status-dot-green'}"></span>
+                                        <div>
+                                            <p class="mono-status-label">Seguimiento activo</p>
+                                            <p class="mono-status-copy">Incluye abiertas y revisadas que todavía no están resueltas.</p>
+                                        </div>
+                                    </div>
+                                    <span class="mono-status-value" th:text="${incidentSummary.activeCount}">0</span>
+                                </div>
+                            </div>
+                            <div class="mono-panel-actions">
+                                <a class="mono-btn-primary"
+                                   th:href="${incidentSummary.activeCount > 0} ? @{/admin/incidents(status='ACTIVE')} : @{/admin/incidents(status='ALL')}"
+                                   th:text="${incidentSummary.activeCount > 0 ? 'Revisar incidencias' : 'Abrir incidencias'}">Abrir incidencias</a>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="mono-panel">
+                        <div class="mono-panel-strip">
                             <h2 class="mono-panel-title">Control SES</h2>
-                            <a class="mono-panel-link" th:href="@{/admin/ses}">Abrir control</a>
+                            <a class="mono-panel-link"
+                               th:href="${sesProblemCount > 0} ? @{/admin/ses(problemOnly=true)} : @{/admin/ses}"
+                               th:text="${sesProblemCount > 0 ? 'Ver problemas' : 'Abrir control'}">Abrir control</a>
                         </div>
                         <div class="mono-panel-body">
                             <div class="mono-status-list">
@@ -140,16 +189,13 @@
                                 </div>
                             </div>
                             <div class="mono-panel-actions">
-                                <a class="mono-btn-primary" th:href="@{/admin/ses}">Abrir control SES</a>
+                                <a class="mono-btn-primary"
+                                   th:href="${sesProblemCount > 0} ? @{/admin/ses(problemOnly=true)} : @{/admin/ses}"
+                                   th:text="${sesProblemCount > 0 ? 'Ver incidencias SES' : 'Abrir control SES'}">Abrir control SES</a>
                                 <a class="mono-btn-secondary" th:href="@{/admin/ses/owners}">Revisar owners</a>
                             </div>
                         </div>
                     </section>
-                </div>
-            </section>
-
-            <section class="mono-layout">
-                <div class="mono-main">
                     <section class="mono-panel">
                         <div class="mono-panel-strip">
                             <h2 class="mono-panel-title">Estado del sistema operativo</h2>
@@ -184,7 +230,7 @@
                                     <div class="mono-status-main">
                                         <span class="mono-status-dot mono-status-dot-green"></span>
                                         <div>
-                                            <p class="mono-status-label">Gestión de propietarios</p>
+                                            <p class="mono-status-label">Gestión de usuarios</p>
                                             <p class="mono-status-copy">
                                                 <span th:text="${activeOwnerCount}">0</span> cuentas listas ·
                                                 <span th:text="${inactiveOwnerCount}">0</span> inactivas
@@ -208,17 +254,17 @@
                     <section class="mono-module-grid">
                         <article class="mono-module">
                             <div class="mono-module-head">
-                                <svg class="mono-module-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <svg class="mono-module-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path d="M10 10a3.5 3.5 0 1 0-3.5-3.5A3.5 3.5 0 0 0 10 10Zm-5.5 6a5.5 5.5 0 0 1 11 0H4.5Z"/>
                                 </svg>
-                                <h3 class="mono-module-title">Gestión de propietarios</h3>
+                                <h3 class="mono-module-title">Gestión de usuarios</h3>
                             </div>
-                            <p class="mono-module-copy">Administración centralizada de perfiles de propietarios y sus credenciales de acceso al sistema.</p>
+                            <p class="mono-module-copy">Administración centralizada de owners, superadmins y contraseñas de acceso.</p>
                             <a class="mono-btn-secondary" th:href="@{/admin/users}">Gestionar usuarios</a>
                         </article>
                         <article class="mono-module">
                             <div class="mono-module-head">
-                                <svg class="mono-module-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <svg class="mono-module-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path d="M4 3h9l3 3v11H4V3Zm2 2v10h8V7.2L12.8 5H6Zm1.5 3h5v1.5h-5V8Zm0 3h5v1.5h-5V11Z"/>
                                 </svg>
                                 <h3 class="mono-module-title">Catálogo oficial</h3>
@@ -297,13 +343,12 @@
                                 <div class="mono-meter-bar mono-meter-bar-red" th:style="'width:' + ${sourceHealthPercent} + '%'"></div>
                             </div>
                         </div>
-                        <div class="mt-6 border-t border-[#e8e8e9] pt-4 text-[11px] text-[#707881]">
-                            <p class="mb-2">Versión activa:
-                                <strong class="text-[#1a1c1d]" th:text="${dashboard.currentSourceVersion != null ? dashboard.currentSourceVersion : 'Sin versión'}">Sin versión</strong>
+                        <div class="mono-rail-meta">
+                            <p>Versión activa:
+                                <strong th:text="${dashboard.currentSourceVersion != null ? dashboard.currentSourceVersion : 'Sin versión'}">Sin versión</strong>
                             </p>
                             <p>Última sync:
-                                <strong class="text-[#1a1c1d]"
-                                        th:text="${dashboard.currentUpdatedAt != null ? #temporals.format(dashboard.currentUpdatedAt, 'dd/MM/yyyy HH:mm') : 'Sin carga'}">Sin carga</strong>
+                                <strong th:text="${dashboard.currentUpdatedAt != null ? #temporals.format(dashboard.currentUpdatedAt, 'dd/MM/yyyy HH:mm') : 'Sin carga'}">Sin carga</strong>
                             </p>
                         </div>
                     </section>
@@ -314,25 +359,25 @@
                         </div>
                         <div class="mono-link-list">
                             <a class="mono-link-item" th:href="@{/admin/users}">
-                                <svg class="mono-link-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <svg class="mono-link-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path d="M10 10a3.5 3.5 0 1 0-3.5-3.5A3.5 3.5 0 0 0 10 10Zm-5.5 6a5.5 5.5 0 0 1 11 0H4.5Z"/>
                                 </svg>
-                                Gestión de propietarios
+                                Gestión de usuarios
                             </a>
                             <a class="mono-link-item" th:href="@{/admin/users/new}">
-                                <svg class="mono-link-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <svg class="mono-link-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path d="M9 3h2v6h6v2h-6v6H9v-6H3V9h6V3Z"/>
                                 </svg>
-                                Nuevo owner
+                                Nuevo usuario
                             </a>
                             <a class="mono-link-item" th:href="@{/admin/ses}">
-                                <svg class="mono-link-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <svg class="mono-link-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path d="M4 4h12v3H4V4Zm0 4.5h12V16H4V8.5Zm2 2V14h3v-3.5H6Zm5 0V14h3v-3.5h-3Z"/>
                                 </svg>
                                 Control SES
                             </a>
                             <a class="mono-link-item" th:href="@{/admin/municipalities}">
-                                <svg class="mono-link-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <svg class="mono-link-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path d="M4 3h9l3 3v11H4V3Zm2 2v10h8V7.2L12.8 5H6Z"/>
                                 </svg>
                                 Catálogo oficial

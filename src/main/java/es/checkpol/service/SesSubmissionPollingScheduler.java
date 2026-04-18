@@ -46,8 +46,19 @@ public class SesSubmissionPollingScheduler {
                     result.processingStateDescription(),
                     result.communicationCode(),
                     result.processingErrorType(),
-                    result.processingErrorDescription()
+                    result.processingErrorDescription(),
+                    result.responseCode(),
+                    result.responseDescription(),
+                    result.rawResponse()
                 );
+            } catch (SesCommunicationException exception) {
+                communication.registerSesResponseNeedsReview(
+                    java.time.OffsetDateTime.now(),
+                    exception.getResponseCode() == null ? -1 : exception.getResponseCode(),
+                    exception.getMessage(),
+                    exception.getRawResponse()
+                );
+                LOGGER.warn("SES ha respondido con un formato pendiente de revisar para la comunicación {}.", communication.getId(), exception);
             } catch (RuntimeException exception) {
                 LOGGER.warn("No he podido actualizar el estado SES de la comunicación {}.", communication.getId(), exception);
             }

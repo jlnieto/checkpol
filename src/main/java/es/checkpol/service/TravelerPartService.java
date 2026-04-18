@@ -36,7 +36,15 @@ public class TravelerPartService {
 
     @Transactional
     public String generateXml(Long bookingId) {
-        return createGeneratedCommunication(bookingId, CommunicationDispatchMode.MANUAL_DOWNLOAD).getXmlContent();
+        BookingDetails details = getReadyDetails(bookingId);
+        String xml = xmlGenerator.generate(details);
+        return createGeneratedCommunication(
+            bookingId,
+            currentAppUserService.requireCurrentUserId(),
+            details,
+            xml,
+            CommunicationDispatchMode.MANUAL_DOWNLOAD
+        ).getXmlContent();
     }
 
     @Transactional
@@ -46,14 +54,26 @@ public class TravelerPartService {
             throw new IllegalStateException("Falta la configuración del servicio web de SES para este owner.");
         }
 
-        GeneratedCommunication communication = createGeneratedCommunication(bookingId, CommunicationDispatchMode.SES_WEB_SERVICE);
+        Long ownerId = currentAppUserService.requireCurrentUserId();
+        BookingDetails details = getReadyDetails(bookingId);
+        String xml = xmlGenerator.generate(details);
+        preventIdenticalSesResubmission(bookingId, ownerId, xml);
+
+        GeneratedCommunication communication = createGeneratedCommunication(
+            bookingId,
+            ownerId,
+            details,
+            xml,
+            CommunicationDispatchMode.SES_WEB_SERVICE
+        );
         try {
             SesSubmissionResult result = sesCommunicationGateway.submitTravelerPart(owner, communication.getXmlContent());
-            communication.registerSesSubmission(OffsetDateTime.now(), result.loteCode(), result.responseCode(), result.responseDescription());
+            communication.registerSesSubmission(OffsetDateTime.now(), result.loteCode(), result.responseCode(), result.responseDescription(), result.rawResponse());
             return result;
         } catch (RuntimeException exception) {
-            communication.registerFailedSesSubmission(OffsetDateTime.now(), null, exception.getMessage());
-            throw exception;
+            SesSubmissionResult result = failedSubmissionResult(exception);
+            communication.registerFailedSesSubmission(OffsetDateTime.now(), result.responseCode(), result.responseDescription(), result.rawResponse());
+            return result;
         }
     }
 
@@ -74,16 +94,25 @@ public class TravelerPartService {
             throw new IllegalStateException("Falta la configuración del servicio web de SES para este owner.");
         }
 
-        SesLoteStatusResult result = sesCommunicationGateway.queryLoteStatus(owner, communication.getSesLoteCode());
-        communication.registerSesProcessingResult(
-            OffsetDateTime.now(),
-            result.processingStateCode(),
-            result.processingStateDescription(),
-            result.communicationCode(),
-            result.processingErrorType(),
-            result.processingErrorDescription()
-        );
-        return result;
+        try {
+            SesLoteStatusResult result = sesCommunicationGateway.queryLoteStatus(owner, communication.getSesLoteCode());
+            communication.registerSesProcessingResult(
+                OffsetDateTime.now(),
+                result.processingStateCode(),
+                result.processingStateDescription(),
+                result.communicationCode(),
+                result.processingErrorType(),
+                result.processingErrorDescription(),
+                result.responseCode(),
+                result.responseDescription(),
+                result.rawResponse()
+            );
+            return result;
+        } catch (RuntimeException exception) {
+            SesLoteStatusResult result = failedLoteStatusResult(communication.getSesLoteCode(), exception);
+            communication.registerSesResponseNeedsReview(OffsetDateTime.now(), result.responseCode(), result.responseDescription(), result.rawResponse());
+            return result;
+        }
     }
 
     @Transactional
@@ -106,10 +135,13 @@ public class TravelerPartService {
             throw new IllegalStateException("Esta comunicación ya está anulada en SES.");
         }
 
-        SesSubmissionResult result = sesCommunicationGateway.cancelLote(owner, communication.getSesLoteCode());
-        if (result.responseCode() == 0) {
-            communication.registerSesCancellation(OffsetDateTime.now(), result.responseCode(), result.responseDescription());
+        SesSubmissionResult result;
+        try {
+            result = sesCommunicationGateway.cancelLote(owner, communication.getSesLoteCode());
+        } catch (RuntimeException exception) {
+            result = failedSubmissionResult(exception);
         }
+        communication.registerSesCancellation(OffsetDateTime.now(), result.responseCode(), result.responseDescription(), result.rawResponse());
         return result;
     }
 
@@ -122,15 +154,39 @@ public class TravelerPartService {
         return communication.getXmlContent();
     }
 
-    private GeneratedCommunication createGeneratedCommunication(Long bookingId, CommunicationDispatchMode dispatchMode) {
+    private BookingDetails getReadyDetails(Long bookingId) {
         BookingDetails details = bookingService.getDetails(bookingId);
         if (!details.readyForTravelerPart()) {
             throw new IllegalStateException(details.blockingMessage() == null
                 ? "La estancia no está lista para generar el archivo SES."
                 : details.blockingMessage());
         }
-        String xml = xmlGenerator.generate(details);
-        int nextVersion = generatedCommunicationRepository.findFirstByBookingIdAndBookingOwnerIdOrderByVersionDesc(bookingId, currentAppUserService.requireCurrentUserId())
+        return details;
+    }
+
+    private void preventIdenticalSesResubmission(Long bookingId, Long ownerId, String xml) {
+        generatedCommunicationRepository.findFirstByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(bookingId, ownerId)
+            .filter(communication -> xml.equals(communication.getXmlContent()))
+            .filter(this::blocksIdenticalSesResubmission)
+            .ifPresent(communication -> {
+                throw new IllegalStateException("SES no acepta reenviar exactamente el mismo archivo. Cambia la estancia o algún huésped antes de presentarlo de nuevo.");
+            });
+    }
+
+    private boolean blocksIdenticalSesResubmission(GeneratedCommunication communication) {
+        return communication.getDispatchStatus() == CommunicationDispatchStatus.SES_CANCELLED
+            || (communication.getDispatchStatus() == CommunicationDispatchStatus.SUBMISSION_FAILED
+                && Integer.valueOf(10121).equals(communication.getSesResponseCode()));
+    }
+
+    private GeneratedCommunication createGeneratedCommunication(
+        Long bookingId,
+        Long ownerId,
+        BookingDetails details,
+        String xml,
+        CommunicationDispatchMode dispatchMode
+    ) {
+        int nextVersion = generatedCommunicationRepository.findFirstByBookingIdAndBookingOwnerIdOrderByVersionDesc(bookingId, ownerId)
             .map(communication -> communication.getVersion() + 1)
             .orElse(1);
         GeneratedCommunication communication = new GeneratedCommunication(
@@ -143,5 +199,35 @@ public class TravelerPartService {
         );
         generatedCommunicationRepository.save(communication);
         return communication;
+    }
+
+    private SesSubmissionResult failedSubmissionResult(RuntimeException exception) {
+        if (exception instanceof SesCommunicationException sesException) {
+            return new SesSubmissionResult(
+                sesException.getResponseCode() == null ? -1 : sesException.getResponseCode(),
+                sesException.getMessage(),
+                null,
+                sesException.getRawResponse()
+            );
+        }
+        return new SesSubmissionResult(-1, exception.getMessage(), null, null);
+    }
+
+    private SesLoteStatusResult failedLoteStatusResult(String loteCode, RuntimeException exception) {
+        if (exception instanceof SesCommunicationException sesException) {
+            return new SesLoteStatusResult(
+                sesException.getResponseCode() == null ? -1 : sesException.getResponseCode(),
+                sesException.getMessage(),
+                loteCode,
+                null,
+                null,
+                null,
+                null,
+                sesException.getMessage(),
+                null,
+                sesException.getRawResponse()
+            );
+        }
+        return new SesLoteStatusResult(-1, exception.getMessage(), loteCode, null, null, null, null, exception.getMessage(), null, null);
     }
 }

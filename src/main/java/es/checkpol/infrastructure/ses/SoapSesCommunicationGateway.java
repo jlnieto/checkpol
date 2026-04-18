@@ -2,6 +2,7 @@ package es.checkpol.infrastructure.ses;
 
 import es.checkpol.domain.AppUser;
 import es.checkpol.domain.SesConnectionTestStatus;
+import es.checkpol.service.SesCommunicationException;
 import es.checkpol.service.SesCommunicationGateway;
 import es.checkpol.service.SesConnectionTestResult;
 import es.checkpol.service.SesCredentialCipher;
@@ -25,7 +26,11 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Base64;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -182,13 +187,20 @@ public class SoapSesCommunicationGateway implements SesCommunicationGateway {
 
         try {
             HttpResponse<String> response = sendSoapRequest(owner, buildSoapEnvelope(owner, encodeZipBase64(xmlContent)));
+            String responseBody = response.body();
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new IllegalStateException("SES ha devuelto HTTP " + response.statusCode() + ".");
+                throw new SesCommunicationException("SES ha devuelto HTTP " + response.statusCode() + ".", null, normalizeRawDetail(responseBody));
             }
-            return parseSoapResponse(response.body());
+            try {
+                return parseSoapResponse(responseBody);
+            } catch (Exception exception) {
+                throw unexpectedSesResponse("No he podido interpretar la respuesta de envío de SES.", responseBody, exception);
+            }
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("La comunicación con SES se ha interrumpido.", exception);
+        } catch (SesCommunicationException exception) {
+            throw exception;
         } catch (Exception exception) {
             if (exception instanceof IllegalStateException || exception instanceof IllegalArgumentException) {
                 throw (RuntimeException) exception;
@@ -208,13 +220,20 @@ public class SoapSesCommunicationGateway implements SesCommunicationGateway {
 
         try {
             HttpResponse<String> response = sendSoapRequest(owner, buildConsultaLoteSoapEnvelope(loteCode.trim()));
+            String responseBody = response.body();
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new IllegalStateException("SES ha devuelto HTTP " + response.statusCode() + ".");
+                throw new SesCommunicationException("SES ha devuelto HTTP " + response.statusCode() + ".", null, normalizeRawDetail(responseBody));
             }
-            return parseConsultaLoteResponse(response.body());
+            try {
+                return parseConsultaLoteResponse(responseBody);
+            } catch (Exception exception) {
+                throw unexpectedSesResponse("No he podido interpretar la respuesta de consulta de lote de SES.", responseBody, exception);
+            }
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("La consulta a SES se ha interrumpido.", exception);
+        } catch (SesCommunicationException exception) {
+            throw exception;
         } catch (Exception exception) {
             if (exception instanceof IllegalStateException || exception instanceof IllegalArgumentException) {
                 throw (RuntimeException) exception;
@@ -234,13 +253,20 @@ public class SoapSesCommunicationGateway implements SesCommunicationGateway {
 
         try {
             HttpResponse<String> response = sendSoapRequest(owner, buildAnulacionLoteSoapEnvelope(loteCode.trim()));
+            String responseBody = response.body();
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new IllegalStateException("SES ha devuelto HTTP " + response.statusCode() + ".");
+                throw new SesCommunicationException("SES ha devuelto HTTP " + response.statusCode() + ".", null, normalizeRawDetail(responseBody));
             }
-            return parseAnulacionLoteResponse(response.body());
+            try {
+                return parseAnulacionLoteResponse(responseBody);
+            } catch (Exception exception) {
+                throw unexpectedSesResponse("No he podido interpretar la respuesta de anulación de SES.", responseBody, exception);
+            }
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("La anulación en SES se ha interrumpido.", exception);
+        } catch (SesCommunicationException exception) {
+            throw exception;
         } catch (Exception exception) {
             if (exception instanceof IllegalStateException || exception instanceof IllegalArgumentException) {
                 throw (RuntimeException) exception;
@@ -343,10 +369,10 @@ public class SoapSesCommunicationGateway implements SesCommunicationGateway {
         Integer code = parseRequiredInt(document, "codigo");
         String description = parseRequiredText(document, "descripcion");
         String lote = parseOptionalText(document, "lote");
-        return new SesSubmissionResult(code, description, lote);
+        return new SesSubmissionResult(code, description, lote, normalizeRawDetail(body));
     }
 
-    private SesLoteStatusResult parseConsultaLoteResponse(String body) throws Exception {
+    SesLoteStatusResult parseConsultaLoteResponse(String body) throws Exception {
         Document document = parseDocument(body);
         int responseCode = parseRequiredXPathInt(document, "string((//*[local-name()='consultaLoteResponse']/*[local-name()='respuesta']/*[local-name()='codigo'])[1])");
         String responseDescription = parseRequiredXPath(document, "string((//*[local-name()='consultaLoteResponse']/*[local-name()='respuesta']/*[local-name()='descripcion'])[1])");
@@ -367,15 +393,45 @@ public class SoapSesCommunicationGateway implements SesCommunicationGateway {
             blankToNull(communicationCode),
             blankToNull(processingErrorType),
             blankToNull(processingErrorDescription),
-            blankToNull(processedAtValue) == null ? null : OffsetDateTime.parse(processedAtValue)
+            parseSesDateTime(processedAtValue),
+            normalizeRawDetail(body)
         );
     }
 
-    private SesSubmissionResult parseAnulacionLoteResponse(String body) throws Exception {
+    private OffsetDateTime parseSesDateTime(String value) {
+        String normalized = blankToNull(value);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            return OffsetDateTime.parse(normalized);
+        } catch (DateTimeParseException ignored) {
+            // SES returns fechaProcesamiento as "yyyy-MM-dd HH:mm:ss" in production responses.
+            try {
+                LocalDateTime localDateTime = LocalDateTime.parse(normalized, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                return localDateTime.atZone(ZoneId.of("Europe/Madrid")).toOffsetDateTime();
+            } catch (DateTimeParseException ignoredAgain) {
+                return null;
+            }
+        }
+    }
+
+    SesSubmissionResult parseAnulacionLoteResponse(String body) throws Exception {
         Document document = parseDocument(body);
         int code = parseRequiredXPathInt(document, "string((//*[local-name()='anulacionLoteResponse']/*[local-name()='codigo'])[1])");
-        String description = parseRequiredXPath(document, "string((//*[local-name()='anulacionLoteResponse']/*[local-name()='descripcion'])[1])");
-        return new SesSubmissionResult(code, description, null);
+        String description = parseOptionalXPath(document, "string((//*[local-name()='anulacionLoteResponse']/*[local-name()='descripcion'])[1])");
+        if (!hasText(description) && code == 0) {
+            description = "Anulación aceptada por SES.";
+        } else if (!hasText(description)) {
+            description = "SES ha respondido a la anulación con código " + code + ".";
+        }
+        return new SesSubmissionResult(code, description, null, normalizeRawDetail(body));
+    }
+
+    private SesCommunicationException unexpectedSesResponse(String message, String body, Exception cause) {
+        String faultString = summarizeSoapFault(body);
+        String detail = hasText(faultString) ? message + " Fault: " + faultString : message;
+        return new SesCommunicationException(detail, null, normalizeRawDetail(body), cause);
     }
 
     private Document parseDocument(String body) throws Exception {

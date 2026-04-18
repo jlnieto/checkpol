@@ -18,6 +18,7 @@ class SesWsHttpClientConfigTest {
         HttpClient httpClient = config.sesHttpClient("", "", "PKCS12");
 
         assertNotNull(httpClient);
+        org.junit.jupiter.api.Assertions.assertEquals(HttpClient.Version.HTTP_1_1, httpClient.version());
     }
 
     @Test

@@ -6,12 +6,12 @@
     <title>Nueva vivienda | Checkpol</title>
     <link rel="stylesheet" th:href="@{/app.css}">
 </head>
-<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
-<main class="mx-auto flex min-h-screen w-full max-w-4xl flex-col px-3 py-5 sm:px-6 sm:py-8">
-    <div th:replace="~{fragments/owner-menu :: ownerMenu}"></div>
+<body class="owner-body">
+<main class="owner-shell-narrow">
+    <div th:replace="~{fragments/owner-menu :: ownerMenu('accommodations')}"></div>
 
     <section class="owner-page">
-        <header class="space-y-2 md:space-y-3">
+        <header class="owner-header">
             <a class="public-back-link" th:href="@{/accommodations}">
                 <span aria-hidden="true">←</span>
                 <span>Volver</span>
@@ -19,15 +19,15 @@
 
             <div class="space-y-1">
                 <p class="owner-kicker">Viviendas</p>
-                <h1 class="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl" th:text="${formTitle}">Nueva vivienda</h1>
-                <p class="text-sm leading-6 text-slate-600 sm:text-base">Guarda primero el nombre y el código SES.</p>
+                <h1 class="owner-title" th:text="${formTitle}">Nueva vivienda</h1>
+                <p class="owner-copy">Guarda primero el nombre y el código SES.</p>
             </div>
         </header>
 
         <section class="mx-auto w-full max-w-2xl">
             <div class="owner-form-shell">
                 <form th:action="${formAction}" th:object="${accommodationForm}" method="post" class="space-y-6" novalidate>
-                    <section class="space-y-5 rounded-[28px] border border-primary/12 bg-linear-to-br from-sky-50 via-white to-white px-5 py-5 ring-1 ring-white/60">
+                    <section class="owner-form-section-highlight">
                         <div class="space-y-2">
                             <p class="owner-kicker">Obligatorio para guardar</p>
                             <h2 class="text-2xl font-extrabold tracking-tight text-slate-900">Lo mínimo para dejarla lista</h2>
@@ -50,7 +50,7 @@
                         </div>
                     </section>
 
-                    <section class="space-y-4 border-t border-slate-200/80 pt-4">
+                    <section class="owner-form-section">
                         <div class="space-y-1">
                             <p class="owner-kicker">Opcional por ahora</p>
                             <p class="text-sm leading-6 text-slate-500">Solo si te ayuda a tener la vivienda mejor organizada.</p>
@@ -73,10 +73,10 @@
                         </div>
                     </section>
 
-                    <div class="space-y-3 border-t border-slate-200/80 pt-6">
+                    <div class="owner-form-footer">
                         <p class="text-sm leading-6 text-slate-500">Después podrás registrar una estancia.</p>
                         <button class="owner-button-primary w-full justify-center" type="submit" th:text="${submitLabel}">Guardar vivienda</button>
-                        <a class="inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-semibold text-slate-500 transition duration-150 hover:text-slate-900" th:href="@{/accommodations}">Cancelar</a>
+                        <a class="owner-button-secondary w-full justify-center" th:href="@{/accommodations}">Cancelar</a>
                     </div>
                 </form>
             </div>

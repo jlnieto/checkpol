@@ -23,6 +23,7 @@ import java.util.List;
 public class AdminSesMonitoringService {
 
     private static final List<CommunicationDispatchStatus> PROBLEM_STATUSES = List.of(
+        CommunicationDispatchStatus.SES_RESPONSE_NEEDS_REVIEW,
         CommunicationDispatchStatus.SUBMISSION_FAILED,
         CommunicationDispatchStatus.SES_PROCESSING_ERROR
     );
@@ -75,8 +76,9 @@ public class AdminSesMonitoringService {
 
         return new SesDashboardSummary(
             generatedCommunicationRepository.countByDispatchStatus(CommunicationDispatchStatus.SUBMITTED_TO_SES),
-            generatedCommunicationRepository.countByDispatchStatus(CommunicationDispatchStatus.SUBMISSION_FAILED),
-            generatedCommunicationRepository.countByDispatchStatus(CommunicationDispatchStatus.SES_PROCESSING_ERROR),
+            generatedCommunicationRepository.countByDispatchStatusAndSesProblemReviewedAtIsNull(CommunicationDispatchStatus.SUBMISSION_FAILED),
+            generatedCommunicationRepository.countByDispatchStatusAndSesProblemReviewedAtIsNull(CommunicationDispatchStatus.SES_PROCESSING_ERROR)
+                + generatedCommunicationRepository.countByDispatchStatusAndSesProblemReviewedAtIsNull(CommunicationDispatchStatus.SES_RESPONSE_NEEDS_REVIEW),
             ownersWithoutReadyWs,
             buildTechnicalHealth()
         );
@@ -88,6 +90,32 @@ public class AdminSesMonitoringService {
         return communications.stream()
             .map(this::toCommunicationRow)
             .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public SesCommunicationDetail getCommunicationDetail(Long communicationId) {
+        GeneratedCommunication communication = generatedCommunicationRepository.findAdminDetailById(communicationId)
+            .orElseThrow(() -> new IllegalArgumentException("No he encontrado la comunicación SES indicada."));
+
+        return new SesCommunicationDetail(
+            toCommunicationRow(communication),
+            communication.getSesResponseCode(),
+            communication.getSesResponseDescription(),
+            communication.getSesProcessingStateCode(),
+            communication.getSesProcessingStateDescription(),
+            communication.getSesProcessingErrorType(),
+            communication.getSesProcessingErrorDescription(),
+            communication.getDownloadCount(),
+            communication.getLastDownloadedAt(),
+            communication.getXmlContent()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public String getCommunicationXml(Long communicationId) {
+        return generatedCommunicationRepository.findAdminDetailById(communicationId)
+            .orElseThrow(() -> new IllegalArgumentException("No he encontrado la comunicación SES indicada."))
+            .getXmlContent();
     }
 
     @Transactional(readOnly = true)
@@ -109,19 +137,28 @@ public class AdminSesMonitoringService {
             throw new IllegalStateException("El owner no tiene la configuración WS completa.");
         }
 
-        SesLoteStatusResult result = sesCommunicationGateway.queryLoteStatus(
-            communication.getBooking().getOwner(),
-            communication.getSesLoteCode()
-        );
-        communication.registerSesProcessingResult(
-            OffsetDateTime.now(),
-            result.processingStateCode(),
-            result.processingStateDescription(),
-            result.communicationCode(),
-            result.processingErrorType(),
-            result.processingErrorDescription()
-        );
-        return result;
+        try {
+            SesLoteStatusResult result = sesCommunicationGateway.queryLoteStatus(
+                communication.getBooking().getOwner(),
+                communication.getSesLoteCode()
+            );
+            communication.registerSesProcessingResult(
+                OffsetDateTime.now(),
+                result.processingStateCode(),
+                result.processingStateDescription(),
+                result.communicationCode(),
+                result.processingErrorType(),
+                result.processingErrorDescription(),
+                result.responseCode(),
+                result.responseDescription(),
+                result.rawResponse()
+            );
+            return result;
+        } catch (RuntimeException exception) {
+            SesLoteStatusResult result = failedLoteStatusResult(communication.getSesLoteCode(), exception);
+            communication.registerSesResponseNeedsReview(OffsetDateTime.now(), result.responseCode(), result.responseDescription(), result.rawResponse());
+            return result;
+        }
     }
 
     @Transactional
@@ -132,6 +169,9 @@ public class AdminSesMonitoringService {
         AppUser owner = source.getBooking().getOwner();
         if (!owner.hasSesWebServiceConfiguration()) {
             throw new IllegalStateException("El owner no tiene la configuración WS completa.");
+        }
+        if (isDuplicateSubmissionFailure(source)) {
+            throw new IllegalStateException("No reintentes este envío desde admin: SES ya lo ha marcado como lote duplicado. Corrige la estancia o los huéspedes antes de generar un nuevo parte.");
         }
 
         int nextVersion = generatedCommunicationRepository.findFirstByBookingIdOrderByVersionDesc(source.getBooking().getId())
@@ -149,21 +189,32 @@ public class AdminSesMonitoringService {
 
         try {
             SesSubmissionResult result = sesCommunicationGateway.submitTravelerPart(owner, retry.getXmlContent());
-            retry.registerSesSubmission(OffsetDateTime.now(), result.loteCode(), result.responseCode(), result.responseDescription());
+            retry.registerSesSubmission(OffsetDateTime.now(), result.loteCode(), result.responseCode(), result.responseDescription(), result.rawResponse());
             return retry;
         } catch (RuntimeException exception) {
-            retry.registerFailedSesSubmission(OffsetDateTime.now(), null, exception.getMessage());
-            throw exception;
+            SesSubmissionResult result = failedSubmissionResult(exception);
+            retry.registerFailedSesSubmission(OffsetDateTime.now(), result.responseCode(), result.responseDescription(), result.rawResponse());
+            return retry;
         }
+    }
+
+    @Transactional
+    public void markCommunicationProblemReviewed(Long communicationId, String reviewedBy) {
+        GeneratedCommunication communication = generatedCommunicationRepository.findAdminDetailById(communicationId)
+            .orElseThrow(() -> new IllegalArgumentException("No he encontrado la comunicación SES indicada."));
+        communication.markSesProblemReviewed(OffsetDateTime.now(), reviewedBy);
     }
 
     private List<GeneratedCommunication> loadCommunications(String statusFilter, boolean problemOnly) {
         CommunicationDispatchStatus requestedStatus = parseStatus(statusFilter);
         if (requestedStatus != null) {
+            if (problemOnly && PROBLEM_STATUSES.contains(requestedStatus)) {
+                return generatedCommunicationRepository.findTop100ByDispatchStatusAndSesProblemReviewedAtIsNullOrderByGeneratedAtDesc(requestedStatus);
+            }
             return generatedCommunicationRepository.findTop100ByDispatchStatusOrderByGeneratedAtDesc(requestedStatus);
         }
         if (problemOnly) {
-            return generatedCommunicationRepository.findTop100ByDispatchStatusInOrderByGeneratedAtDesc(PROBLEM_STATUSES);
+            return generatedCommunicationRepository.findTop100ByDispatchStatusInAndSesProblemReviewedAtIsNullOrderByGeneratedAtDesc(PROBLEM_STATUSES);
         }
         return generatedCommunicationRepository.findTop100ByOrderByGeneratedAtDesc();
     }
@@ -190,14 +241,26 @@ public class AdminSesMonitoringService {
             communication.getSubmittedAt(),
             communication.getSesLastStatusCheckedAt(),
             communication.getSesCancelledAt(),
+            communication.getSesProblemReviewedAt(),
+            communication.getSesProblemReviewedBy(),
             communication.getDispatchStatus() == CommunicationDispatchStatus.SUBMITTED_TO_SES
                 && communication.getSesLoteCode() != null
                 && owner.hasSesWebServiceConfiguration(),
-            communication.getDispatchStatus() == CommunicationDispatchStatus.SUBMISSION_FAILED
+            !isDuplicateSubmissionFailure(communication) && (communication.getDispatchStatus() == CommunicationDispatchStatus.SUBMISSION_FAILED
                 || communication.getDispatchStatus() == CommunicationDispatchStatus.SES_PROCESSING_ERROR
-                || communication.getDispatchStatus() == CommunicationDispatchStatus.SES_CANCELLED,
-            owner.hasSesWebServiceConfiguration()
+                || communication.getDispatchStatus() == CommunicationDispatchStatus.SES_RESPONSE_NEEDS_REVIEW
+                || communication.getDispatchStatus() == CommunicationDispatchStatus.SES_CANCELLED),
+            communication.canMarkSesProblemReviewed(),
+            owner.hasSesWebServiceConfiguration(),
+            communication.getSesSubmissionRawResponse(),
+            communication.getSesStatusRawResponse(),
+            communication.getSesCancellationRawResponse()
         );
+    }
+
+    private boolean isDuplicateSubmissionFailure(GeneratedCommunication communication) {
+        return communication.getDispatchStatus() == CommunicationDispatchStatus.SUBMISSION_FAILED
+            && Integer.valueOf(10121).equals(communication.getSesResponseCode());
     }
 
     private SesOwnerRow toOwnerRow(AppUser owner) {
@@ -212,9 +275,9 @@ public class AdminSesMonitoringService {
             .orElse(null);
 
         long pendingCount = generatedCommunicationRepository.countByBookingOwnerIdAndDispatchStatus(owner.getId(), CommunicationDispatchStatus.SUBMITTED_TO_SES);
-        long errorCount = generatedCommunicationRepository.countByBookingOwnerIdAndDispatchStatusIn(owner.getId(), PROBLEM_STATUSES);
+        long errorCount = generatedCommunicationRepository.countByBookingOwnerIdAndDispatchStatusInAndSesProblemReviewedAtIsNull(owner.getId(), PROBLEM_STATUSES);
         String lastError = generatedCommunicationRepository
-            .findFirstByBookingOwnerIdAndDispatchStatusInOrderByGeneratedAtDesc(owner.getId(), PROBLEM_STATUSES)
+            .findFirstByBookingOwnerIdAndDispatchStatusInAndSesProblemReviewedAtIsNullOrderByGeneratedAtDesc(owner.getId(), PROBLEM_STATUSES)
             .map(this::communicationDetail)
             .orElse(null);
 
@@ -310,6 +373,7 @@ public class AdminSesMonitoringService {
         return switch (communication.getDispatchStatus()) {
             case XML_READY -> communication.getDispatchMode() == CommunicationDispatchMode.MANUAL_DOWNLOAD ? "Solo XML" : "Lista para reintento";
             case SUBMITTED_TO_SES -> "Pendiente SES";
+            case SES_RESPONSE_NEEDS_REVIEW -> "Revisión técnica";
             case SUBMISSION_FAILED -> "Error envío";
             case SES_PROCESSED -> "SES ok";
             case SES_PROCESSING_ERROR -> "Error SES";
@@ -321,6 +385,7 @@ public class AdminSesMonitoringService {
         return switch (communication.getDispatchStatus()) {
             case SES_PROCESSED -> "mono-pill-success";
             case SUBMITTED_TO_SES -> "mono-pill-warning";
+            case SES_RESPONSE_NEEDS_REVIEW -> "mono-pill-warning";
             case SUBMISSION_FAILED, SES_PROCESSING_ERROR -> "mono-pill-danger";
             case XML_READY, SES_CANCELLED -> "mono-pill-neutral";
         };
@@ -328,6 +393,10 @@ public class AdminSesMonitoringService {
 
     private String communicationDetail(GeneratedCommunication communication) {
         return switch (communication.getDispatchStatus()) {
+            case SES_RESPONSE_NEEDS_REVIEW -> normalizeDetail(
+                communication.getSesResponseDescription(),
+                "SES ha respondido, pero falta interpretar un identificador operativo."
+            );
             case SUBMISSION_FAILED -> normalizeDetail(communication.getSesResponseDescription(), "El envío falló antes de llegar a SES.");
             case SES_PROCESSING_ERROR -> normalizeDetail(communication.getSesProcessingErrorDescription(), "SES ha rechazado la comunicación.");
             case SES_PROCESSED -> normalizeDetail(
@@ -355,6 +424,36 @@ public class AdminSesMonitoringService {
 
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
+    }
+
+    private SesSubmissionResult failedSubmissionResult(RuntimeException exception) {
+        if (exception instanceof SesCommunicationException sesException) {
+            return new SesSubmissionResult(
+                sesException.getResponseCode() == null ? -1 : sesException.getResponseCode(),
+                sesException.getMessage(),
+                null,
+                sesException.getRawResponse()
+            );
+        }
+        return new SesSubmissionResult(-1, exception.getMessage(), null, null);
+    }
+
+    private SesLoteStatusResult failedLoteStatusResult(String loteCode, RuntimeException exception) {
+        if (exception instanceof SesCommunicationException sesException) {
+            return new SesLoteStatusResult(
+                sesException.getResponseCode() == null ? -1 : sesException.getResponseCode(),
+                sesException.getMessage(),
+                loteCode,
+                null,
+                null,
+                null,
+                null,
+                sesException.getMessage(),
+                null,
+                sesException.getRawResponse()
+            );
+        }
+        return new SesLoteStatusResult(-1, exception.getMessage(), loteCode, null, null, null, null, exception.getMessage(), null, null);
     }
 
     public record SesDashboardSummary(
@@ -389,10 +488,59 @@ public class AdminSesMonitoringService {
         OffsetDateTime submittedAt,
         OffsetDateTime lastCheckedAt,
         OffsetDateTime cancelledAt,
+        OffsetDateTime problemReviewedAt,
+        String problemReviewedBy,
         boolean canRefresh,
         boolean canRetry,
-        boolean ownerReadyForWs
+        boolean canMarkProblemReviewed,
+        boolean ownerReadyForWs,
+        String submissionRawResponse,
+        String statusRawResponse,
+        String cancellationRawResponse
     ) {
+        public boolean hasRawResponse() {
+            return hasText(submissionRawResponse) || hasText(statusRawResponse) || hasText(cancellationRawResponse);
+        }
+
+        private boolean hasText(String value) {
+            return value != null && !value.isBlank();
+        }
+    }
+
+    public record SesCommunicationDetail(
+        SesCommunicationRow row,
+        Integer responseCode,
+        String responseDescription,
+        Integer processingStateCode,
+        String processingStateDescription,
+        String processingErrorType,
+        String processingErrorDescription,
+        Integer downloadCount,
+        OffsetDateTime lastDownloadedAt,
+        String xmlContent
+    ) {
+        public boolean hasSesIdentifiers() {
+            return hasText(row.loteCode()) || hasText(row.sesCommunicationCode());
+        }
+
+        public boolean hasProcessingDetail() {
+            return processingStateCode != null
+                || hasText(processingStateDescription)
+                || hasText(processingErrorType)
+                || hasText(processingErrorDescription);
+        }
+
+        public boolean hasSubmissionDetail() {
+            return responseCode != null || hasText(responseDescription);
+        }
+
+        public boolean hasXmlContent() {
+            return hasText(xmlContent);
+        }
+
+        private boolean hasText(String value) {
+            return value != null && !value.isBlank();
+        }
     }
 
     public record SesOwnerRow(

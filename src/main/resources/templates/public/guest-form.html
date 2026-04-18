@@ -7,7 +7,7 @@
     <link rel="stylesheet" th:href="@{/app.css}">
     <script th:src="@{/wizard-form.js}" defer></script>
 </head>
-<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
+<body class="public-body">
 <main class="public-shell public-shell-xl">
     <header class="mb-4 space-y-2 md:mb-5">
         <a class="public-back-link"
@@ -17,7 +17,7 @@
         </a>
 
         <div class="space-y-1">
-            <h1 class="max-w-[16ch] text-[1.8rem] font-semibold tracking-tight text-slate-900 sm:text-3xl"
+            <h1 class="max-w-[16ch] text-[1.8rem] font-semibold tracking-tight text-slate-900 sm:max-w-none sm:text-3xl"
                 th:text="${guestWizardTitle}">Datos del huésped 1</h1>
         </div>
     </header>
@@ -103,7 +103,7 @@
                                 <span>Nacionalidad <span class="text-slate-400">(opcional)</span></span>
                                 <input type="hidden" th:field="*{nationality}">
                                 <input class="public-input" type="text" list="nationality-options-public" data-country-display="nationality"
-                                       name="nationalityDisplay" placeholder="Espana (ESP)" autocomplete="country-name">
+                                       name="nationalityDisplay" placeholder="España (ESP)" autocomplete="country-name">
                                 <datalist id="nationality-options-public">
                                     <option th:each="country : ${countries}" th:value="${country.label + ' (' + country.code + ')'}"></option>
                                 </datalist>

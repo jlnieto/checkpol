@@ -32,6 +32,9 @@ public class SecurityConfig {
             .exceptionHandling(exceptionHandling -> exceptionHandling
                 .accessDeniedPage("/access-denied")
             )
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers(new AntPathRequestMatcher("/logout", "POST"))
+            )
             .logout(logout -> logout
                 .logoutRequestMatcher(new OrRequestMatcher(
                     new AntPathRequestMatcher("/logout", "GET"),

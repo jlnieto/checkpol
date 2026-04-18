@@ -1,6 +1,8 @@
 package es.checkpol.web;
 
+import es.checkpol.domain.AppUserRole;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record AdminUserForm(
@@ -11,6 +13,9 @@ public record AdminUserForm(
     @NotBlank(message = "Escribe un nombre visible.")
     @Size(max = 120, message = "El nombre visible no puede superar los 120 caracteres.")
     String displayName,
+
+    @NotNull(message = "Selecciona el tipo de usuario.")
+    AppUserRole role,
 
     @Size(max = 120, message = "La contraseña no puede superar los 120 caracteres.")
     String password,
@@ -28,6 +33,18 @@ public record AdminUserForm(
 ) {
 
     public AdminUserForm() {
-        this("", "", "", "", "", "", true);
+        this("", "", AppUserRole.OWNER, "", "", "", "", true);
+    }
+
+    public AdminUserForm(
+        String username,
+        String displayName,
+        String password,
+        String sesArrendadorCode,
+        String sesWsUsername,
+        String sesWsPassword,
+        boolean active
+    ) {
+        this(username, displayName, AppUserRole.OWNER, password, sesArrendadorCode, sesWsUsername, sesWsPassword, active);
     }
 }

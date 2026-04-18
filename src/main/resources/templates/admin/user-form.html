@@ -11,27 +11,7 @@
     <aside class="mono-sidebar-shell" th:replace="~{admin/fragments :: sidebar('users')}"></aside>
 
     <section class="mono-content">
-        <header class="mono-topbar">
-            <div class="mono-topbar-left">
-                <button class="mono-topbar-button" type="button" aria-label="Navegación">
-                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path d="M3 5h14v2H3V5Zm0 4h14v2H3V9Zm0 4h14v2H3v-2Z"/>
-                    </svg>
-                </button>
-                <label class="mono-search">
-                    <svg class="mono-search-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path d="M8.5 3a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Zm0 1.5a4 4 0 1 0 2.6 7l3.2 3.2 1.1-1.1-3.2-3.2A4 4 0 0 0 8.5 4.5Z"/>
-                    </svg>
-                    <input class="mono-search-input" type="text" placeholder="Buscar propietario..." readonly>
-                </label>
-            </div>
-            <div class="mono-topbar-right">
-                <span class="mono-topbar-meta">Catálogo:
-                    <strong th:text="${dashboard.currentSourceVersion != null ? dashboard.currentSourceVersion : 'SIN_VERSIÓN'}">SIN_VERSIÓN</strong>
-                </span>
-                <a class="mono-btn-ghost" th:href="@{/admin/users}">Volver</a>
-            </div>
-        </header>
+        <header th:replace="~{admin/fragments :: topbar('Buscar usuario...')}"></header>
 
         <div class="mono-page">
         <div class="mono-page-head">
@@ -39,7 +19,7 @@
             <nav class="mono-breadcrumb">
                 <span>Admin</span>
                 <span>/</span>
-                <span>Propietarios</span>
+                <span>Usuarios</span>
                 <span>/</span>
                 <span class="mono-breadcrumb-active" th:text="${formTitle}">Nuevo usuario</span>
             </nav>
@@ -55,7 +35,7 @@
             <p th:text="${flashMessage}">Error técnico.</p>
         </div>
 
-        <section class="mono-layout">
+        <section class="mono-layout mono-layout-single">
             <div class="mono-main">
                 <section class="mono-form-panel">
                     <div class="mono-panel-strip">
@@ -67,11 +47,13 @@
                             <p th:each="error : ${#fields.globalErrors()}" th:text="${error}">Error</p>
                         </div>
 
-                        <p class="mono-compact-copy">Edita el acceso del owner. Si completas SES, también podrá presentar automáticamente; si no, seguirá trabajando con XML descargable.</p>
+                        <p class="mono-compact-copy" th:text="${ownerRole ? 'Gestiona el acceso del owner y, si procede, su conexión automática con SES.' : 'Gestiona un superadmin interno. No tiene datos SES ni acceso al área owner.'}">
+                            Gestiona el acceso del usuario.
+                        </p>
 
                         <div class="mono-field md:col-span-2">
-                            <span class="mono-field-label">Acceso del owner</span>
-                            <p class="mono-compact-copy">Primero deja claro quién es el owner y si puede entrar.</p>
+                            <span class="mono-field-label">Acceso del usuario</span>
+                            <p class="mono-compact-copy">Primero deja claro quién puede entrar y con qué rol.</p>
                         </div>
 
                         <label class="mono-field md:col-span-2">
@@ -86,20 +68,54 @@
                             <small class="mono-field-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></small>
                         </label>
 
-                        <label class="mono-field">
-                            <span class="mono-field-label">Contraseña</span>
+                        <label class="mono-field" th:if="${!editing}">
+                            <span class="mono-field-label">Tipo de usuario</span>
+                            <select class="mono-field-input" th:field="*{role}">
+                                <option th:each="roleOption : ${userRoles}"
+                                        th:value="${roleOption}"
+                                        th:text="${roleOption.name() == 'SUPER_ADMIN' ? 'Super admin' : 'Owner'}">Owner</option>
+                            </select>
+                            <small class="mono-field-help">Owner trabaja con estancias. Superadmin gestiona toda la aplicación.</small>
+                            <small class="mono-field-error" th:if="${#fields.hasErrors('role')}" th:errors="*{role}"></small>
+                        </label>
+
+                        <div class="mono-field" th:if="${editing}">
+                            <input type="hidden" th:field="*{role}">
+                            <span class="mono-field-label">Tipo de usuario</span>
+                            <span class="mono-pill"
+                                  th:classappend="${adminUserForm.role().name() == 'SUPER_ADMIN' ? ' mono-pill-neutral' : ' mono-pill-success'}"
+                                  th:text="${adminUserForm.role().name() == 'SUPER_ADMIN' ? 'Super admin' : 'Owner'}">Owner</span>
+                            <small class="mono-field-help">El rol no se cambia desde edición para evitar conversiones accidentales.</small>
+                        </div>
+
+                        <label class="mono-field" th:if="${!editing}">
+                            <span class="mono-field-label">Contraseña inicial</span>
                             <input class="mono-field-input" th:field="*{password}" type="password" autocomplete="new-password"
-                                   th:placeholder="${sesPasswordStored ? 'Déjala vacía si no quieres cambiarla' : 'Escríbela solo si quieres definirla o cambiarla'}">
-                            <small class="mono-field-help" th:if="${sesPasswordStored}">Ya hay una clave guardada para este owner.</small>
+                                   placeholder="Contraseña de acceso inicial">
                             <small class="mono-field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></small>
                         </label>
+
+                        <div class="mono-field" th:if="${editing}">
+                            <input type="hidden" th:field="*{password}">
+                            <span class="mono-field-label">Seguridad</span>
+                            <div class="mono-security-card mt-2">
+                                <div class="mono-security-head">
+                                    <div>
+                                        <p class="mono-security-title">Contraseña protegida</p>
+                                        <p class="mono-security-copy">Cambio separado de los datos de perfil. Si editas tu propia cuenta, se pedirá la contraseña actual.</p>
+                                    </div>
+                                    <span class="mono-security-badge">Activo</span>
+                                </div>
+                                <a class="mono-action-btn mono-action-btn-secondary" th:href="@{|/admin/users/${editedUser.id}/password|}">Cambiar</a>
+                            </div>
+                        </div>
 
                         <label class="mono-checkbox md:col-span-2">
                             <input th:field="*{active}" type="checkbox">
                             <span>Usuario activo</span>
                         </label>
 
-                        <div class="mono-field md:col-span-2">
+                        <div class="mono-field md:col-span-2" th:if="${ownerRole}">
                             <span class="mono-field-label">Presentación automática en SES</span>
                             <div class="mono-status-list mt-3">
                                 <div class="mono-status-row">
@@ -157,9 +173,9 @@
                                                 <span th:text="${connectionTestHttpStatus != null ? 'HTTP ' + connectionTestHttpStatus : 'Sin HTTP'}">HTTP 502</span>
                                                 <span th:if="${connectionTestErrorType != null}" th:text="${' · ' + connectionTestErrorType}"> · TECHNICAL_ERROR</span>
                                             </p>
-                                            <details class="mt-2" th:if="${connectionTestRawDetail != null}">
-                                                <summary class="mono-panel-link">Ver detalle técnico</summary>
-                                                <div class="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-[12px] leading-6 text-slate-700 break-words" th:text="${connectionTestRawDetail}">Detalle</div>
+                                            <details class="mono-technical-details" th:if="${connectionTestRawDetail != null}">
+                                                <summary class="mono-technical-summary">Ver detalle técnico</summary>
+                                                <div class="mono-raw-box" th:text="${connectionTestRawDetail}">Detalle</div>
                                             </details>
                                         </div>
                                     </div>
@@ -169,21 +185,21 @@
                             </div>
                         </div>
 
-                        <label class="mono-field">
+                        <label class="mono-field" th:if="${ownerRole}">
                             <span class="mono-field-label">Código de entidad / arrendador SES</span>
                             <input class="mono-field-input" th:field="*{sesArrendadorCode}" type="text" autocomplete="off" maxlength="10" placeholder="0000260833">
                             <small class="mono-field-help">Usa el código numérico que aparece al seleccionar la entidad en SES.</small>
                             <small class="mono-field-error" th:if="${#fields.hasErrors('sesArrendadorCode')}" th:errors="*{sesArrendadorCode}"></small>
                         </label>
 
-                        <label class="mono-field">
+                        <label class="mono-field" th:if="${ownerRole}">
                             <span class="mono-field-label">Usuario servicio web SES</span>
                             <input class="mono-field-input" th:field="*{sesWsUsername}" type="text" autocomplete="off" maxlength="50" placeholder="usuario-ws-ses">
                             <small class="mono-field-help">Usa el valor que SES muestra en el bloque "Datos del usuario".</small>
                             <small class="mono-field-error" th:if="${#fields.hasErrors('sesWsUsername')}" th:errors="*{sesWsUsername}"></small>
                         </label>
 
-                        <label class="mono-field md:col-span-2">
+                        <label class="mono-field md:col-span-2" th:if="${ownerRole}">
                             <span class="mono-field-label">Clave servicio web SES</span>
                             <input class="mono-field-input" th:field="*{sesWsPassword}" type="password" autocomplete="new-password"
                                    th:placeholder="${sesPasswordStored ? 'Déjala vacía si quieres mantener la actual' : 'Completa la clave para activar SES'}">
@@ -193,8 +209,8 @@
 
                         <div class="mono-inline-actions">
                             <a class="mono-btn-secondary" th:href="@{/admin/users}">Cancelar</a>
-                            <button class="mono-btn-secondary" type="submit">Guardar</button>
-                            <button class="mono-btn-primary" type="submit" name="afterSaveAction" value="test">Guardar y probar SES</button>
+                            <button class="mono-btn-primary" type="submit">Guardar usuario</button>
+                            <button class="mono-btn-secondary" type="submit" name="afterSaveAction" value="test" th:if="${ownerRole}">Guardar y probar SES</button>
                         </div>
                     </form>
                     </div>

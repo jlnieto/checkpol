@@ -59,4 +59,42 @@ class SesSubmissionPollingSchedulerTest {
         assertEquals(CommunicationDispatchStatus.SES_PROCESSED, communication.getDispatchStatus());
         assertEquals("com-1", communication.getSesCommunicationCode());
     }
+
+    @Test
+    void marksNonZeroStatusResponseForReview() {
+        GeneratedCommunicationRepository repository = mock(GeneratedCommunicationRepository.class);
+        SesCommunicationGateway gateway = mock(SesCommunicationGateway.class);
+        SesSubmissionPollingScheduler scheduler = new SesSubmissionPollingScheduler(repository, gateway);
+
+        AppUser owner = new AppUser("owner", "hash", "Owner", AppUserRole.OWNER, true, OffsetDateTime.now(), OffsetDateTime.now());
+        owner.updateSesWsConfiguration("A123456789", "ws-user", "encrypted");
+        Booking booking = new Booking(
+            owner,
+            new Accommodation(owner, "Casa Olivo", "H123456789", "VT-123"),
+            "ABC123",
+            1,
+            LocalDate.now(),
+            BookingChannel.DIRECT,
+            LocalDate.now().plusDays(1),
+            LocalDate.now().plusDays(2),
+            PaymentType.EFECT,
+            LocalDate.now(),
+            null,
+            null,
+            null
+        );
+        GeneratedCommunication communication = new GeneratedCommunication(booking, 1, OffsetDateTime.now(), "<xml/>");
+        communication.registerSesSubmission(OffsetDateTime.now(), "lote-1", 0, "ok");
+
+        when(repository.findTop25ByDispatchStatusOrderBySubmittedAtAsc(CommunicationDispatchStatus.SUBMITTED_TO_SES))
+            .thenReturn(List.of(communication));
+        when(gateway.queryLoteStatus(owner, "lote-1"))
+            .thenReturn(new SesLoteStatusResult(10199, "Error consultando lote", "lote-1", null, null, null, null, null, null, "<soap>error</soap>"));
+
+        scheduler.refreshPendingSesSubmissions();
+
+        assertEquals(CommunicationDispatchStatus.SES_RESPONSE_NEEDS_REVIEW, communication.getDispatchStatus());
+        assertEquals("Error consultando lote", communication.getSesResponseDescription());
+        assertEquals("<soap>error</soap>", communication.getSesStatusRawResponse());
+    }
 }

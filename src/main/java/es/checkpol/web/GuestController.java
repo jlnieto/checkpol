@@ -61,7 +61,9 @@ public class GuestController {
 
     @GetMapping("/bookings/{bookingId}")
     public String details(@PathVariable Long bookingId, Model model) {
-        model.addAttribute("details", bookingService.getDetails(bookingId));
+        BookingDetails details = bookingService.getDetails(bookingId);
+        model.addAttribute("details", details);
+        model.addAttribute("detailView", BookingDetailView.from(details, model.containsAttribute("shareMessage")));
         return "bookings/details";
     }
 
@@ -255,9 +257,16 @@ public class GuestController {
     public String submitTravelerPartToSes(@PathVariable Long bookingId, RedirectAttributes redirectAttributes) {
         try {
             var result = travelerPartService.submitTravelerPart(bookingId);
-            String lote = result.loteCode() == null || result.loteCode().isBlank() ? "sin lote devuelto" : result.loteCode();
-            redirectAttributes.addFlashAttribute("flashMessage", "Envío enviado a SES. Lote: " + lote + ".");
-            redirectAttributes.addFlashAttribute("flashKind", "success");
+            if (result.responseCode() == 0 && result.loteCode() != null && !result.loteCode().isBlank()) {
+                redirectAttributes.addFlashAttribute("flashMessage", "Envío enviado a SES. Lote: " + result.loteCode() + ".");
+                redirectAttributes.addFlashAttribute("flashKind", "success");
+            } else if (result.responseCode() == 0) {
+                redirectAttributes.addFlashAttribute("flashMessage", "SES ha respondido OK, pero falta interpretar el lote. Queda pendiente de revisión técnica.");
+                redirectAttributes.addFlashAttribute("flashKind", "error");
+            } else {
+                redirectAttributes.addFlashAttribute("flashMessage", buildSesSubmissionRejectedMessage(result));
+                redirectAttributes.addFlashAttribute("flashKind", "error");
+            }
         } catch (IllegalStateException | IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("flashMessage", exception.getMessage());
             redirectAttributes.addFlashAttribute("flashKind", "error");
@@ -276,6 +285,9 @@ public class GuestController {
             if (result.communicationCode() != null && !result.communicationCode().isBlank()) {
                 redirectAttributes.addFlashAttribute("flashMessage", "SES ya ha procesado la comunicación. Código: " + result.communicationCode() + ".");
                 redirectAttributes.addFlashAttribute("flashKind", "success");
+            } else if (result.responseCode() != 0) {
+                redirectAttributes.addFlashAttribute("flashMessage", result.responseDescription());
+                redirectAttributes.addFlashAttribute("flashKind", "error");
             } else if (result.processingErrorDescription() != null && !result.processingErrorDescription().isBlank()) {
                 redirectAttributes.addFlashAttribute("flashMessage", result.processingErrorDescription());
                 redirectAttributes.addFlashAttribute("flashKind", "error");
@@ -334,6 +346,13 @@ public class GuestController {
         return "SES no ha confirmado la anulación. Código " + result.responseCode() + ": " + description;
     }
 
+    private String buildSesSubmissionRejectedMessage(es.checkpol.service.SesSubmissionResult result) {
+        String description = result.responseDescription() == null || result.responseDescription().isBlank()
+            ? "SES no ha confirmado el envío."
+            : result.responseDescription().trim();
+        return "SES no ha confirmado el envío. Código " + result.responseCode() + ": " + description;
+    }
+
     @PostMapping("/bookings/{bookingId}/self-service-link")
     public String issueSelfServiceLink(@PathVariable Long bookingId, RedirectAttributes redirectAttributes) {
         guestSelfServiceService.issueAccess(bookingId);
@@ -345,18 +364,17 @@ public class GuestController {
     @PostMapping("/bookings/{bookingId}/share-self-service-link")
     public String prepareShareSelfServiceLink(@PathVariable Long bookingId, RedirectAttributes redirectAttributes) {
         BookingDetails details = bookingService.getDetails(bookingId);
-        SelfServiceAccess access = details.selfServiceAccess()
-            .orElseGet(() -> guestSelfServiceService.issueAccess(bookingId));
+        SelfServiceAccess access = guestSelfServiceService.issueAccess(bookingId);
 
         String linkUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
             .path("/guest-access/{token}")
             .buildAndExpand(access.token())
             .toUriString();
         String message = "Hola.\n\n"
-            + "Necesitamos que completes los datos de las personas que se alojan en "
+            + "Para preparar el check-in obligatorio de huéspedes de "
             + details.booking().getAccommodation().getName()
-            + ". Solo tarda 1-2 minutos.\n\n"
-            + "Hazlo desde aquí:\n"
+            + ", necesitamos los datos de las personas que se alojan. Se tarda 1-2 minutos.\n\n"
+            + "Puedes completarlos aquí:\n"
             + linkUrl;
 
         redirectAttributes.addFlashAttribute(
@@ -398,6 +416,7 @@ public class GuestController {
         model.addAttribute("formAction", action);
         model.addAttribute("formTitle", title);
         model.addAttribute("submitLabel", submitLabel);
+        model.addAttribute("editingGuest", guestId != null);
         model.addAttribute("bookingUrl", "/bookings/" + bookingId);
         model.addAttribute("initialStep", step == null ? null : Math.max(step - 1, 0));
         String newAddressUrl = guestId == null

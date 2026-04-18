@@ -1,0 +1,2 @@
+-- Production converts PostgreSQL large object identifiers back to text.
+-- Test schema already stores these columns as text.

@@ -1,6 +1,9 @@
 package es.checkpol.web;
 
 import es.checkpol.config.SecurityConfig;
+import es.checkpol.domain.AppIncidentArea;
+import es.checkpol.domain.AppIncidentSeverity;
+import es.checkpol.domain.AppIncidentStatus;
 import es.checkpol.domain.AppUserRole;
 import es.checkpol.domain.CommunicationDispatchMode;
 import es.checkpol.domain.CommunicationDispatchStatus;
@@ -8,6 +11,7 @@ import es.checkpol.domain.SesConnectionTestStatus;
 import es.checkpol.service.AdminUserSummary;
 import es.checkpol.service.AdminSettingsService;
 import es.checkpol.service.AdminSesMonitoringService;
+import es.checkpol.service.AppIncidentService;
 import es.checkpol.service.AppUserPrincipal;
 import es.checkpol.service.AppUserAdminService;
 import es.checkpol.service.CurrentAppUserService;
@@ -26,10 +30,12 @@ import java.util.List;
 import java.time.OffsetDateTime;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
@@ -56,6 +62,9 @@ class AdminControllerTest {
     private AdminSesMonitoringService adminSesMonitoringService;
 
     @MockitoBean
+    private AppIncidentService appIncidentService;
+
+    @MockitoBean
     private CurrentAppUserService currentAppUserService;
 
     @Test
@@ -65,6 +74,7 @@ class AdminControllerTest {
             new AdminUserSummary(1L, "admin", "Administrador", AppUserRole.SUPER_ADMIN, true)
         ));
         when(adminSesMonitoringService.getDashboardSummary()).thenReturn(sesSummary());
+        when(appIncidentService.getDashboardSummary()).thenReturn(incidentSummary());
         when(municipalityAdminService.getDashboardSummary()).thenReturn(new MunicipalityAdminService.DashboardSummary(
             false,
             0,
@@ -83,13 +93,14 @@ class AdminControllerTest {
             .andExpect(model().attributeExists("ownerCount"))
             .andExpect(model().attributeExists("users"))
             .andExpect(model().attributeExists("sourceHealth"))
-            .andExpect(model().attributeExists("sesSummary"));
+            .andExpect(model().attributeExists("sesSummary"))
+            .andExpect(model().attributeExists("incidentSummary"));
     }
 
     @Test
     @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
     void createsOwnerUser() throws Exception {
-        when(appUserAdminService.createOwner(any())).thenReturn(new es.checkpol.domain.AppUser(
+        when(appUserAdminService.createUser(any())).thenReturn(new es.checkpol.domain.AppUser(
             "jose",
             "hash",
             "José",
@@ -103,10 +114,57 @@ class AdminControllerTest {
                 .with(csrf())
                 .param("username", "jose")
                 .param("displayName", "José")
+                .param("role", "OWNER")
                 .param("password", "secreta")
                 .param("active", "true"))
             .andExpect(status().is3xxRedirection())
             .andExpect(redirectedUrl("/admin/users"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
+    void createsSuperAdminUser() throws Exception {
+        when(appUserAdminService.createUser(any())).thenReturn(new es.checkpol.domain.AppUser(
+            "ana",
+            "hash",
+            "Ana Admin",
+            AppUserRole.SUPER_ADMIN,
+            true,
+            OffsetDateTime.parse("2026-04-04T10:00:00Z"),
+            OffsetDateTime.parse("2026-04-04T10:00:00Z")
+        ));
+
+        mockMvc.perform(post("/admin/users")
+                .with(csrf())
+                .param("username", "ana")
+                .param("displayName", "Ana Admin")
+                .param("role", "SUPER_ADMIN")
+                .param("password", "secreta")
+                .param("active", "true"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/admin/users"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
+    void showsPasswordForm() throws Exception {
+        mockDashboardAndUsers();
+        when(appUserAdminService.getUserEntity(1L)).thenReturn(new es.checkpol.domain.AppUser(
+            "admin",
+            "hash",
+            "Administrador",
+            AppUserRole.SUPER_ADMIN,
+            true,
+            OffsetDateTime.parse("2026-04-04T10:00:00Z"),
+            OffsetDateTime.parse("2026-04-04T10:00:00Z")
+        ));
+        when(currentAppUserService.requireAuthenticatedUser()).thenReturn(adminPrincipal());
+
+        mockMvc.perform(get("/admin/users/1/password"))
+            .andExpect(status().isOk())
+            .andExpect(view().name("admin/user-password"))
+            .andExpect(model().attributeExists("adminPasswordForm"))
+            .andExpect(model().attribute("selfPasswordChange", true));
     }
 
     @Test
@@ -189,9 +247,15 @@ class AdminControllerTest {
                 OffsetDateTime.parse("2026-04-04T10:10:00Z"),
                 null,
                 null,
+                null,
+                null,
                 true,
                 false,
-                true
+                false,
+                true,
+                null,
+                null,
+                null
             )
         ));
 
@@ -201,6 +265,29 @@ class AdminControllerTest {
             .andExpect(model().attribute("activeSection", "ses"))
             .andExpect(model().attributeExists("sesRows"))
             .andExpect(model().attributeExists("sesSummary"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
+    void showsSesCommunicationTraceability() throws Exception {
+        mockDashboardAndUsers();
+        when(adminSesMonitoringService.getCommunicationDetail(10L)).thenReturn(sesCommunicationDetail());
+
+        mockMvc.perform(get("/admin/ses/communications/10"))
+            .andExpect(status().isOk())
+            .andExpect(view().name("admin/ses-detail"))
+            .andExpect(model().attribute("activeSection", "ses"))
+            .andExpect(model().attributeExists("detail"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
+    void downloadsSesCommunicationXmlFromAdmin() throws Exception {
+        when(adminSesMonitoringService.getCommunicationXml(10L)).thenReturn("<parte/>");
+
+        mockMvc.perform(get("/admin/ses/communications/10.xml"))
+            .andExpect(status().isOk())
+            .andExpect(content().xml("<parte/>"));
     }
 
     @Test
@@ -236,6 +323,40 @@ class AdminControllerTest {
             .andExpect(view().name("admin/ses-owners"))
             .andExpect(model().attribute("activeSection", "ses"))
             .andExpect(model().attributeExists("ownerRows"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
+    void showsIncidentsPage() throws Exception {
+        mockDashboardAndUsers();
+        when(appIncidentService.findRecentIncidents("ACTIVE")).thenReturn(List.of(incidentRow()));
+
+        mockMvc.perform(get("/admin/incidents"))
+            .andExpect(status().isOk())
+            .andExpect(view().name("admin/incidents"))
+            .andExpect(model().attribute("activeSection", "incidents"))
+            .andExpect(model().attributeExists("incidentSummary"))
+            .andExpect(model().attributeExists("incidents"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
+    void marksIncidentReviewed() throws Exception {
+        mockMvc.perform(post("/admin/incidents/7/review").with(csrf()).param("status", "OPEN"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/admin/incidents?status=OPEN"));
+
+        verify(appIncidentService).markReviewed(7L);
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
+    void marksIncidentResolved() throws Exception {
+        mockMvc.perform(post("/admin/incidents/7/resolve").with(csrf()).param("status", "ACTIVE"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/admin/incidents?status=ACTIVE"));
+
+        verify(appIncidentService).markResolved(7L);
     }
 
     @Test
@@ -287,6 +408,19 @@ class AdminControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
+    void marksSesCommunicationProblemReviewed() throws Exception {
+        mockMvc.perform(post("/admin/ses/communications/10/review")
+                .with(csrf())
+                .param("status", "ALL")
+                .param("problemOnly", "true"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/admin/ses?status=ALL&problemOnly=true"));
+
+        verify(adminSesMonitoringService).markCommunicationProblemReviewed(10L, "admin");
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "SUPER_ADMIN")
     void updatesCatalogDefaultSettings() throws Exception {
         when(currentAppUserService.requireAuthenticatedUser()).thenReturn(adminPrincipal());
 
@@ -330,6 +464,13 @@ class AdminControllerTest {
             .andExpect(redirectedUrl("/login?logout"));
     }
 
+    @Test
+    void logoutWithoutSessionOrCsrfDoesNotShowMethodNotAllowed() throws Exception {
+        mockMvc.perform(post("/logout"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/login?logout"));
+    }
+
     private void mockDashboardAndUsers() {
         when(appUserAdminService.findAllUsers()).thenReturn(List.of(
             new AdminUserSummary(1L, "admin", "Administrador", AppUserRole.SUPER_ADMIN, true)
@@ -337,6 +478,8 @@ class AdminControllerTest {
         when(adminSesMonitoringService.getDashboardSummary()).thenReturn(sesSummary());
         when(adminSesMonitoringService.findRecentCommunications(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyBoolean())).thenReturn(List.of());
         when(adminSesMonitoringService.findOwnerRows()).thenReturn(List.of());
+        when(appIncidentService.getDashboardSummary()).thenReturn(incidentSummary());
+        when(appIncidentService.findRecentIncidents(org.mockito.ArgumentMatchers.any())).thenReturn(List.of());
         when(adminSettingsService.getMunicipalityAdminDefaults()).thenReturn(defaults());
         when(adminSettingsService.getVerificationSettings()).thenReturn(verificationSettings());
         when(municipalityAdminService.getDashboardSummary()).thenReturn(new MunicipalityAdminService.DashboardSummary(
@@ -365,6 +508,77 @@ class AdminControllerTest {
                 new AdminSesMonitoringService.SesTechnicalCheck("Truststore", "OK", "Cargado", "mono-pill-success"),
                 new AdminSesMonitoringService.SesTechnicalCheck("Scheduler SES", "Activo", "Cada 60 s", "mono-pill-success")
             )
+        );
+    }
+
+    private AppIncidentService.IncidentDashboardSummary incidentSummary() {
+        return new AppIncidentService.IncidentDashboardSummary(1, 2);
+    }
+
+    private AppIncidentService.IncidentRow incidentRow() {
+        return new AppIncidentService.IncidentRow(
+            7L,
+            "INC-7",
+            AppIncidentArea.OWNER,
+            AppIncidentSeverity.ERROR,
+            AppIncidentStatus.OPEN,
+            "Error de prueba",
+            "java.lang.IllegalStateException: Error de prueba",
+            "stack",
+            "GET",
+            "/bookings/15",
+            "joana",
+            "Mozilla",
+            15L,
+            null,
+            null,
+            OffsetDateTime.parse("2026-04-18T10:00:00Z"),
+            null,
+            null
+        );
+    }
+
+    private AdminSesMonitoringService.SesCommunicationDetail sesCommunicationDetail() {
+        return new AdminSesMonitoringService.SesCommunicationDetail(
+            new AdminSesMonitoringService.SesCommunicationRow(
+                10L,
+                20L,
+                30L,
+                "Joana",
+                "joana",
+                "Apartamento Centro",
+                "CHK-1",
+                2,
+                CommunicationDispatchMode.SES_WEB_SERVICE,
+                CommunicationDispatchStatus.SES_CANCELLED,
+                "Anulada",
+                "mono-pill-neutral",
+                "Lote anulado en SES.",
+                "ABC",
+                "COM-1",
+                OffsetDateTime.parse("2026-04-04T10:00:00Z"),
+                OffsetDateTime.parse("2026-04-04T10:10:00Z"),
+                OffsetDateTime.parse("2026-04-04T10:20:00Z"),
+                OffsetDateTime.parse("2026-04-04T10:30:00Z"),
+                null,
+                null,
+                false,
+                true,
+                false,
+                true,
+                "<envio/>",
+                "<consulta/>",
+                "<anulacion/>"
+            ),
+            0,
+            "OK",
+            1,
+            "Procesado",
+            null,
+            null,
+            0,
+            null,
+            "<parte/>"
         );
     }
 

@@ -6,9 +6,9 @@
     <title>Viviendas | Checkpol</title>
     <link rel="stylesheet" th:href="@{/app.css}">
 </head>
-<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
+<body class="owner-body">
 <main class="owner-shell">
-    <div th:replace="~{fragments/owner-menu :: ownerMenu}"></div>
+    <div th:replace="~{fragments/owner-menu :: ownerMenu('accommodations')}"></div>
 
     <section class="owner-page">
         <header class="owner-header">
@@ -69,11 +69,11 @@
                                    th:text="${'Código SES: ' + accommodation.sesEstablishmentCode}">Código SES: H123456789</p>
                             </div>
                             <div class="flex flex-wrap gap-2">
-                                <span class="public-pill-muted"
+                                <span class="owner-pill-muted"
                                       th:text="${#strings.isEmpty(accommodation.registrationNumber) ? 'Sin registro turístico' : accommodation.registrationNumber}">
                                     VT-1234-A
                                 </span>
-                                <span class="public-pill-muted"
+                                <span class="owner-pill-muted"
                                       th:text="${accommodation.roomCount == null ? 'Habitaciones sin indicar' : accommodation.roomCount + (accommodation.roomCount == 1 ? ' habitación' : ' habitaciones')}">
                                     2 habitaciones
                                 </span>

@@ -7,9 +7,9 @@
     <link rel="stylesheet" th:href="@{/app.css}">
     <script th:src="@{/address-form.js}" defer></script>
 </head>
-<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
+<body class="owner-body">
 <main class="owner-shell-narrow">
-    <div th:replace="~{fragments/owner-menu :: ownerMenu}"></div>
+    <div th:replace="~{fragments/owner-menu :: ownerMenu('bookings')}"></div>
 
     <section class="owner-page">
         <header class="owner-header">

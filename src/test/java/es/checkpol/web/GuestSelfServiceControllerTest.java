@@ -87,7 +87,7 @@ class GuestSelfServiceControllerTest {
             .andExpect(status().isOk())
             .andExpect(view().name("public/guest-complete"))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
-                .string(org.hamcrest.Matchers.containsString("Check-in finalizado ✅")));
+                .string(org.hamcrest.Matchers.containsString("Check-in finalizado")));
     }
 
     @Test

@@ -3,6 +3,7 @@ package es.checkpol.service;
 import es.checkpol.domain.AppUser;
 import es.checkpol.domain.AppUserRole;
 import es.checkpol.repository.AppUserRepository;
+import es.checkpol.web.AdminPasswordForm;
 import es.checkpol.web.AdminUserForm;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -48,30 +49,56 @@ public class AppUserAdminService {
 
     @Transactional
     public AppUser createOwner(AdminUserForm form) {
+        return createUser(new AdminUserForm(
+            form.username(),
+            form.displayName(),
+            AppUserRole.OWNER,
+            form.password(),
+            form.sesArrendadorCode(),
+            form.sesWsUsername(),
+            form.sesWsPassword(),
+            form.active()
+        ));
+    }
+
+    @Transactional
+    public AppUser createUser(AdminUserForm form) {
         validateCreate(form);
         if (appUserRepository.existsByUsername(form.username().trim())) {
             throw new IllegalArgumentException("Ya existe un usuario con ese nombre.");
         }
+        AppUserRole role = requireRole(form.role());
         OffsetDateTime now = OffsetDateTime.now();
-        AppUser owner = new AppUser(
+        AppUser user = new AppUser(
             form.username().trim(),
             passwordEncoder.encode(form.password().trim()),
             form.displayName().trim(),
-            AppUserRole.OWNER,
+            role,
             form.active(),
             now,
             now
         );
-        appUserSesService.updateSesConfiguration(owner, form.sesArrendadorCode(), form.sesWsUsername(), form.sesWsPassword());
-        return appUserRepository.save(owner);
+        if (role == AppUserRole.OWNER) {
+            appUserSesService.updateSesConfiguration(user, form.sesArrendadorCode(), form.sesWsUsername(), form.sesWsPassword());
+        }
+        return appUserRepository.save(user);
     }
 
     @Transactional(readOnly = true)
     public AdminUserForm getOwnerForm(Long userId) {
-        AppUser user = getOwner(userId);
+        return getUserForm(getOwner(userId));
+    }
+
+    @Transactional(readOnly = true)
+    public AdminUserForm getUserForm(Long userId) {
+        return getUserForm(getUser(userId));
+    }
+
+    private AdminUserForm getUserForm(AppUser user) {
         return new AdminUserForm(
             user.getUsername(),
             user.getDisplayName(),
+            user.getRole(),
             "",
             user.getSesArrendadorCode() == null ? "" : user.getSesArrendadorCode(),
             user.getSesWsUsername() == null ? "" : user.getSesWsUsername(),
@@ -91,20 +118,56 @@ public class AppUserAdminService {
         return getOwner(userId);
     }
 
+    @Transactional(readOnly = true)
+    public AppUser getUserEntity(Long userId) {
+        return getUser(userId);
+    }
+
     @Transactional
     public AppUser updateOwner(Long userId, AdminUserForm form) {
+        getOwner(userId);
+        return updateUser(userId, new AdminUserForm(
+            form.username(),
+            form.displayName(),
+            AppUserRole.OWNER,
+            form.password(),
+            form.sesArrendadorCode(),
+            form.sesWsUsername(),
+            form.sesWsPassword(),
+            form.active()
+        ));
+    }
+
+    @Transactional
+    public AppUser updateUser(Long userId, AdminUserForm form) {
         validateUpdate(form);
-        AppUser user = getOwner(userId);
+        AppUser user = getUser(userId);
         String newUsername = form.username().trim();
         if (!user.getUsername().equals(newUsername) && appUserRepository.existsByUsername(newUsername)) {
             throw new IllegalArgumentException("Ya existe un usuario con ese nombre.");
         }
+        ensureSuperAdminCanBeDeactivated(user, form.active());
         user.updateUsername(newUsername);
-        user.updateOwner(form.displayName().trim(), form.active());
-        appUserSesService.updateSesConfiguration(user, form.sesArrendadorCode(), form.sesWsUsername(), form.sesWsPassword());
+        user.updateProfile(form.displayName().trim(), form.active());
+        if (user.getRole() == AppUserRole.OWNER) {
+            appUserSesService.updateSesConfiguration(user, form.sesArrendadorCode(), form.sesWsUsername(), form.sesWsPassword());
+        } else {
+            user.clearSesWsConfiguration();
+        }
         if (form.password() != null && !form.password().isBlank()) {
             user.updatePasswordHash(passwordEncoder.encode(form.password().trim()));
         }
+        return user;
+    }
+
+    @Transactional
+    public AppUser changePassword(Long userId, AdminPasswordForm form, Long currentAdminId, String currentAdminUsername) {
+        AppUser user = getUser(userId);
+        validatePasswordForm(form, isCurrentUser(user, currentAdminId, currentAdminUsername));
+        if (isCurrentUser(user, currentAdminId, currentAdminUsername) && !passwordEncoder.matches(form.currentPassword().trim(), user.getPasswordHash())) {
+            throw new IllegalArgumentException("La contraseña actual no es correcta.");
+        }
+        user.updatePasswordHash(passwordEncoder.encode(form.newPassword().trim()));
         return user;
     }
 
@@ -114,12 +177,16 @@ public class AppUserAdminService {
     }
 
     private AppUser getOwner(Long userId) {
-        AppUser user = appUserRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("No he encontrado ese usuario."));
+        AppUser user = getUser(userId);
         if (user.getRole() != AppUserRole.OWNER) {
             throw new IllegalArgumentException("Solo puedes editar usuarios propietarios.");
         }
         return user;
+    }
+
+    private AppUser getUser(Long userId) {
+        return appUserRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("No he encontrado ese usuario."));
     }
 
     private void validateCreate(AdminUserForm form) {
@@ -139,6 +206,43 @@ public class AppUserAdminService {
         }
         if (form.displayName() == null || form.displayName().isBlank()) {
             throw new IllegalArgumentException("Escribe un nombre visible.");
+        }
+        requireRole(form.role());
+    }
+
+    private AppUserRole requireRole(AppUserRole role) {
+        if (role == null) {
+            throw new IllegalArgumentException("Selecciona el tipo de usuario.");
+        }
+        return role;
+    }
+
+    private void ensureSuperAdminCanBeDeactivated(AppUser user, boolean requestedActive) {
+        if (user.getRole() != AppUserRole.SUPER_ADMIN || requestedActive || !user.isActive()) {
+            return;
+        }
+        if (appUserRepository.countByRoleAndActiveTrue(AppUserRole.SUPER_ADMIN) <= 1) {
+            throw new IllegalArgumentException("No puedes desactivar el último superadmin activo.");
+        }
+    }
+
+    private boolean isCurrentUser(AppUser user, Long currentAdminId, String currentAdminUsername) {
+        return (currentAdminId != null && currentAdminId.equals(user.getId()))
+            || (currentAdminUsername != null && currentAdminUsername.equals(user.getUsername()));
+    }
+
+    private void validatePasswordForm(AdminPasswordForm form, boolean currentUser) {
+        if (currentUser && (form.currentPassword() == null || form.currentPassword().isBlank())) {
+            throw new IllegalArgumentException("Escribe tu contraseña actual.");
+        }
+        if (form.newPassword() == null || form.newPassword().isBlank()) {
+            throw new IllegalArgumentException("Escribe la nueva contraseña.");
+        }
+        if (form.confirmPassword() == null || form.confirmPassword().isBlank()) {
+            throw new IllegalArgumentException("Confirma la nueva contraseña.");
+        }
+        if (!form.newPassword().equals(form.confirmPassword())) {
+            throw new IllegalArgumentException("La nueva contraseña y la confirmación no coinciden.");
         }
     }
 

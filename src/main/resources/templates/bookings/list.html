@@ -6,9 +6,9 @@
     <title>Estancias | Checkpol</title>
     <link rel="stylesheet" th:href="@{/app.css}">
 </head>
-<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
+<body class="owner-body">
 <main class="owner-shell">
-    <div th:replace="~{fragments/owner-menu :: ownerMenu}"></div>
+    <div th:replace="~{fragments/owner-menu :: ownerMenu('bookings')}"></div>
 
     <section class="owner-page">
         <header class="owner-header">
@@ -16,13 +16,6 @@
                 <div class="space-y-2">
                     <h1 class="owner-title">Qué hago ahora</h1>
                     <p class="owner-copy">Empieza por lo importante.</p>
-                </div>
-
-                <div class="owner-home-actions">
-                    <div class="owner-quick-links">
-                        <a class="owner-quick-link" th:if="${hasAccommodations}" th:href="@{/bookings(filter='incomplete')}">Estancias</a>
-                        <a class="owner-quick-link" th:unless="${hasAccommodations}" th:href="@{/accommodations/new}">Primera vivienda</a>
-                    </div>
                 </div>
             </div>
         </header>
@@ -66,7 +59,25 @@
                     </div>
                 </section>
 
-                <section class="owner-priority-card" th:if="${hasAccommodations and nextBooking == null}">
+                <section class="owner-priority-card" th:if="${hasAccommodations and nextBooking == null and nextCommunicationBooking != null}">
+                    <div class="owner-banner-row">
+                        <div class="space-y-3">
+                            <p class="owner-priority-eyebrow">Siguiente paso</p>
+                            <div class="space-y-2">
+                                <h2 class="text-3xl font-extrabold tracking-tight text-slate-900"
+                                    th:text="${nextCommunicationSummary.title}">Presenta el parte en SES</h2>
+                                <p class="owner-copy"
+                                   th:text="${nextCommunicationSummary.text}">Casa Olivo · Datos revisados. Falta presentar el parte.</p>
+                            </div>
+                        </div>
+                        <div class="owner-banner-actions">
+                            <a class="owner-button-primary" th:href="@{|/bookings/${nextCommunicationBooking.booking.id}|}">Abrir estancia</a>
+                            <a class="owner-button-secondary justify-center" th:href="@{/bookings/new}">Nueva estancia</a>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="owner-priority-card" th:if="${hasAccommodations and nextBooking == null and nextCommunicationBooking == null}">
                     <div class="owner-banner-row">
                         <div class="space-y-3">
                             <p class="owner-priority-eyebrow">Siguiente paso</p>
@@ -96,7 +107,7 @@
                             <div class="owner-booking-badge-row">
                                 <span class="owner-status-pending"
                                       th:text="${item.operationalStatus.name() == 'REVIEW_PENDING' ? 'Pendiente' : 'Bloqueada'}">Pendiente</span>
-                                <span class="public-pill-muted" th:text="${item.booking.channel.label}">Airbnb</span>
+                                <span class="owner-pill-muted" th:text="${item.booking.channel.label}">Airbnb</span>
                             </div>
                             <div class="owner-queue-body">
                                 <div class="min-w-0">
@@ -112,7 +123,7 @@
                     </div>
                 </section>
 
-                <section class="owner-card" th:if="${hasAccommodations and #lists.isEmpty(reviewQueue) and countAll > 0}">
+                <section class="owner-card" th:if="${hasAccommodations and #lists.isEmpty(reviewQueue) and nextCommunicationBooking == null and countAll > 0}">
                     <div class="space-y-2">
                         <p class="owner-kicker">Pendientes</p>
                         <h2 class="text-2xl font-extrabold tracking-tight text-slate-900">No hay nada que revisar ahora</h2>
@@ -123,30 +134,40 @@
                     </div>
                 </section>
 
-                <section class="owner-card" th:if="${selectedFilter != 'ALL' and !#lists.isEmpty(bookings)}">
+                <section class="owner-card" th:if="${!#lists.isEmpty(bookings)}">
                     <div class="space-y-2">
-                        <p class="owner-kicker">Vista filtrada</p>
+                        <p class="owner-kicker" th:text="${selectedFilter == 'ALL' ? 'Todas' : 'Vista filtrada'}">Todas</p>
                         <h2 class="text-2xl font-extrabold tracking-tight text-slate-900"
-                            th:text="${selectedFilter == 'INCOMPLETE' ? 'Estancias pendientes' : (selectedFilter == 'READY' ? 'Estancias listas' : (selectedFilter == 'TODAY' ? 'Entradas de hoy' : 'Próximas estancias'))}">Estancias listas</h2>
+                            th:text="${selectedFilter == 'ALL' ? 'Todas las estancias' : (selectedFilter == 'INCOMPLETE' ? 'Estancias pendientes' : (selectedFilter == 'READY' ? 'Estancias listas' : (selectedFilter == 'TODAY' ? 'Entradas de hoy' : 'Próximas estancias')))}">Todas las estancias</h2>
                     </div>
 
                     <div class="mt-4 owner-queue-list">
                         <article class="owner-queue-card" th:each="item : ${bookings}">
-                            <div class="owner-booking-badge-row">
-                                <span class="owner-status-ready"
-                                      th:if="${item.communicationStatusSummary != null}"
-                                      th:text="${item.communicationStatusSummary.contains('anulada') ? 'Anulada' : (item.communicationStatusSummary.contains('procesado') or item.communicationStatusSummary.contains('Código:') ? 'SES ok' : (item.communicationStatusSummary.contains('Enviada a SES') ? 'En SES' : (item.readyForTravelerPart ? 'Lista' : 'Pendiente')))}">Lista</span>
+	                            <div class="owner-booking-badge-row">
+	                                <span class="owner-status-ready"
+	                                      th:if="${item.communicationStatusSummary != null}"
+	                                      th:text="${item.communicationDispatchStatus != null and item.communicationDispatchStatus.name() == 'SES_CANCELLED'
+	                                          ? 'Anulada'
+	                                          : (item.communicationDispatchStatus != null and item.communicationDispatchStatus.name() == 'SES_RESPONSE_NEEDS_REVIEW'
+	                                              ? 'Revisión SES'
+	                                              : (item.communicationDispatchStatus != null and item.communicationDispatchStatus.name() == 'SES_PROCESSED'
+	                                                  ? 'SES ok'
+	                                                  : (item.communicationDispatchStatus != null and item.communicationDispatchStatus.name() == 'SUBMITTED_TO_SES'
+	                                                      ? 'En SES'
+	                                                      : (item.communicationDispatchStatus != null and item.communicationDispatchStatus.name() == 'XML_READY' and item.sesSubmissionAvailable
+	                                                          ? 'Pendiente SES'
+	                                                          : (item.readyForTravelerPart ? 'Lista' : 'Pendiente')))))}">Lista</span>
                                 <span class="owner-status-ready"
                                       th:if="${item.communicationStatusSummary == null and item.readyForTravelerPart}">Lista</span>
                                 <span class="owner-status-pending"
                                       th:unless="${item.communicationStatusSummary != null or item.readyForTravelerPart}"
                                       th:text="${item.operationalStatus.name() == 'REVIEW_PENDING' ? 'Pendiente' : 'Bloqueada'}">Pendiente</span>
-                                <span class="public-pill-muted" th:text="${item.booking.channel.label}">Airbnb</span>
+                                <span class="owner-pill-muted" th:text="${item.booking.channel.label}">Airbnb</span>
                             </div>
                             <h3 class="mt-3 text-xl font-extrabold tracking-tight text-slate-900" th:text="${item.booking.accommodation.name}">Casa Olivo</h3>
                             <p class="owner-queue-meta" th:text="${item.booking.referenceCode + ' · Entrada ' + #temporals.format(item.booking.checkInDate, 'dd/MM/yyyy')}">ABC123 · Entrada 27/03/2026</p>
                             <p class="mt-3 owner-copy"
-                               th:text="${item.communicationStatusSummary != null ? item.communicationStatusSummary : (item.readyForTravelerPart ? (item.sesSubmissionAvailable ? 'Lista para presentar en SES o descargar el XML.' : 'Lista para descargar el XML.') : item.blockingSummary)}">Lista para descargar el XML.</p>
+                               th:text="${item.communicationStatusSummary != null ? (item.communicationStatusSummary.contains('XML preparado') and item.sesSubmissionAvailable ? 'XML generado. Falta presentar el parte en SES.' : item.communicationStatusSummary) : (item.readyForTravelerPart ? (item.sesSubmissionAvailable ? 'Lista para presentar en SES o descargar el XML.' : 'Lista para descargar el XML.') : item.blockingSummary)}">Lista para descargar el XML.</p>
                             <div class="mt-4 owner-actions">
                                 <a class="owner-button-primary w-full justify-center sm:w-auto" th:href="@{|/bookings/${item.booking.id}|}">Abrir estancia</a>
                             </div>
@@ -160,12 +181,12 @@
                     <p class="owner-kicker">Resumen rápido</p>
                     <div class="mt-4 owner-helper-list">
                         <div class="owner-helper-item">
-                            <strong th:text="${countIncomplete == 1 ? '1 estancia pendiente' : countIncomplete + ' estancias pendientes'}">0 estancias pendientes</strong>
-                            <span>Estas son las que conviene revisar antes de pensar en descargar el XML.</span>
+                            <strong th:text="${reviewSummary.title}">0 estancias pendientes</strong>
+                            <span th:text="${reviewSummary.text}">No hay datos bloqueados por revisar.</span>
                         </div>
                         <div class="owner-helper-item">
-                            <strong th:text="${countReady == 1 ? '1 estancia lista' : countReady + ' estancias listas'}">0 estancias listas</strong>
-                            <span>Si ya están listas, solo quedará entrar y descargar el archivo.</span>
+                            <strong th:text="${communicationSummary.title}">0 partes pendientes</strong>
+                            <span th:text="${communicationSummary.text}">No hay partes pendientes ahora.</span>
                         </div>
                     </div>
                 </section>

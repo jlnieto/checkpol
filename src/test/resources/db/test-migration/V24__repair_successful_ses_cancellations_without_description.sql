@@ -1,0 +1,2 @@
+-- Production repairs rows affected by SES responses without descripcion.
+-- Test databases do not contain historical rows to repair.

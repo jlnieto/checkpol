@@ -100,6 +100,95 @@ class TravelerPartServiceTest {
     }
 
     @Test
+    void marksSubmissionForReviewWhenSesReturnsOkWithoutLote() {
+        BookingDetails details = sampleDetails(true);
+        AppUser owner = details.booking().getOwner();
+        owner.updateSesWsConfiguration("A123456789", "ws-user", "encrypted");
+        Mockito.when(bookingService.getDetails(1L)).thenReturn(details);
+        Mockito.when(xmlGenerator.generate(details)).thenReturn("<xml/>");
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(currentAppUserService.requireCurrentUserEntity()).thenReturn(owner);
+        Mockito.when(generatedCommunicationRepository.findFirstByBookingIdAndBookingOwnerIdOrderByVersionDesc(1L, 7L)).thenReturn(Optional.empty());
+        Mockito.when(generatedCommunicationRepository.save(Mockito.any(GeneratedCommunication.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        Mockito.when(sesCommunicationGateway.submitTravelerPart(owner, "<xml/>"))
+            .thenReturn(new SesSubmissionResult(0, "ok", null, "<soap>ok-sin-lote</soap>"));
+
+        SesSubmissionResult result = travelerPartService.submitTravelerPart(1L);
+
+        assertEquals(0, result.responseCode());
+        ArgumentCaptor<GeneratedCommunication> captor = ArgumentCaptor.forClass(GeneratedCommunication.class);
+        Mockito.verify(generatedCommunicationRepository).save(captor.capture());
+        assertEquals(CommunicationDispatchStatus.SES_RESPONSE_NEEDS_REVIEW, captor.getValue().getDispatchStatus());
+        assertEquals("<soap>ok-sin-lote</soap>", captor.getValue().getSesSubmissionRawResponse());
+    }
+
+    @Test
+    void storesRawResponseWhenSubmissionParserFails() {
+        BookingDetails details = sampleDetails(true);
+        AppUser owner = details.booking().getOwner();
+        owner.updateSesWsConfiguration("A123456789", "ws-user", "encrypted");
+        Mockito.when(bookingService.getDetails(1L)).thenReturn(details);
+        Mockito.when(xmlGenerator.generate(details)).thenReturn("<xml/>");
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(currentAppUserService.requireCurrentUserEntity()).thenReturn(owner);
+        Mockito.when(generatedCommunicationRepository.findFirstByBookingIdAndBookingOwnerIdOrderByVersionDesc(1L, 7L)).thenReturn(Optional.empty());
+        Mockito.when(generatedCommunicationRepository.save(Mockito.any(GeneratedCommunication.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        Mockito.when(sesCommunicationGateway.submitTravelerPart(owner, "<xml/>"))
+            .thenThrow(new SesCommunicationException("No he podido interpretar la respuesta de envío de SES.", null, "<soap>respuesta-rara</soap>"));
+
+        SesSubmissionResult result = travelerPartService.submitTravelerPart(1L);
+
+        assertEquals(-1, result.responseCode());
+        ArgumentCaptor<GeneratedCommunication> captor = ArgumentCaptor.forClass(GeneratedCommunication.class);
+        Mockito.verify(generatedCommunicationRepository).save(captor.capture());
+        assertEquals(CommunicationDispatchStatus.SUBMISSION_FAILED, captor.getValue().getDispatchStatus());
+        assertEquals("<soap>respuesta-rara</soap>", captor.getValue().getSesSubmissionRawResponse());
+    }
+
+    @Test
+    void blocksIdenticalSesResubmissionAfterCancellation() {
+        BookingDetails details = sampleDetails(true);
+        AppUser owner = details.booking().getOwner();
+        owner.updateSesWsConfiguration("A123456789", "ws-user", "encrypted");
+        GeneratedCommunication previous = new GeneratedCommunication(details.booking(), 1, OffsetDateTime.now(), "<xml/>");
+        previous.registerSesSubmission(OffsetDateTime.now(), "lote-1", 0, "ok");
+        previous.registerSesCancellation(OffsetDateTime.now(), 0, "Anulada");
+        Mockito.when(bookingService.getDetails(1L)).thenReturn(details);
+        Mockito.when(xmlGenerator.generate(details)).thenReturn("<xml/>");
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(currentAppUserService.requireCurrentUserEntity()).thenReturn(owner);
+        Mockito.when(generatedCommunicationRepository.findFirstByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(1L, 7L))
+            .thenReturn(Optional.of(previous));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> travelerPartService.submitTravelerPart(1L));
+
+        assertEquals("SES no acepta reenviar exactamente el mismo archivo. Cambia la estancia o algún huésped antes de presentarlo de nuevo.", exception.getMessage());
+        Mockito.verify(sesCommunicationGateway, Mockito.never()).submitTravelerPart(Mockito.any(), Mockito.anyString());
+        Mockito.verify(generatedCommunicationRepository, Mockito.never()).save(Mockito.any(GeneratedCommunication.class));
+    }
+
+    @Test
+    void blocksRepeatedSesDuplicateFailureWithSameXml() {
+        BookingDetails details = sampleDetails(true);
+        AppUser owner = details.booking().getOwner();
+        owner.updateSesWsConfiguration("A123456789", "ws-user", "encrypted");
+        GeneratedCommunication previous = new GeneratedCommunication(details.booking(), 2, OffsetDateTime.now(), "<xml/>");
+        previous.registerFailedSesSubmission(OffsetDateTime.now(), 10121, "Lote duplicado");
+        Mockito.when(bookingService.getDetails(1L)).thenReturn(details);
+        Mockito.when(xmlGenerator.generate(details)).thenReturn("<xml/>");
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(currentAppUserService.requireCurrentUserEntity()).thenReturn(owner);
+        Mockito.when(generatedCommunicationRepository.findFirstByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(1L, 7L))
+            .thenReturn(Optional.of(previous));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> travelerPartService.submitTravelerPart(1L));
+
+        assertTrue(exception.getMessage().contains("SES no acepta reenviar exactamente el mismo archivo"));
+        Mockito.verify(sesCommunicationGateway, Mockito.never()).submitTravelerPart(Mockito.any(), Mockito.anyString());
+        Mockito.verify(generatedCommunicationRepository, Mockito.never()).save(Mockito.any(GeneratedCommunication.class));
+    }
+
+    @Test
     void refreshesSesSubmissionStatusFromLote() {
         BookingDetails details = sampleDetails(true);
         AppUser owner = details.booking().getOwner();
@@ -121,6 +210,49 @@ class TravelerPartServiceTest {
     }
 
     @Test
+    void marksStatusResponseForReviewWhenSesReturnsNonZeroCode() {
+        BookingDetails details = sampleDetails(true);
+        AppUser owner = details.booking().getOwner();
+        owner.updateSesWsConfiguration("A123456789", "ws-user", "encrypted");
+        GeneratedCommunication communication = new GeneratedCommunication(details.booking(), 1, OffsetDateTime.now(), "<xml/>");
+        communication.registerSesSubmission(OffsetDateTime.now(), "lote-1", 0, "ok");
+        Mockito.when(currentAppUserService.requireCurrentUserEntity()).thenReturn(owner);
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(generatedCommunicationRepository.findByIdAndBookingIdAndBookingOwnerId(9L, 1L, 7L))
+            .thenReturn(Optional.of(communication));
+        Mockito.when(sesCommunicationGateway.queryLoteStatus(owner, "lote-1"))
+            .thenReturn(new SesLoteStatusResult(10199, "Error consultando lote", "lote-1", null, null, null, null, null, null, "<soap>error</soap>"));
+
+        SesLoteStatusResult result = travelerPartService.refreshSesSubmissionStatus(1L, 9L);
+
+        assertEquals(10199, result.responseCode());
+        assertEquals(CommunicationDispatchStatus.SES_RESPONSE_NEEDS_REVIEW, communication.getDispatchStatus());
+        assertEquals("Error consultando lote", communication.getSesResponseDescription());
+        assertEquals("<soap>error</soap>", communication.getSesStatusRawResponse());
+    }
+
+    @Test
+    void storesRawStatusResponseWhenLoteParserFails() {
+        BookingDetails details = sampleDetails(true);
+        AppUser owner = details.booking().getOwner();
+        owner.updateSesWsConfiguration("A123456789", "ws-user", "encrypted");
+        GeneratedCommunication communication = new GeneratedCommunication(details.booking(), 1, OffsetDateTime.now(), "<xml/>");
+        communication.registerSesSubmission(OffsetDateTime.now(), "lote-1", 0, "ok");
+        Mockito.when(currentAppUserService.requireCurrentUserEntity()).thenReturn(owner);
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(generatedCommunicationRepository.findByIdAndBookingIdAndBookingOwnerId(9L, 1L, 7L))
+            .thenReturn(Optional.of(communication));
+        Mockito.when(sesCommunicationGateway.queryLoteStatus(owner, "lote-1"))
+            .thenThrow(new SesCommunicationException("No he podido interpretar la respuesta de consulta de lote de SES.", null, "<soap>estado-raro</soap>"));
+
+        SesLoteStatusResult result = travelerPartService.refreshSesSubmissionStatus(1L, 9L);
+
+        assertEquals(-1, result.responseCode());
+        assertEquals(CommunicationDispatchStatus.SES_RESPONSE_NEEDS_REVIEW, communication.getDispatchStatus());
+        assertEquals("<soap>estado-raro</soap>", communication.getSesStatusRawResponse());
+    }
+
+    @Test
     void cancelsSesSubmissionByLote() {
         BookingDetails details = sampleDetails(true);
         AppUser owner = details.booking().getOwner();
@@ -138,6 +270,27 @@ class TravelerPartServiceTest {
 
         assertEquals(0, result.responseCode());
         assertEquals(CommunicationDispatchStatus.SES_CANCELLED, communication.getDispatchStatus());
+    }
+
+    @Test
+    void storesRawCancellationResponseWhenCancellationIsRejected() {
+        BookingDetails details = sampleDetails(true);
+        AppUser owner = details.booking().getOwner();
+        owner.updateSesWsConfiguration("A123456789", "ws-user", "encrypted");
+        GeneratedCommunication communication = new GeneratedCommunication(details.booking(), 1, OffsetDateTime.now(), "<xml/>");
+        communication.registerSesSubmission(OffsetDateTime.now(), "lote-1", 0, "ok");
+        Mockito.when(currentAppUserService.requireCurrentUserEntity()).thenReturn(owner);
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(generatedCommunicationRepository.findByIdAndBookingIdAndBookingOwnerId(9L, 1L, 7L))
+            .thenReturn(Optional.of(communication));
+        Mockito.when(sesCommunicationGateway.cancelLote(owner, "lote-1"))
+            .thenReturn(new SesSubmissionResult(12, "Lote no anulable", null, "<soap>no-anulado</soap>"));
+
+        SesSubmissionResult result = travelerPartService.cancelSesSubmission(1L, 9L);
+
+        assertEquals(12, result.responseCode());
+        assertEquals(CommunicationDispatchStatus.SUBMITTED_TO_SES, communication.getDispatchStatus());
+        assertEquals("<soap>no-anulado</soap>", communication.getSesCancellationRawResponse());
     }
 
     private BookingDetails sampleDetails(boolean ready) {

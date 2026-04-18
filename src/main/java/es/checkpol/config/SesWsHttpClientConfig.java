@@ -27,7 +27,9 @@ public class SesWsHttpClientConfig {
         @Value("${checkpol.ses.ws.truststore-password:}") String truststorePassword,
         @Value("${checkpol.ses.ws.truststore-type:PKCS12}") String truststoreType
     ) {
-        HttpClient.Builder builder = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15));
+        HttpClient.Builder builder = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1)
+            .connectTimeout(Duration.ofSeconds(15));
 
         if (truststorePath == null || truststorePath.isBlank()) {
             return builder.build();

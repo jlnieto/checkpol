@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Trazabilidad SES | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="mono-body antialiased">
+<main class="mono-app">
+    <aside class="mono-sidebar-shell" th:replace="~{admin/fragments :: sidebar('ses')}"></aside>
+
+    <section class="mono-content">
+        <header th:replace="~{admin/fragments :: topbar('Trazabilidad técnica SES')}"></header>
+
+        <div class="mono-page">
+            <div class="mono-page-head">
+                <h1 class="mono-page-title">Trazabilidad SES</h1>
+                <nav class="mono-breadcrumb">
+                    <span>Admin</span>
+                    <span>/</span>
+                    <a th:href="@{/admin/ses}">SES</a>
+                    <span>/</span>
+                    <span class="mono-breadcrumb-active" th:text="${'Comunicación #' + detail.row.communicationId}">Comunicación #10</span>
+                </nav>
+            </div>
+
+            <section class="mono-layout">
+                <div class="mono-main">
+                    <section class="mono-panel">
+                        <div class="mono-panel-strip">
+                            <div>
+                                <h2 class="mono-panel-title" th:text="${detail.row.accommodationName}">Casita</h2>
+                                <p class="mono-compact-copy">
+                                    Ref <span th:text="${detail.row.bookingReference}">XJ123456</span>
+                                    · versión <span th:text="${detail.row.version}">1</span>
+                                    · owner <span th:text="${detail.row.ownerDisplayName}">Joana</span>
+                                </p>
+                            </div>
+                            <span class="mono-pill" th:classappend="${' ' + detail.row.toneClass}" th:text="${detail.row.statusLabel}">Estado</span>
+                        </div>
+                        <div class="mono-panel-body">
+                            <dl class="mono-kv">
+                                <div class="mono-kv-row">
+                                    <dt>Modo</dt>
+                                    <dd th:text="${detail.row.dispatchMode.name() == 'SES_WEB_SERVICE' ? 'Servicio web SES' : 'Descarga manual'}">Servicio web SES</dd>
+                                </div>
+                                <div class="mono-kv-row">
+                                    <dt>Generada</dt>
+                                    <dd th:text="${#temporals.format(detail.row.generatedAt, 'dd/MM/yyyy HH:mm')}">18/04/2026 10:00</dd>
+                                </div>
+                                <div class="mono-kv-row" th:if="${detail.row.submittedAt != null}">
+                                    <dt>Enviada</dt>
+                                    <dd th:text="${#temporals.format(detail.row.submittedAt, 'dd/MM/yyyy HH:mm')}">18/04/2026 10:01</dd>
+                                </div>
+                                <div class="mono-kv-row" th:if="${detail.row.lastCheckedAt != null}">
+                                    <dt>Última consulta</dt>
+                                    <dd th:text="${#temporals.format(detail.row.lastCheckedAt, 'dd/MM/yyyy HH:mm')}">18/04/2026 10:05</dd>
+                                </div>
+                                <div class="mono-kv-row" th:if="${detail.row.cancelledAt != null}">
+                                    <dt>Anulada</dt>
+                                    <dd th:text="${#temporals.format(detail.row.cancelledAt, 'dd/MM/yyyy HH:mm')}">18/04/2026 10:10</dd>
+                                </div>
+                                <div class="mono-kv-row" th:if="${detail.lastDownloadedAt != null}">
+                                    <dt>Última descarga</dt>
+                                    <dd th:text="${#temporals.format(detail.lastDownloadedAt, 'dd/MM/yyyy HH:mm')}">18/04/2026 10:15</dd>
+                                </div>
+                                <div class="mono-kv-row">
+                                    <dt>Descargas owner</dt>
+                                    <dd th:text="${detail.downloadCount}">0</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </section>
+
+                    <section class="mono-panel" th:if="${detail.hasSesIdentifiers()}">
+                        <div class="mono-panel-strip">
+                            <h2 class="mono-panel-title">Identificadores SES</h2>
+                        </div>
+                        <div class="mono-panel-body">
+                            <dl class="mono-kv">
+                                <div class="mono-kv-row" th:if="${detail.row.loteCode != null}">
+                                    <dt>Lote</dt>
+                                    <dd th:text="${detail.row.loteCode}">lote</dd>
+                                </div>
+                                <div class="mono-kv-row" th:if="${detail.row.sesCommunicationCode != null}">
+                                    <dt>Código comunicación</dt>
+                                    <dd th:text="${detail.row.sesCommunicationCode}">codigo</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </section>
+
+                    <section class="mono-panel" th:if="${detail.hasSubmissionDetail() or detail.hasProcessingDetail()}">
+                        <div class="mono-panel-strip">
+                            <h2 class="mono-panel-title">Respuesta interpretada</h2>
+                        </div>
+                        <div class="mono-panel-body">
+                            <dl class="mono-kv">
+                                <div class="mono-kv-row" th:if="${detail.responseCode != null}">
+                                    <dt>Código respuesta</dt>
+                                    <dd th:text="${detail.responseCode}">0</dd>
+                                </div>
+                                <div class="mono-kv-row" th:if="${detail.responseDescription != null}">
+                                    <dt>Descripción respuesta</dt>
+                                    <dd th:text="${detail.responseDescription}">OK</dd>
+                                </div>
+                                <div class="mono-kv-row" th:if="${detail.processingStateCode != null}">
+                                    <dt>Estado procesamiento</dt>
+                                    <dd th:text="${detail.processingStateCode}">1</dd>
+                                </div>
+                                <div class="mono-kv-row" th:if="${detail.processingStateDescription != null}">
+                                    <dt>Detalle procesamiento</dt>
+                                    <dd th:text="${detail.processingStateDescription}">Procesado</dd>
+                                </div>
+                                <div class="mono-kv-row" th:if="${detail.processingErrorType != null}">
+                                    <dt>Tipo error SES</dt>
+                                    <dd th:text="${detail.processingErrorType}">E</dd>
+                                </div>
+                                <div class="mono-kv-row" th:if="${detail.processingErrorDescription != null}">
+                                    <dt>Error SES</dt>
+                                    <dd th:text="${detail.processingErrorDescription}">Error</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </section>
+
+                    <section class="mono-panel">
+                        <div class="mono-panel-strip">
+                            <h2 class="mono-panel-title">XML generado</h2>
+                            <a class="mono-panel-link" th:href="@{|/admin/ses/communications/${detail.row.communicationId}.xml|}">Descargar XML</a>
+                        </div>
+                        <div class="mono-panel-body">
+                            <details class="mono-technical-details" th:if="${detail.hasXmlContent()}">
+                                <summary class="mono-technical-summary">Ver XML almacenado</summary>
+                                <pre class="mono-raw-box mono-raw-pre" th:text="${detail.xmlContent}">XML</pre>
+                            </details>
+                            <p class="mono-compact-copy" th:unless="${detail.hasXmlContent()}">No hay XML almacenado para esta comunicación.</p>
+                        </div>
+                    </section>
+
+                    <section class="mono-panel" th:if="${detail.row.hasRawResponse()}">
+                        <div class="mono-panel-strip">
+                            <h2 class="mono-panel-title">Respuestas SES sin procesar</h2>
+                        </div>
+                        <div class="mono-panel-body">
+                            <div class="mono-compact-list">
+                                <article class="mono-compact-item" th:if="${detail.row.submissionRawResponse != null}">
+                                    <details class="mono-technical-details">
+                                        <summary class="mono-technical-summary">Ver respuesta de envío</summary>
+                                        <pre class="mono-raw-box mono-raw-pre" th:text="${detail.row.submissionRawResponse}">Respuesta envío</pre>
+                                    </details>
+                                </article>
+                                <article class="mono-compact-item" th:if="${detail.row.statusRawResponse != null}">
+                                    <details class="mono-technical-details">
+                                        <summary class="mono-technical-summary">Ver respuesta de consulta de estado</summary>
+                                        <pre class="mono-raw-box mono-raw-pre" th:text="${detail.row.statusRawResponse}">Respuesta consulta</pre>
+                                    </details>
+                                </article>
+                                <article class="mono-compact-item" th:if="${detail.row.cancellationRawResponse != null}">
+                                    <details class="mono-technical-details">
+                                        <summary class="mono-technical-summary">Ver respuesta de anulación</summary>
+                                        <pre class="mono-raw-box mono-raw-pre" th:text="${detail.row.cancellationRawResponse}">Respuesta anulación</pre>
+                                    </details>
+                                </article>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <aside class="mono-rail">
+                    <section class="mono-message">
+                        <p class="mono-message-label">Uso de soporte</p>
+                        <p class="mono-message-copy">Esta pantalla no es para el owner. Sirve para diagnosticar respuestas SES, comprobar el XML exacto enviado y ajustar parsers si SES cambia el formato.</p>
+                        <a class="mono-message-link" th:href="@{/admin/ses}">Volver a Control SES</a>
+                    </section>
+
+                    <section class="mono-rail-panel">
+                        <div class="mono-panel-strip">
+                            <h2 class="mono-panel-title">Accesos</h2>
+                        </div>
+                        <div class="mono-link-list">
+                            <a class="mono-link-item" th:href="@{|/admin/users/${detail.row.ownerId}/edit|}">Editar owner</a>
+                            <a class="mono-link-item" th:href="@{/admin/ses(problemOnly=true)}">Problemas SES</a>
+                            <a class="mono-link-item" th:href="@{/admin/incidents(status='ACTIVE')}">Incidencias activas</a>
+                        </div>
+                    </section>
+                </aside>
+            </section>
+        </div>
+    </section>
+</main>
+</body>
+</html>

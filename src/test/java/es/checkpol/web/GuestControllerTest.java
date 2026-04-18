@@ -4,7 +4,10 @@ import es.checkpol.domain.Accommodation;
 import es.checkpol.domain.Address;
 import es.checkpol.domain.Booking;
 import es.checkpol.domain.BookingChannel;
+import es.checkpol.domain.CommunicationDispatchMode;
+import es.checkpol.domain.CommunicationDispatchStatus;
 import es.checkpol.domain.DocumentType;
+import es.checkpol.domain.GeneratedCommunication;
 import es.checkpol.config.SecurityConfig;
 import es.checkpol.service.BookingDetails;
 import es.checkpol.service.BookingService;
@@ -88,7 +91,7 @@ class GuestControllerTest {
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                 .string(org.hamcrest.Matchers.containsString("España (ESP)")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
-                .string(org.hamcrest.Matchers.containsString("Guía rápida")))
+                .string(org.hamcrest.Matchers.containsString("Escribe el nombre igual que en el documento")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                 .string(org.hamcrest.Matchers.containsString("Nacionalidad <span class=\"text-slate-400\">(opcional)</span>")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
@@ -110,6 +113,14 @@ class GuestControllerTest {
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                 .string(org.hamcrest.Matchers.containsString("Enviar enlace")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("Editar estancia")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("Si no falta nadie, entra en Editar estancia")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Cambiar estancia a 1 persona"))))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("/bookings/1/edit")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                 .string(org.hamcrest.Matchers.containsString("Añadir huésped manualmente")))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                 .string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Archivo para SES"))))
@@ -121,6 +132,68 @@ class GuestControllerTest {
 
     @Test
     @WithMockUser(username = "owner", roles = "OWNER")
+    void hidesGuestEditingAndSelfServiceOptionsAfterSesSubmission() throws Exception {
+        when(bookingService.getDetails(1L)).thenReturn(sampleSubmittedToSesDetails());
+
+        mockMvc.perform(get("/bookings/1"))
+            .andExpect(status().isOk())
+            .andExpect(view().name("bookings/details"))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("SES está procesando el envío")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("Datos enviados a SES")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("No cambies datos salvo que anules")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(not(org.hamcrest.Matchers.containsString("Añadir huésped"))))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(not(org.hamcrest.Matchers.containsString("Enviar un enlace para rellenar datos"))))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(not(org.hamcrest.Matchers.containsString("Generar o renovar enlace"))))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(not(org.hamcrest.Matchers.containsString("Criterio de revisión"))));
+    }
+
+    @Test
+    @WithMockUser(username = "owner", roles = "OWNER")
+    void showsPrimarySesActionsWhenResponseNeedsReview() throws Exception {
+        when(bookingService.getDetails(1L)).thenReturn(sampleSesResponseNeedsReviewDetails());
+
+        mockMvc.perform(get("/bookings/1"))
+            .andExpect(status().isOk())
+            .andExpect(view().name("bookings/details"))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("Respuesta SES pendiente de revisión")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("action=\"/bookings/1/communications/9/refresh-ses-status\"")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("Consultar estado SES")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("action=\"/bookings/1/communications/9/cancel-ses\"")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("Anular en SES")));
+    }
+
+    @Test
+    @WithMockUser(username = "owner", roles = "OWNER")
+    void blocksSesSubmissionAfterCancellationWhenXmlHasNotChanged() throws Exception {
+        when(bookingService.getDetails(1L)).thenReturn(sampleCancelledSameXmlDetails());
+
+        mockMvc.perform(get("/bookings/1"))
+            .andExpect(status().isOk())
+            .andExpect(view().name("bookings/details"))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("Cambia algo antes de presentar")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("SES no acepta el mismo XML otra vez")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Presentar parte en SES"))))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .string(org.hamcrest.Matchers.containsString("/bookings/1/edit")));
+    }
+
+    @Test
+    @WithMockUser(username = "owner", roles = "OWNER")
     void preparesShareMessageUsingSelfServiceLink() throws Exception {
         when(bookingService.getDetails(1L)).thenReturn(sampleDetails());
         when(guestSelfServiceService.issueAccess(1L)).thenReturn(new SelfServiceAccess("abc123", OffsetDateTime.now().plusDays(7)));
@@ -128,7 +201,36 @@ class GuestControllerTest {
         mockMvc.perform(post("/bookings/1/share-self-service-link").with(csrf()))
             .andExpect(status().is3xxRedirection())
             .andExpect(redirectedUrl("/bookings/1"))
-            .andExpect(flash().attributeExists("shareMessage"));
+            .andExpect(flash().attribute(
+                "shareMessage",
+                hasToString(allOf(
+                    containsString("Para preparar el check-in obligatorio de huéspedes de Casa Olivo"),
+                    containsString("Se tarda 1-2 minutos."),
+                    containsString("Puedes completarlos aquí:")
+                ))
+            ));
+    }
+
+    @Test
+    @WithMockUser(username = "owner", roles = "OWNER")
+    void preparesShareMessageWithFreshLinkWhenPreviousLinkExists() throws Exception {
+        when(bookingService.getDetails(1L)).thenReturn(sampleDetailsWithSelfServiceAccess(
+            new SelfServiceAccess("expired-token", OffsetDateTime.now().minusDays(1))
+        ));
+        when(guestSelfServiceService.issueAccess(1L)).thenReturn(new SelfServiceAccess("fresh-token", OffsetDateTime.now().plusDays(7)));
+
+        mockMvc.perform(post("/bookings/1/share-self-service-link").with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/bookings/1"))
+            .andExpect(flash().attribute(
+                "shareMessage",
+                hasToString(allOf(
+                    containsString("/guest-access/fresh-token"),
+                    not(containsString("/guest-access/expired-token"))
+                ))
+            ));
+
+        verify(guestSelfServiceService).issueAccess(1L);
     }
 
     @Test
@@ -341,6 +443,7 @@ class GuestControllerTest {
         Booking booking = new Booking(accommodation, "ABC123", 2,
             LocalDate.now(), BookingChannel.DIRECT, LocalDate.now().plusDays(2), LocalDate.now().plusDays(4),
             es.checkpol.domain.PaymentType.EFECT, LocalDate.now(), null, null, null);
+        ReflectionTestUtils.setField(booking, "id", 1L);
         Address address = sampleAddress(booking);
         es.checkpol.domain.Guest guest = new es.checkpol.domain.Guest(
             booking,
@@ -384,6 +487,33 @@ class GuestControllerTest {
             "1 huésped registrado · 2 personas esperadas",
             "No se puede generar el XML porque el número de huéspedes registrados no coincide con el número de personas de la estancia.",
             List.of("No se puede generar el XML porque el número de huéspedes registrados no coincide con el número de personas de la estancia.")
+        );
+    }
+
+    private BookingDetails sampleDetailsWithSelfServiceAccess(SelfServiceAccess access) {
+        BookingDetails details = sampleDetails();
+        return new BookingDetails(
+            details.booking(),
+            details.guests(),
+            details.guestCount(),
+            details.expectedGuestCount(),
+            details.guestCountMismatch(),
+            details.readyForTravelerPart(),
+            details.sesSubmissionAvailable(),
+            details.lastGeneratedCommunication(),
+            details.generatedCommunicationCount(),
+            details.generatedCommunications(),
+            Optional.of(access),
+            details.operationalStatus(),
+            details.pendingReviewGuestCount(),
+            details.selfServiceGuestCount(),
+            details.blockedByBookingData(),
+            details.blockedByGuestData(),
+            details.blockedByPendingReview(),
+            details.blockedByAddressExport(),
+            details.blockingSummary(),
+            details.blockingMessage(),
+            details.blockingReasons()
         );
     }
 
@@ -468,6 +598,7 @@ class GuestControllerTest {
         Booking booking = new Booking(accommodation, "ABC123", 1,
             LocalDate.now(), BookingChannel.DIRECT, LocalDate.now().plusDays(2), LocalDate.now().plusDays(4),
             es.checkpol.domain.PaymentType.EFECT, LocalDate.now(), null, null, null);
+        ReflectionTestUtils.setField(booking, "id", 1L);
         Address address = sampleAddress(booking);
 
         es.checkpol.domain.Guest guest = new es.checkpol.domain.Guest(
@@ -522,6 +653,7 @@ class GuestControllerTest {
         Booking booking = new Booking(accommodation, "ABC123", 1,
             LocalDate.now(), BookingChannel.DIRECT, LocalDate.now().plusDays(2), LocalDate.now().plusDays(4),
             es.checkpol.domain.PaymentType.EFECT, LocalDate.now(), null, null, null);
+        ReflectionTestUtils.setField(booking, "id", 1L);
         Address address = sampleAddress(booking);
         es.checkpol.domain.Guest guest = new es.checkpol.domain.Guest(
             booking,
@@ -567,6 +699,128 @@ class GuestControllerTest {
             "Lista para descargar el archivo SES",
             null,
             List.of()
+        );
+    }
+
+    private BookingDetails sampleSubmittedToSesDetails() {
+        BookingDetails details = sampleReadyDetails();
+        GeneratedCommunication communication = new GeneratedCommunication(
+            details.booking(),
+            1,
+            OffsetDateTime.now(),
+            "<xml/>",
+            CommunicationDispatchMode.SES_WEB_SERVICE,
+            CommunicationDispatchStatus.XML_READY
+        );
+        ReflectionTestUtils.setField(communication, "id", 9L);
+        communication.registerSesSubmission(OffsetDateTime.now(), "lote-1", 0, "ok", "<raw/>");
+
+        return new BookingDetails(
+            details.booking(),
+            details.guests(),
+            details.guestCount(),
+            details.expectedGuestCount(),
+            details.guestCountMismatch(),
+            details.readyForTravelerPart(),
+            true,
+            Optional.of(communication),
+            1,
+            List.of(communication),
+            details.selfServiceAccess(),
+            details.operationalStatus(),
+            details.pendingReviewGuestCount(),
+            details.selfServiceGuestCount(),
+            details.blockedByBookingData(),
+            details.blockedByGuestData(),
+            details.blockedByPendingReview(),
+            details.blockedByAddressExport(),
+            details.blockingSummary(),
+            details.blockingMessage(),
+            details.blockingReasons()
+        );
+    }
+
+    private BookingDetails sampleSesResponseNeedsReviewDetails() {
+        BookingDetails details = sampleReadyDetails();
+        GeneratedCommunication communication = new GeneratedCommunication(
+            details.booking(),
+            1,
+            OffsetDateTime.now(),
+            "<xml/>",
+            CommunicationDispatchMode.SES_WEB_SERVICE,
+            CommunicationDispatchStatus.XML_READY
+        );
+        ReflectionTestUtils.setField(communication, "id", 9L);
+        communication.registerSesSubmission(OffsetDateTime.now().minusMinutes(5), "lote-1", 0, "ok", "<raw/>");
+        communication.registerSesResponseNeedsReview(
+            OffsetDateTime.now(),
+            -1,
+            "No he podido interpretar la respuesta de consulta de lote de SES.",
+            "<raw-status/>"
+        );
+
+        return new BookingDetails(
+            details.booking(),
+            details.guests(),
+            details.guestCount(),
+            details.expectedGuestCount(),
+            details.guestCountMismatch(),
+            details.readyForTravelerPart(),
+            true,
+            Optional.of(communication),
+            1,
+            List.of(communication),
+            details.selfServiceAccess(),
+            details.operationalStatus(),
+            details.pendingReviewGuestCount(),
+            details.selfServiceGuestCount(),
+            details.blockedByBookingData(),
+            details.blockedByGuestData(),
+            details.blockedByPendingReview(),
+            details.blockedByAddressExport(),
+            details.blockingSummary(),
+            details.blockingMessage(),
+            details.blockingReasons()
+        );
+    }
+
+    private BookingDetails sampleCancelledSameXmlDetails() {
+        BookingDetails details = sampleReadyDetails();
+        GeneratedCommunication communication = new GeneratedCommunication(
+            details.booking(),
+            1,
+            OffsetDateTime.now(),
+            "<xml/>",
+            CommunicationDispatchMode.SES_WEB_SERVICE,
+            CommunicationDispatchStatus.XML_READY
+        );
+        ReflectionTestUtils.setField(communication, "id", 9L);
+        communication.registerSesSubmission(OffsetDateTime.now().minusMinutes(5), "lote-1", 0, "ok", "<raw/>");
+        communication.registerSesCancellation(OffsetDateTime.now(), 0, "Anulada", "<raw-cancel/>");
+
+        return new BookingDetails(
+            details.booking(),
+            details.guests(),
+            details.guestCount(),
+            details.expectedGuestCount(),
+            details.guestCountMismatch(),
+            details.readyForTravelerPart(),
+            true,
+            Optional.of(communication),
+            true,
+            1,
+            List.of(communication),
+            details.selfServiceAccess(),
+            details.operationalStatus(),
+            details.pendingReviewGuestCount(),
+            details.selfServiceGuestCount(),
+            details.blockedByBookingData(),
+            details.blockedByGuestData(),
+            details.blockedByPendingReview(),
+            details.blockedByAddressExport(),
+            details.blockingSummary(),
+            details.blockingMessage(),
+            details.blockingReasons()
         );
     }
 

@@ -11,28 +11,7 @@
     <aside class="mono-sidebar-shell" th:replace="~{admin/fragments :: sidebar('ses')}"></aside>
 
     <section class="mono-content">
-        <header class="mono-topbar">
-            <div class="mono-topbar-left">
-                <button class="mono-topbar-button" type="button" aria-label="Navegación">
-                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path d="M3 5h14v2H3V5Zm0 4h14v2H3V9Zm0 4h14v2H3v-2Z"/>
-                    </svg>
-                </button>
-                <label class="mono-search">
-                    <svg class="mono-search-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path d="M8.5 3a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Zm0 1.5a4 4 0 1 0 2.6 7l3.2 3.2 1.1-1.1-3.2-3.2A4 4 0 0 0 8.5 4.5Z"/>
-                    </svg>
-                    <input class="mono-search-input" type="text" placeholder="Control de comunicaciones SES" readonly>
-                </label>
-            </div>
-            <div class="mono-topbar-right">
-                <span class="mono-topbar-meta">Catálogo:
-                    <strong th:text="${dashboard.currentSourceVersion != null ? dashboard.currentSourceVersion : 'SIN_VERSIÓN'}">SIN_VERSIÓN</strong>
-                </span>
-                <a class="mono-btn-ghost" th:href="@{/admin}">Resumen</a>
-                <a class="mono-btn-ghost" th:href="@{/admin/ses/owners}">Owners SES</a>
-            </div>
-        </header>
+        <header th:replace="~{admin/fragments :: topbar('Control de comunicaciones SES')}"></header>
 
         <div class="mono-page">
             <div class="mono-page-head">
@@ -49,6 +28,18 @@
             </div>
             <div class="mono-alert-error" th:if="${flashMessage != null and flashKind == 'error'}">
                 <p th:text="${flashMessage}">Ha ocurrido un error.</p>
+            </div>
+            <div class="mono-alert-error" th:if="${sesProblemCount > 0 and !problemOnly}">
+                <div class="mono-alert-row">
+                    <p>
+                        <strong th:text="${sesProblemCount}">1</strong>
+                        <span> incidencia(s) SES activas. Filtra la tabla para actuar solo sobre problemas.</span>
+                    </p>
+                    <a class="mono-panel-link" th:href="@{/admin/ses(problemOnly=true)}">Ver solo problemas</a>
+                </div>
+            </div>
+            <div class="mono-alert-warning" th:if="${problemOnly and #lists.isEmpty(sesRows)}">
+                <p>No hay incidencias SES activas con el filtro actual.</p>
             </div>
 
             <section class="mono-layout">
@@ -116,13 +107,14 @@
                             <a class="mono-panel-link" th:href="@{/admin/ses/owners}">Ver owners</a>
                         </div>
                         <div class="mono-panel-body">
-                            <form class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between" method="get" th:action="@{/admin/ses}">
-                                <div class="grid gap-3 sm:grid-cols-2">
+                            <form class="mono-filter-bar" method="get" th:action="@{/admin/ses}">
+                                <div class="mono-filter-fields">
                                     <label class="block">
                                         <span class="mono-table-meta block">Estado</span>
                                         <select class="mono-field-input mt-1 min-w-48" name="status">
                                             <option value="ALL" th:selected="${selectedStatus == 'ALL'}">Todos</option>
                                             <option value="SUBMITTED_TO_SES" th:selected="${selectedStatus == 'SUBMITTED_TO_SES'}">Pendiente SES</option>
+                                            <option value="SES_RESPONSE_NEEDS_REVIEW" th:selected="${selectedStatus == 'SES_RESPONSE_NEEDS_REVIEW'}">Revisión técnica</option>
                                             <option value="SUBMISSION_FAILED" th:selected="${selectedStatus == 'SUBMISSION_FAILED'}">Error envío</option>
                                             <option value="SES_PROCESSING_ERROR" th:selected="${selectedStatus == 'SES_PROCESSING_ERROR'}">Error SES</option>
                                             <option value="SES_PROCESSED" th:selected="${selectedStatus == 'SES_PROCESSED'}">SES ok</option>
@@ -130,7 +122,7 @@
                                             <option value="XML_READY" th:selected="${selectedStatus == 'XML_READY'}">Solo XML</option>
                                         </select>
                                     </label>
-                                    <label class="flex items-center gap-2 pt-5">
+                                    <label class="mono-checkbox-row">
                                         <input type="checkbox" name="problemOnly" value="true" th:checked="${problemOnly}">
                                         <span class="mono-table-meta">Solo problemas</span>
                                     </label>
@@ -170,6 +162,20 @@
                                         <p class="mono-table-meta" th:text="${row.detail}">Sin detalle</p>
                                         <p class="mono-table-meta mt-1" th:if="${row.loteCode != null}" th:text="${'Lote ' + row.loteCode}">Lote</p>
                                         <p class="mono-table-meta mt-1" th:if="${row.sesCommunicationCode != null}" th:text="${'Código ' + row.sesCommunicationCode}">Código</p>
+                                        <p class="mono-table-meta mt-1"
+                                           th:if="${row.problemReviewedAt != null}"
+                                           th:text="${'Revisada por ' + (row.problemReviewedBy != null ? row.problemReviewedBy : 'admin') + ' · ' + #temporals.format(row.problemReviewedAt, 'dd/MM/yyyy HH:mm')}">Revisada</p>
+                                        <details class="mono-technical-details" th:if="${row.hasRawResponse()}">
+                                            <summary class="mono-technical-summary">Respuesta técnica SES</summary>
+                                            <div class="mono-raw-box">
+                                                <p class="mono-table-meta font-semibold" th:if="${row.submissionRawResponse != null}">Envío</p>
+                                                <pre class="mono-raw-pre" th:if="${row.submissionRawResponse != null}" th:text="${row.submissionRawResponse}">Respuesta envío</pre>
+                                                <p class="mono-table-meta mt-3 font-semibold" th:if="${row.statusRawResponse != null}">Consulta</p>
+                                                <pre class="mono-raw-pre" th:if="${row.statusRawResponse != null}" th:text="${row.statusRawResponse}">Respuesta consulta</pre>
+                                                <p class="mono-table-meta mt-3 font-semibold" th:if="${row.cancellationRawResponse != null}">Anulación</p>
+                                                <pre class="mono-raw-pre" th:if="${row.cancellationRawResponse != null}" th:text="${row.cancellationRawResponse}">Respuesta anulación</pre>
+                                            </div>
+                                        </details>
                                     </td>
                                     <td class="mono-table-meta"
                                         th:text="${row.lastCheckedAt != null
@@ -188,6 +194,13 @@
                                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                             <button class="mono-panel-link" type="submit">Reintentar</button>
                                         </form>
+                                        <form th:if="${row.canMarkProblemReviewed}" th:action="@{|/admin/ses/communications/${row.communicationId}/review|}" method="post">
+                                            <input type="hidden" name="status" th:value="${selectedStatus}">
+                                            <input type="hidden" name="problemOnly" th:value="${problemOnly}">
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <button class="mono-panel-link" type="submit">Marcar revisada</button>
+                                        </form>
+                                        <a class="mono-panel-link" th:href="@{|/admin/ses/communications/${row.communicationId}|}">Ver trazabilidad</a>
                                         <a class="mono-panel-link" th:href="@{|/admin/users/${row.ownerId}/edit|}">Ver owner</a>
                                     </td>
                                 </tr>

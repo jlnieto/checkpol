@@ -196,10 +196,14 @@ public class AppUser {
         return updatedAt;
     }
 
-    public void updateOwner(String displayName, boolean active) {
+    public void updateProfile(String displayName, boolean active) {
         this.displayName = displayName;
         this.active = active;
         touch();
+    }
+
+    public void updateOwner(String displayName, boolean active) {
+        updateProfile(displayName, active);
     }
 
     public void updateSesWsConfiguration(String sesArrendadorCode, String sesWsUsername, String sesWsPasswordEncrypted) {

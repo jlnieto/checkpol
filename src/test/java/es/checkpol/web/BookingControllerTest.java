@@ -3,6 +3,7 @@ package es.checkpol.web;
 import es.checkpol.domain.Accommodation;
 import es.checkpol.domain.Booking;
 import es.checkpol.domain.BookingChannel;
+import es.checkpol.domain.CommunicationDispatchStatus;
 import es.checkpol.domain.PaymentType;
 import es.checkpol.config.SecurityConfig;
 import es.checkpol.service.BookingListItem;
@@ -89,7 +90,7 @@ class BookingControllerTest {
             null,
             null
         );
-        BookingListItem readyItem = new BookingListItem(booking, 2, 2, true, false, BookingOperationalStatus.READY_FOR_XML, 0, false, null, null);
+        BookingListItem readyItem = new BookingListItem(booking, 2, 2, true, false, BookingOperationalStatus.READY_FOR_XML, 0, false, null, null, null);
 
         when(bookingService.findAll()).thenReturn(List.of(readyItem));
         when(bookingService.findAll(BookingFilter.INCOMPLETE)).thenReturn(List.of());
@@ -134,6 +135,7 @@ class BookingControllerTest {
             0,
             true,
             "4 huéspedes registrados · 2 personas esperadas",
+            null,
             null
         );
 
@@ -207,6 +209,104 @@ class BookingControllerTest {
 
     @Test
     @WithMockUser(username = "owner", roles = "OWNER")
+    void showsSesSubmissionAsNextStepWhenBookingIsReadyButNotSubmitted() throws Exception {
+        Accommodation accommodation = new Accommodation("Casita", "H123456789", "VT-123");
+        when(accommodationService.findAll()).thenReturn(List.of(accommodation));
+        Booking booking = new Booking(
+            accommodation,
+            "XJ123456",
+            1,
+            LocalDate.of(2026, 4, 10),
+            BookingChannel.AIRBNB,
+            LocalDate.of(2026, 4, 10),
+            LocalDate.of(2026, 4, 12),
+            PaymentType.PLATF,
+            null,
+            "Airbnb",
+            null,
+            null
+        );
+        ReflectionTestUtils.setField(booking, "id", 1L);
+        BookingListItem readyForSes = new BookingListItem(
+            booking,
+            1,
+            1,
+            true,
+            true,
+            BookingOperationalStatus.READY_FOR_XML,
+            0,
+            false,
+            null,
+            null,
+            null
+        );
+
+        when(bookingService.findAll()).thenReturn(List.of(readyForSes));
+        when(bookingService.findAll(BookingFilter.INCOMPLETE)).thenReturn(List.of());
+        when(bookingService.findAll(BookingFilter.READY)).thenReturn(List.of(readyForSes));
+        when(bookingService.findAll(BookingFilter.TODAY)).thenReturn(List.of());
+        when(bookingService.findAll(BookingFilter.UPCOMING)).thenReturn(List.of());
+
+        mockMvc.perform(get("/bookings"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Presenta el parte en SES")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Casita · Datos revisados. Falta presentar el parte de viajeros.")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Todas las estancias")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("XJ123456")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("href=\"/bookings/1\"")))
+            .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("No hay nada bloqueado"))))
+            .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("No hay nada que revisar ahora"))));
+    }
+
+    @Test
+    @WithMockUser(username = "owner", roles = "OWNER")
+    void showsSesReviewStateWhenSubmittedResponseNeedsReview() throws Exception {
+        Accommodation accommodation = new Accommodation("Casita", "H123456789", "VT-123");
+        when(accommodationService.findAll()).thenReturn(List.of(accommodation));
+        Booking booking = new Booking(
+            accommodation,
+            "XJ123456",
+            1,
+            LocalDate.of(2026, 4, 10),
+            BookingChannel.AIRBNB,
+            LocalDate.of(2026, 4, 10),
+            LocalDate.of(2026, 4, 12),
+            PaymentType.PLATF,
+            null,
+            "Airbnb",
+            null,
+            null
+        );
+        ReflectionTestUtils.setField(booking, "id", 1L);
+        BookingListItem needsReview = new BookingListItem(
+            booking,
+            1,
+            1,
+            true,
+            true,
+            BookingOperationalStatus.XML_GENERATED,
+            0,
+            false,
+            null,
+            "No he podido interpretar la respuesta de consulta de lote de SES.",
+            CommunicationDispatchStatus.SES_RESPONSE_NEEDS_REVIEW
+        );
+
+        when(bookingService.findAll()).thenReturn(List.of(needsReview));
+        when(bookingService.findAll(BookingFilter.INCOMPLETE)).thenReturn(List.of());
+        when(bookingService.findAll(BookingFilter.READY)).thenReturn(List.of(needsReview));
+        when(bookingService.findAll(BookingFilter.TODAY)).thenReturn(List.of());
+        when(bookingService.findAll(BookingFilter.UPCOMING)).thenReturn(List.of());
+
+        mockMvc.perform(get("/bookings"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Revisión SES")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("No he podido interpretar la respuesta de consulta de lote de SES.")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("XJ123456")));
+    }
+
+    @Test
+    @WithMockUser(username = "owner", roles = "OWNER")
     void keepsFormWhenServiceValidationFails() throws Exception {
         when(accommodationService.findAll()).thenReturn(List.of(new Accommodation("Casa Olivo", "H123456789", "VT-123")));
         doThrow(new IllegalArgumentException("La fecha de salida debe ser posterior a la fecha de entrada."))
@@ -240,7 +340,8 @@ class BookingControllerTest {
         mockMvc.perform(get("/bookings/1/edit"))
             .andExpect(status().isOk())
             .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"2026-03-27\"")))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"2026-04-01\"")));
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"2026-04-01\"")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("href=\"/bookings/1\"")));
     }
 
     @Test
@@ -253,6 +354,7 @@ class BookingControllerTest {
         mockMvc.perform(get("/bookings/new"))
             .andExpect(status().isOk())
             .andExpect(view().name("bookings/form"))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("href=\"/bookings\"")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("<option value=\"7\" selected=\"selected\">Casa Olivo</option>")));
     }
 

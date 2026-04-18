@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Error | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="owner-body">
+<main class="owner-shell-narrow">
+    <section class="owner-page">
+        <div class="inline-flex items-center rounded-full bg-rose-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-rose-700 shadow-sm">
+            Incidencia registrada
+        </div>
+
+        <section class="owner-card mt-5">
+            <div class="space-y-3">
+                <h1 class="owner-title" th:text="${title}">Ha ocurrido un problema</h1>
+                <p class="owner-copy max-w-2xl" th:text="${message}">Hemos guardado la incidencia para revisarla desde administración.</p>
+                <p class="owner-note max-w-2xl" th:text="${nextStep}">Código de incidencia: INC-1</p>
+            </div>
+
+            <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+                <a class="owner-button-primary justify-center"
+                   th:href="${homeHref != null ? homeHref : '/bookings'}"
+                   th:text="${homeLabel != null ? homeLabel : 'Volver al inicio'}">Volver al inicio</a>
+                <a class="owner-button-secondary justify-center" th:href="@{/login}">Ir al login</a>
+            </div>
+        </section>
+    </section>
+</main>
+</body>
+</html>

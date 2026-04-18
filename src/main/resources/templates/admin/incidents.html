@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Incidencias | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="mono-body antialiased">
+<main class="mono-app">
+    <aside class="mono-sidebar-shell" th:replace="~{admin/fragments :: sidebar('incidents')}"></aside>
+
+    <section class="mono-content">
+        <header th:replace="~{admin/fragments :: topbar('Errores de owner, huéspedes y admin')}"></header>
+
+        <div class="mono-page">
+            <div class="mono-page-head">
+                <h1 class="mono-page-title">Incidencias</h1>
+                <nav class="mono-breadcrumb">
+                    <span>Admin</span>
+                    <span>/</span>
+                    <span class="mono-breadcrumb-active">Incidencias</span>
+                </nav>
+            </div>
+
+            <div class="mono-alert-success" th:if="${flashMessage != null and flashKind == 'success'}">
+                <p th:text="${flashMessage}">Acción completada.</p>
+            </div>
+            <div class="mono-alert-error" th:if="${flashMessage != null and flashKind == 'error'}">
+                <p th:text="${flashMessage}">Ha ocurrido un error.</p>
+            </div>
+            <div class="mono-alert-error" th:if="${incidentSummary.openCount > 0}">
+                <div class="mono-alert-row">
+                    <p>
+                        <strong th:text="${incidentSummary.openCount}">1</strong>
+                        <span> incidencia(s) nueva(s). Revisa el área, ruta y detalle técnico antes de marcar como resuelta.</span>
+                    </p>
+                    <a class="mono-panel-link" th:href="@{/admin/incidents(status='OPEN')}">Ver abiertas</a>
+                </div>
+            </div>
+
+            <section class="mono-layout">
+                <div class="mono-main">
+                    <section class="mono-panel">
+                        <div class="mono-panel-strip">
+                            <h2 class="mono-panel-title">Qué mirar primero</h2>
+                            <a class="mono-panel-link" th:href="@{/admin/incidents(status='ACTIVE')}">Solo activas</a>
+                        </div>
+                        <div class="mono-panel-body">
+                            <div class="mono-status-list">
+                                <div class="mono-status-row">
+                                    <div class="mono-status-main">
+                                        <span class="mono-status-dot" th:classappend="${incidentSummary.openCount > 0 ? ' mono-status-dot-red' : ' mono-status-dot-green'}"></span>
+                                        <div>
+                                            <p class="mono-status-label">Errores sin revisar</p>
+                                            <p class="mono-status-copy">Son el primer foco operativo: owner, huéspedes públicos o admin.</p>
+                                        </div>
+                                    </div>
+                                    <span class="mono-status-value" th:text="${incidentSummary.openCount}">0</span>
+                                </div>
+                                <div class="mono-status-row">
+                                    <div class="mono-status-main">
+                                        <span class="mono-status-dot" th:classappend="${incidentSummary.activeCount > 0 ? ' mono-status-dot-amber' : ' mono-status-dot-green'}"></span>
+                                        <div>
+                                            <p class="mono-status-label">Seguimiento pendiente</p>
+                                            <p class="mono-status-copy">Abiertas y revisadas que todavía no se han cerrado.</p>
+                                        </div>
+                                    </div>
+                                    <span class="mono-status-value" th:text="${incidentSummary.activeCount}">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="mono-table-panel">
+                        <div class="mono-panel-strip">
+                            <div>
+                                <h2 class="mono-panel-title">Registro de incidencias</h2>
+                                <p class="mono-compact-copy">Una fila por error inesperado. El código INC ayuda a localizar lo que haya visto el usuario.</p>
+                            </div>
+                            <a class="mono-panel-link" th:href="@{/admin}">Volver al resumen</a>
+                        </div>
+                        <div class="mono-panel-body">
+                            <form class="mono-filter-bar" method="get" th:action="@{/admin/incidents}">
+                                <label class="block">
+                                    <span class="mono-table-meta block">Estado</span>
+                                    <select class="mono-field-input mt-1 min-w-48" name="status">
+                                        <option value="ACTIVE" th:selected="${selectedStatus == 'ACTIVE'}">Activas</option>
+                                        <option value="OPEN" th:selected="${selectedStatus == 'OPEN'}">Abiertas</option>
+                                        <option value="REVIEWED" th:selected="${selectedStatus == 'REVIEWED'}">Revisadas</option>
+                                        <option value="RESOLVED" th:selected="${selectedStatus == 'RESOLVED'}">Resueltas</option>
+                                        <option value="ALL" th:selected="${selectedStatus == 'ALL'}">Todas</option>
+                                    </select>
+                                </label>
+                                <button class="mono-btn-secondary sm:w-auto" type="submit">Aplicar filtro</button>
+                            </form>
+                        </div>
+                        <div th:if="${!#lists.isEmpty(incidents)}">
+                            <table class="mono-table">
+                                <thead>
+                                <tr>
+                                    <th>Incidencia</th>
+                                    <th>Área</th>
+                                    <th>Estado</th>
+                                    <th>Contexto</th>
+                                    <th>Detalle</th>
+                                    <th>Acción</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="row : ${incidents}">
+                                    <td>
+                                        <p class="mono-table-strong" th:text="${row.code}">INC-1</p>
+                                        <p class="mono-table-meta" th:text="${#temporals.format(row.createdAt, 'dd/MM/yyyy HH:mm')}">18/04/2026 10:15</p>
+                                    </td>
+                                    <td>
+                                        <p class="mono-table-strong" th:text="${row.area.label}">Owner</p>
+                                        <p class="mono-table-meta" th:text="${row.severity.label}">Error</p>
+                                    </td>
+                                    <td>
+                                        <span class="mono-pill" th:classappend="${' ' + row.toneClass()}" th:text="${row.status.label}">Abierta</span>
+                                    </td>
+                                    <td>
+                                        <p class="mono-table-strong" th:text="${row.method + ' ' + row.path}">GET /bookings</p>
+                                        <p class="mono-table-meta" th:if="${row.username != null}" th:text="${'Usuario ' + row.username}">Usuario admin</p>
+                                        <p class="mono-table-meta" th:if="${row.bookingId != null}" th:text="${'Estancia #' + row.bookingId}">Estancia #1</p>
+                                        <p class="mono-table-meta" th:if="${row.guestId != null}" th:text="${'Huésped #' + row.guestId}">Huésped #1</p>
+                                        <p class="mono-table-meta" th:if="${row.communicationId != null}" th:text="${'Comunicación #' + row.communicationId}">Comunicación #1</p>
+                                    </td>
+                                    <td>
+                                        <p class="mono-table-strong" th:text="${row.message}">NullPointerException</p>
+                                        <p class="mono-table-meta mt-1" th:if="${row.technicalDetail != null}" th:text="${row.technicalDetail}">Detalle técnico</p>
+                                        <details class="mono-technical-details" th:if="${row.stackTrace != null}">
+                                            <summary class="mono-technical-summary">Stack trace</summary>
+                                            <pre class="mono-raw-box mono-raw-pre" th:text="${row.stackTrace}">stack</pre>
+                                        </details>
+                                    </td>
+                                    <td class="mono-table-actions">
+                                        <form th:if="${row.canMarkReviewed()}" th:action="@{|/admin/incidents/${row.incidentId}/review|}" method="post">
+                                            <input type="hidden" name="status" th:value="${selectedStatus}">
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <button class="mono-panel-link" type="submit">Marcar revisada</button>
+                                        </form>
+                                        <form th:if="${row.canMarkResolved()}" th:action="@{|/admin/incidents/${row.incidentId}/resolve|}" method="post">
+                                            <input type="hidden" name="status" th:value="${selectedStatus}">
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <button class="mono-panel-link" type="submit">Resolver</button>
+                                        </form>
+                                        <a class="mono-panel-link"
+                                           th:if="${row.communicationId != null}"
+                                           th:href="@{|/admin/ses/communications/${row.communicationId}|}">Ver trazabilidad SES</a>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mono-panel-body" th:if="${#lists.isEmpty(incidents)}">
+                            <p class="mono-compact-copy">No hay incidencias con el filtro actual.</p>
+                        </div>
+                    </section>
+                </div>
+
+                <aside class="mono-rail">
+                    <section class="mono-message">
+                        <p class="mono-message-label">Criterio operativo</p>
+                        <p class="mono-message-copy">Abierta significa que nadie la ha mirado. Revisada significa que está identificada. Resuelta significa que ya no requiere acción.</p>
+                        <a class="mono-message-link" th:href="@{/admin/incidents(status='OPEN')}">Ver abiertas</a>
+                    </section>
+                </aside>
+            </section>
+        </div>
+    </section>
+</main>
+</body>
+</html>

@@ -11,7 +11,9 @@ import es.checkpol.domain.Guest;
 import es.checkpol.domain.GuestReviewStatus;
 import es.checkpol.domain.GuestSex;
 import es.checkpol.domain.GuestSubmissionSource;
+import es.checkpol.domain.GeneratedCommunication;
 import es.checkpol.domain.PaymentType;
+import es.checkpol.infrastructure.xml.TravelerPartXmlGenerator;
 import es.checkpol.repository.AccommodationRepository;
 import es.checkpol.repository.BookingRepository;
 import es.checkpol.repository.GeneratedCommunicationRepository;
@@ -36,12 +38,14 @@ class BookingServiceTest {
     private final GuestRepository guestRepository = Mockito.mock(GuestRepository.class);
     private final GeneratedCommunicationRepository generatedCommunicationRepository = Mockito.mock(GeneratedCommunicationRepository.class);
     private final CurrentAppUserService currentAppUserService = Mockito.mock(CurrentAppUserService.class);
+    private final TravelerPartXmlGenerator travelerPartXmlGenerator = new TravelerPartXmlGenerator();
     private final BookingService bookingService = new BookingService(
         bookingRepository,
         accommodationRepository,
         guestRepository,
         generatedCommunicationRepository,
-        currentAppUserService
+        currentAppUserService,
+        travelerPartXmlGenerator
     );
 
     @Test
@@ -114,6 +118,62 @@ class BookingServiceTest {
         assertEquals(true, details.readyForTravelerPart());
         assertEquals(false, details.guestCountMismatch());
         assertEquals(BookingOperationalStatus.READY_FOR_XML, details.operationalStatus());
+    }
+
+    @Test
+    void detectsWhenLatestCommunicationMatchesCurrentXml() {
+        Booking booking = sampleBooking(1);
+        Guest guest = sampleGuest(booking, 1L, GuestReviewStatus.REVIEWED, sampleSpanishAddress(booking, "28079"));
+        GeneratedCommunication communication = new GeneratedCommunication(
+            booking,
+            1,
+            java.time.OffsetDateTime.now(),
+            travelerPartXmlGenerator.generate(booking, List.of(guest))
+        );
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(bookingRepository.findDetailById(1L, 7L)).thenReturn(Optional.of(booking));
+        Mockito.when(guestRepository.findAllByBookingIdAndBookingOwnerIdOrderByIdAsc(1L, 7L)).thenReturn(List.of(guest));
+        Mockito.when(generatedCommunicationRepository.findAllByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(1L, 7L)).thenReturn(List.of(communication));
+
+        BookingDetails details = bookingService.getDetails(1L);
+
+        assertEquals(true, details.lastGeneratedCommunicationMatchesCurrentXml());
+    }
+
+    @Test
+    void detectsWhenGuestChangeMakesLatestCommunicationOutdated() {
+        Booking booking = sampleBooking(1);
+        Guest guest = sampleGuest(booking, 1L, GuestReviewStatus.REVIEWED, sampleSpanishAddress(booking, "28079"));
+        GeneratedCommunication communication = new GeneratedCommunication(
+            booking,
+            1,
+            java.time.OffsetDateTime.now(),
+            travelerPartXmlGenerator.generate(booking, List.of(guest))
+        );
+        guest.update(
+            guest.getFirstName(),
+            "Nieto",
+            guest.getLastName2(),
+            guest.getDocumentType(),
+            guest.getDocumentNumber(),
+            guest.getDocumentSupport(),
+            guest.getBirthDate(),
+            guest.getNationality(),
+            guest.getSex(),
+            guest.getAddress(),
+            guest.getPhone(),
+            guest.getPhone2(),
+            guest.getEmail(),
+            guest.getRelationship()
+        );
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(bookingRepository.findDetailById(1L, 7L)).thenReturn(Optional.of(booking));
+        Mockito.when(guestRepository.findAllByBookingIdAndBookingOwnerIdOrderByIdAsc(1L, 7L)).thenReturn(List.of(guest));
+        Mockito.when(generatedCommunicationRepository.findAllByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(1L, 7L)).thenReturn(List.of(communication));
+
+        BookingDetails details = bookingService.getDetails(1L);
+
+        assertEquals(false, details.lastGeneratedCommunicationMatchesCurrentXml());
     }
 
     @Test

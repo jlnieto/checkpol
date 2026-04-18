@@ -13,6 +13,7 @@ import es.checkpol.repository.AccommodationRepository;
 import es.checkpol.repository.BookingRepository;
 import es.checkpol.repository.GeneratedCommunicationRepository;
 import es.checkpol.repository.GuestRepository;
+import es.checkpol.infrastructure.xml.TravelerPartXmlGenerator;
 import es.checkpol.web.BookingForm;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,19 +35,22 @@ public class BookingService {
     private final GuestRepository guestRepository;
     private final GeneratedCommunicationRepository generatedCommunicationRepository;
     private final CurrentAppUserService currentAppUserService;
+    private final TravelerPartXmlGenerator travelerPartXmlGenerator;
 
     public BookingService(
         BookingRepository bookingRepository,
         AccommodationRepository accommodationRepository,
         GuestRepository guestRepository,
         GeneratedCommunicationRepository generatedCommunicationRepository,
-        CurrentAppUserService currentAppUserService
+        CurrentAppUserService currentAppUserService,
+        TravelerPartXmlGenerator travelerPartXmlGenerator
     ) {
         this.bookingRepository = bookingRepository;
         this.accommodationRepository = accommodationRepository;
         this.guestRepository = guestRepository;
         this.generatedCommunicationRepository = generatedCommunicationRepository;
         this.currentAppUserService = currentAppUserService;
+        this.travelerPartXmlGenerator = travelerPartXmlGenerator;
     }
 
     @Transactional(readOnly = true)
@@ -57,6 +61,7 @@ public class BookingService {
             List<Guest> guests = guestRepository.findAllByBookingIdAndBookingOwnerIdOrderByIdAsc(booking.getId(), currentUserId);
             List<GeneratedCommunication> communications = generatedCommunicationRepository.findAllByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(booking.getId(), currentUserId);
             int generatedCount = communications.size();
+            GeneratedCommunication lastCommunication = communications.isEmpty() ? null : communications.getFirst();
             ReadinessAssessment assessment = assessReadiness(booking, guests);
             items.add(new BookingListItem(
                 booking,
@@ -68,7 +73,8 @@ public class BookingService {
                 assessment.pendingReviewGuestCount(),
                 assessment.guestCountMismatch(),
                 assessment.blockingSummary(),
-                buildCommunicationStatusSummary(communications.isEmpty() ? null : communications.getFirst())
+                buildCommunicationStatusSummary(lastCommunication),
+                lastCommunication == null ? null : lastCommunication.getDispatchStatus()
             ));
         }
         return items;
@@ -154,6 +160,7 @@ public class BookingService {
         List<Guest> guests = guestRepository.findAllByBookingIdAndBookingOwnerIdOrderByIdAsc(id, currentUserId);
         List<GeneratedCommunication> communications = generatedCommunicationRepository.findAllByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(id, currentUserId);
         ReadinessAssessment assessment = assessReadiness(booking, guests);
+        GeneratedCommunication lastCommunication = communications.isEmpty() ? null : communications.getFirst();
         return new BookingDetails(
             booking,
             guests,
@@ -162,7 +169,8 @@ public class BookingService {
             assessment.guestCountMismatch(),
             assessment.readyForTravelerPart(),
             booking.getOwner() != null && booking.getOwner().hasSesWebServiceConfiguration(),
-            communications.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(communications.getFirst()),
+            lastCommunication == null ? java.util.Optional.empty() : java.util.Optional.of(lastCommunication),
+            latestCommunicationMatchesCurrentXml(booking, guests, assessment.readyForTravelerPart(), lastCommunication),
             communications.size(),
             communications,
             booking.getSelfServiceToken() == null || booking.getSelfServiceExpiresAt() == null
@@ -179,6 +187,18 @@ public class BookingService {
             assessment.blockingMessage(),
             assessment.blockingReasons()
         );
+    }
+
+    private boolean latestCommunicationMatchesCurrentXml(
+        Booking booking,
+        List<Guest> guests,
+        boolean readyForTravelerPart,
+        GeneratedCommunication lastCommunication
+    ) {
+        if (!readyForTravelerPart || lastCommunication == null) {
+            return false;
+        }
+        return lastCommunication.getXmlContent().equals(travelerPartXmlGenerator.generate(booking, guests));
     }
 
     private void validateDates(BookingForm form) {
@@ -255,6 +275,9 @@ public class BookingService {
         return switch (communication.getDispatchStatus()) {
             case XML_READY -> "XML preparado para descargar.";
             case SUBMITTED_TO_SES -> "Enviada a SES. Falta consultar el lote.";
+            case SES_RESPONSE_NEEDS_REVIEW -> communication.getSesResponseDescription() == null || communication.getSesResponseDescription().isBlank()
+                ? "SES ha respondido, pero hace falta revisión técnica."
+                : communication.getSesResponseDescription();
             case SES_PROCESSED -> communication.getSesCommunicationCode() == null || communication.getSesCommunicationCode().isBlank()
                 ? "SES la ha procesado correctamente."
                 : "SES la ha procesado. Código: " + communication.getSesCommunicationCode() + ".";

@@ -22,8 +22,12 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AdminSesMonitoringServiceTest {
@@ -42,8 +46,9 @@ class AdminSesMonitoringServiceTest {
             owner("ana", false, false)
         ));
         when(generatedCommunicationRepository.countByDispatchStatus(CommunicationDispatchStatus.SUBMITTED_TO_SES)).thenReturn(2L);
-        when(generatedCommunicationRepository.countByDispatchStatus(CommunicationDispatchStatus.SUBMISSION_FAILED)).thenReturn(1L);
-        when(generatedCommunicationRepository.countByDispatchStatus(CommunicationDispatchStatus.SES_PROCESSING_ERROR)).thenReturn(3L);
+        when(generatedCommunicationRepository.countByDispatchStatusAndSesProblemReviewedAtIsNull(CommunicationDispatchStatus.SUBMISSION_FAILED)).thenReturn(1L);
+        when(generatedCommunicationRepository.countByDispatchStatusAndSesProblemReviewedAtIsNull(CommunicationDispatchStatus.SES_PROCESSING_ERROR)).thenReturn(2L);
+        when(generatedCommunicationRepository.countByDispatchStatusAndSesProblemReviewedAtIsNull(CommunicationDispatchStatus.SES_RESPONSE_NEEDS_REVIEW)).thenReturn(1L);
         when(pollingSchedulerProvider.getIfAvailable()).thenReturn(new SesSubmissionPollingScheduler(generatedCommunicationRepository, sesCommunicationGateway));
 
         AdminSesMonitoringService service = new AdminSesMonitoringService(
@@ -139,6 +144,92 @@ class AdminSesMonitoringServiceTest {
         assertEquals("L-999", retry.getSesLoteCode());
     }
 
+    @Test
+    void doesNotOfferRetryForDuplicateSubmissionFailure() {
+        AppUser owner = owner("joana", true, true);
+        GeneratedCommunication source = duplicateFailedCommunication(owner);
+        when(generatedCommunicationRepository.findTop100ByDispatchStatusInAndSesProblemReviewedAtIsNullOrderByGeneratedAtDesc(List.of(
+            CommunicationDispatchStatus.SES_RESPONSE_NEEDS_REVIEW,
+            CommunicationDispatchStatus.SUBMISSION_FAILED,
+            CommunicationDispatchStatus.SES_PROCESSING_ERROR
+        ))).thenReturn(List.of(source));
+        when(pollingSchedulerProvider.getIfAvailable()).thenReturn(new SesSubmissionPollingScheduler(generatedCommunicationRepository, sesCommunicationGateway));
+
+        AdminSesMonitoringService service = new AdminSesMonitoringService(
+            generatedCommunicationRepository,
+            appUserRepository,
+            sesCommunicationGateway,
+            new DefaultResourceLoader(),
+            new SesWsSslContextFactory(),
+            pollingSchedulerProvider,
+            "https://pre-ses",
+            "",
+            "",
+            "PKCS12",
+            60000
+        );
+
+        List<AdminSesMonitoringService.SesCommunicationRow> rows = service.findRecentCommunications(null, true);
+
+        assertEquals(1, rows.size());
+        assertFalse(rows.getFirst().canRetry());
+    }
+
+    @Test
+    void marksSesProblemAsReviewed() {
+        AppUser owner = owner("joana", true, true);
+        GeneratedCommunication source = failedCommunication(owner);
+        when(generatedCommunicationRepository.findAdminDetailById(5L)).thenReturn(Optional.of(source));
+        when(pollingSchedulerProvider.getIfAvailable()).thenReturn(new SesSubmissionPollingScheduler(generatedCommunicationRepository, sesCommunicationGateway));
+
+        AdminSesMonitoringService service = new AdminSesMonitoringService(
+            generatedCommunicationRepository,
+            appUserRepository,
+            sesCommunicationGateway,
+            new DefaultResourceLoader(),
+            new SesWsSslContextFactory(),
+            pollingSchedulerProvider,
+            "https://pre-ses",
+            "",
+            "",
+            "PKCS12",
+            60000
+        );
+
+        service.markCommunicationProblemReviewed(5L, "admin");
+
+        assertNotNull(source.getSesProblemReviewedAt());
+        assertEquals("admin", source.getSesProblemReviewedBy());
+        assertFalse(source.canMarkSesProblemReviewed());
+    }
+
+    @Test
+    void rejectsAdminRetryForDuplicateSubmissionFailure() {
+        AppUser owner = owner("joana", true, true);
+        GeneratedCommunication source = duplicateFailedCommunication(owner);
+        when(generatedCommunicationRepository.findAdminDetailById(5L)).thenReturn(Optional.of(source));
+        when(pollingSchedulerProvider.getIfAvailable()).thenReturn(new SesSubmissionPollingScheduler(generatedCommunicationRepository, sesCommunicationGateway));
+
+        AdminSesMonitoringService service = new AdminSesMonitoringService(
+            generatedCommunicationRepository,
+            appUserRepository,
+            sesCommunicationGateway,
+            new DefaultResourceLoader(),
+            new SesWsSslContextFactory(),
+            pollingSchedulerProvider,
+            "https://pre-ses",
+            "",
+            "",
+            "PKCS12",
+            60000
+        );
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> service.retryCommunication(5L));
+
+        assertEquals("No reintentes este envío desde admin: SES ya lo ha marcado como lote duplicado. Corrige la estancia o los huéspedes antes de generar un nuevo parte.", exception.getMessage());
+        verify(sesCommunicationGateway, never()).submitTravelerPart(owner, source.getXmlContent());
+    }
+
     private AppUser owner(String username, boolean active, boolean withWsConfiguration) {
         OffsetDateTime now = OffsetDateTime.parse("2026-04-04T10:00:00Z");
         return withWsConfiguration
@@ -171,6 +262,20 @@ class AdminSesMonitoringServiceTest {
             CommunicationDispatchStatus.XML_READY
         );
         communication.registerFailedSesSubmission(OffsetDateTime.parse("2026-04-04T10:05:00Z"), null, "timeout");
+        return communication;
+    }
+
+    private GeneratedCommunication duplicateFailedCommunication(AppUser owner) {
+        Booking booking = booking(owner);
+        GeneratedCommunication communication = new GeneratedCommunication(
+            booking,
+            1,
+            OffsetDateTime.parse("2026-04-04T10:00:00Z"),
+            "<xml/>",
+            CommunicationDispatchMode.SES_WEB_SERVICE,
+            CommunicationDispatchStatus.XML_READY
+        );
+        communication.registerFailedSesSubmission(OffsetDateTime.parse("2026-04-04T10:05:00Z"), 10121, "Lote duplicado");
         return communication;
     }
 

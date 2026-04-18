@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Component
 public class TravelerPartXmlGenerator {
@@ -15,8 +16,11 @@ public class TravelerPartXmlGenerator {
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'00:00:00");
 
     public String generate(BookingDetails details) {
+        return generate(details.booking(), details.guests());
+    }
+
+    public String generate(Booking booking, List<Guest> guests) {
         StringBuilder xml = new StringBuilder();
-        Booking booking = details.booking();
 
         xml.append("<ns2:peticion xmlns:ns2=\"http://www.neg.hospedajes.mir.es/altaParteHospedaje\">");
         xml.append("<solicitud>");
@@ -27,7 +31,7 @@ public class TravelerPartXmlGenerator {
         xml.append(tag("fechaContrato", formatDate(booking.getContractDate())));
         xml.append(tag("fechaEntrada", formatDateTime(booking.getCheckInDate())));
         xml.append(tag("fechaSalida", formatDateTime(booking.getCheckOutDate())));
-        xml.append(tag("numPersonas", String.valueOf(details.guests().size())));
+        xml.append(tag("numPersonas", String.valueOf(guests.size())));
         xml.append("<pago>");
         xml.append(tag("tipoPago", booking.getPaymentType().name()));
         appendOptional(xml, "fechaPago", booking.getPaymentDate() == null ? null : formatDate(booking.getPaymentDate()));
@@ -37,7 +41,7 @@ public class TravelerPartXmlGenerator {
         xml.append("</pago>");
         xml.append("</contrato>");
 
-        for (Guest guest : details.guests()) {
+        for (Guest guest : guests) {
             xml.append("<persona>");
             xml.append(tag("rol", "VI"));
             xml.append(tag("nombre", guest.getFirstName()));

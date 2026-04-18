@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Nuevo huésped | Checkpol</title>
+    <title th:text="${formTitle + ' | Checkpol'}">Nuevo huésped | Checkpol</title>
     <link rel="stylesheet" th:href="@{/app.css}">
     <script th:src="@{/wizard-form.js}" defer></script>
 </head>
-<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
+<body class="owner-body">
 <main class="owner-shell">
-    <div th:replace="~{fragments/owner-menu :: ownerMenu}"></div>
+    <div th:replace="~{fragments/owner-menu :: ownerMenu('bookings')}"></div>
 
     <section class="owner-page">
         <header class="owner-header">
@@ -21,6 +21,7 @@
                 <p class="owner-kicker">Huéspedes</p>
                 <h1 class="owner-title" th:text="${formTitle}">Nuevo huésped</h1>
                 <p class="owner-copy" th:text="${details.booking.accommodation.name + ' · ' + details.booking.referenceCode}">Casita · ABC123</p>
+                <p class="owner-copy" th:if="${editingGuest}">Cambia solo lo necesario. Al guardar, Checkpol recalcula si puede reenviarse a SES.</p>
             </div>
         </header>
 
@@ -31,7 +32,7 @@
                     <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
                 </div>
 
-                <section class="public-panel overflow-hidden p-5 sm:p-6">
+                <section class="owner-wizard-panel overflow-hidden p-5 sm:p-6">
                     <div class="flex flex-col gap-4 border-b border-slate-200/80 pb-5">
                         <div class="space-y-2">
                             <p class="owner-kicker"><span data-step-progress>Paso 1 de 4</span></p>
@@ -42,6 +43,9 @@
                         <div class="h-2 overflow-hidden rounded-full bg-primary/10" aria-hidden="true">
                             <span class="block h-full w-1/4 rounded-full bg-linear-to-r from-primary to-sky-400 transition-[width] duration-200" data-step-progress-bar></span>
                         </div>
+                        <p class="rounded-2xl bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600" data-step-note-shell hidden>
+                            <span data-step-note-text></span>
+                        </p>
                     </div>
 
                     <div class="pt-5 sm:pt-6">
@@ -148,19 +152,19 @@
 
                             <div class="space-y-4" data-address-choice-shell>
                                 <div class="grid gap-3">
-                                    <label class="public-choice-card address-choice-card" data-address-choice-card th:each="address : ${addresses}">
+                                    <label class="owner-choice-card address-choice-card" data-address-choice-card th:each="address : ${addresses}">
                                         <input class="address-choice-input sr-only" th:field="*{addressId}" type="radio" th:value="${address.id}">
                                         <span class="flex items-start justify-between gap-3">
                                             <span class="min-w-0">
                                                 <span class="block text-base font-semibold text-slate-900" th:text="${address.displayLine1}">Calle Mayor 1</span>
                                                 <span class="mt-1 block text-sm leading-6 text-slate-500" th:text="${address.displayLine2}">28001 · Madrid · ESP</span>
                                             </span>
-                                            <span class="public-pill-muted address-choice-tag">Usar esta dirección</span>
+                                            <span class="owner-pill-muted address-choice-tag">Usar esta dirección</span>
                                         </span>
                                     </label>
 
                                     <button type="submit"
-                                            class="public-choice-card public-choice-card-link address-choice-card address-choice-card-secondary address-choice-card-link"
+                                            class="owner-choice-card owner-choice-card-link address-choice-card address-choice-card-secondary address-choice-card-link"
                                             data-address-choice-card
                                             th:formaction="${saveAddressDraftAction}"
                                             formmethod="post"
@@ -210,33 +214,12 @@
 
                             <div class="owner-form-actions">
                                 <button type="button" class="owner-button-secondary button-ghost" data-step-prev>Volver</button>
-                                <button class="owner-button-primary btn" type="submit">Guardar y finalizar</button>
+                                <button class="owner-button-primary btn" type="submit" th:text="${editingGuest ? submitLabel : 'Guardar y finalizar'}">Guardar y finalizar</button>
                             </div>
                         </section>
                     </div>
                 </section>
             </form>
-
-            <aside class="owner-side-stack">
-                <section class="owner-banner-soft">
-                    <p class="owner-kicker">Guía rápida</p>
-                    <div class="mt-4 owner-helper-list">
-                        <div class="owner-helper-item">
-                            <strong>Hazlo en este orden</strong>
-                            <span>Primero datos personales, luego documento, dirección y por último contacto.</span>
-                        </div>
-                        <div class="owner-helper-item">
-                            <strong>Solo pide lo necesario</strong>
-                            <span>Si un dato ya está claro o reutilizable, no hace falta volver a pensarlo.</span>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="owner-banner-soft" data-step-note-shell hidden>
-                    <p class="owner-kicker">Recuerda</p>
-                    <p class="mt-4 owner-copy" data-step-note-text></p>
-                </section>
-            </aside>
         </section>
     </section>
 </main>

@@ -25,17 +25,25 @@ public interface GeneratedCommunicationRepository extends JpaRepository<Generate
 
     long countByDispatchStatus(CommunicationDispatchStatus dispatchStatus);
 
+    long countByDispatchStatusAndSesProblemReviewedAtIsNull(CommunicationDispatchStatus dispatchStatus);
+
     long countByDispatchStatusIn(List<CommunicationDispatchStatus> statuses);
+
+    long countByDispatchStatusInAndSesProblemReviewedAtIsNull(List<CommunicationDispatchStatus> statuses);
 
     long countByBookingOwnerIdAndDispatchStatus(Long ownerId, CommunicationDispatchStatus dispatchStatus);
 
     long countByBookingOwnerIdAndDispatchStatusIn(Long ownerId, List<CommunicationDispatchStatus> statuses);
+
+    long countByBookingOwnerIdAndDispatchStatusInAndSesProblemReviewedAtIsNull(Long ownerId, List<CommunicationDispatchStatus> statuses);
 
     Optional<GeneratedCommunication> findFirstByBookingOwnerIdOrderByGeneratedAtDesc(Long ownerId);
 
     Optional<GeneratedCommunication> findFirstByBookingOwnerIdAndDispatchStatusOrderBySubmittedAtDesc(Long ownerId, CommunicationDispatchStatus dispatchStatus);
 
     Optional<GeneratedCommunication> findFirstByBookingOwnerIdAndDispatchStatusInOrderByGeneratedAtDesc(Long ownerId, List<CommunicationDispatchStatus> statuses);
+
+    Optional<GeneratedCommunication> findFirstByBookingOwnerIdAndDispatchStatusInAndSesProblemReviewedAtIsNullOrderByGeneratedAtDesc(Long ownerId, List<CommunicationDispatchStatus> statuses);
 
     @EntityGraph(attributePaths = {"booking", "booking.owner", "booking.accommodation"})
     List<GeneratedCommunication> findTop100ByOrderByGeneratedAtDesc();
@@ -44,7 +52,13 @@ public interface GeneratedCommunicationRepository extends JpaRepository<Generate
     List<GeneratedCommunication> findTop100ByDispatchStatusOrderByGeneratedAtDesc(CommunicationDispatchStatus dispatchStatus);
 
     @EntityGraph(attributePaths = {"booking", "booking.owner", "booking.accommodation"})
+    List<GeneratedCommunication> findTop100ByDispatchStatusAndSesProblemReviewedAtIsNullOrderByGeneratedAtDesc(CommunicationDispatchStatus dispatchStatus);
+
+    @EntityGraph(attributePaths = {"booking", "booking.owner", "booking.accommodation"})
     List<GeneratedCommunication> findTop100ByDispatchStatusInOrderByGeneratedAtDesc(List<CommunicationDispatchStatus> statuses);
+
+    @EntityGraph(attributePaths = {"booking", "booking.owner", "booking.accommodation"})
+    List<GeneratedCommunication> findTop100ByDispatchStatusInAndSesProblemReviewedAtIsNullOrderByGeneratedAtDesc(List<CommunicationDispatchStatus> statuses);
 
     @Query("""
         select communication

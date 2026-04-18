@@ -6,14 +6,14 @@
     <title>Datos del huésped | Checkpol</title>
     <link rel="stylesheet" th:href="@{/app.css}">
 </head>
-<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
-<main class="public-shell max-w-3xl">
-    <header class="mb-4 space-y-2 md:mb-5">
+<body class="public-body">
+<main class="public-shell public-shell-checkin">
+    <header class="public-checkin-header">
         <div class="flex flex-wrap items-center gap-2">
-            <div class="inline-flex items-center rounded-full border border-primary/15 bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary shadow-sm">
+            <div class="public-checkin-badge">
                 Check-in
             </div>
-            <div class="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/88 px-3 py-1 text-xs font-medium text-slate-600 shadow-sm">
+            <div class="public-context-chip">
                 <span class="font-semibold text-slate-900" th:text="${access.booking.accommodation.name}">Casita</span>
                 <span aria-hidden="true" class="text-slate-300">·</span>
                 <span th:text="${access.booking.referenceCode}">ABC123</span>
@@ -28,11 +28,11 @@
         </div>
     </header>
 
-    <div class="mb-4 rounded-2xl border border-emerald-300/50 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 shadow-sm"
+    <div class="public-feedback-success"
          th:if="${flashMessage}"
          th:text="${flashMessage}"></div>
 
-    <div class="mb-4 rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 shadow-sm"
+    <div class="public-feedback-warning"
          th:if="${flashError}"
          th:text="${flashError}"></div>
 
@@ -61,7 +61,7 @@
                            th:text="${access.expectedGuestCount - completedGuestCount > 0 ? access.expectedGuestCount - completedGuestCount : 0}">2</p>
                     </div>
                 </div>
-                <a class="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm transition-colors duration-150 hover:bg-primary hover:text-white"
+                <a class="public-hero-action"
                    th:href="@{${nextActionCard.href}}"
                    th:text="${'Completar datos de ' + nextActionCard.title}">Completar datos de Huésped 2</a>
                 <p class="mt-2.5 text-xs leading-5 text-slate-400">Cuando termines esta ficha, te enseñaremos el siguiente paso.</p>
@@ -100,10 +100,8 @@
                 </div>
 
                 <div class="grid gap-3" th:if="${!#lists.isEmpty(remainingPendingGuestCards)}">
-                    <a class="public-guest-card-done border border-primary/10 bg-white/84"
-                       th:each="card : ${remainingPendingGuestCards}"
-                       th:href="@{${card.href}}"
-                       >
+                    <article class="public-guest-card-pending"
+                             th:each="card : ${remainingPendingGuestCards}">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <h3 class="text-base font-bold tracking-tight text-slate-800" th:text="${card.title}">Huésped 1</h3>
@@ -112,11 +110,10 @@
                             <span class="public-pill-warning shrink-0"
                                   th:text="${card.statusLabel}">Faltan datos</span>
                         </div>
-                        <div class="mt-4 flex items-center justify-between gap-3 border-t border-slate-200/70 pt-3">
-                            <p class="text-sm font-semibold text-slate-500" th:text="${card.actionLabel}">Completar datos</p>
-                            <span class="public-guest-card-action" aria-hidden="true">›</span>
+                        <div class="public-card-footer">
+                            <p class="text-sm font-semibold text-slate-500">Completarás esta ficha después</p>
                         </div>
-                    </a>
+                    </article>
                 </div>
 
                 <div class="public-inline-note"
@@ -140,7 +137,7 @@
                                 <span class="public-pill-success shrink-0"
                                       th:text="${card.statusLabel}">Completado</span>
                             </div>
-                            <div class="mt-4 flex items-center justify-between gap-3 border-t border-slate-200/70 pt-3">
+                            <div class="public-card-footer">
                                 <p class="text-sm font-semibold text-primary" th:text="${card.actionLabel}">Editar datos</p>
                                 <span class="public-guest-card-action" aria-hidden="true">›</span>
                             </div>
@@ -148,7 +145,7 @@
                     </div>
                 </div>
 
-                <a class="public-cta-chip"
+                <a th:class="${allGuestsCompleted ? 'public-cta-chip public-cta-chip-muted' : 'public-cta-chip'}"
                    th:if="${extraGuestCard != null}"
                    th:href="@{${extraGuestCard.href}}">
                     <span class="public-cta-chip-icon" aria-hidden="true">+</span>
@@ -171,7 +168,10 @@
                 <div class="flex items-start justify-between gap-3">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Resumen y cierre</p>
-                        <p class="mt-2 text-sm leading-6 text-slate-600">Termina la ficha destacada arriba. Si viaja alguien más, usa la acción opcional y después cierra el check-in.</p>
+                        <p class="mt-2 text-sm leading-6 text-slate-600"
+                           th:text="${allGuestsCompleted} ? 'Ya puedes cerrar el check-in. Si viaja alguien más, usa la acción opcional antes de finalizar.' : 'Termina la ficha destacada arriba. Si viaja alguien más, usa la acción opcional y después cierra el check-in.'">
+                            Termina la ficha destacada arriba. Si viaja alguien más, usa la acción opcional y después cierra el check-in.
+                        </p>
                     </div>
                 </div>
                 <div class="mt-4 grid grid-cols-2 gap-3">

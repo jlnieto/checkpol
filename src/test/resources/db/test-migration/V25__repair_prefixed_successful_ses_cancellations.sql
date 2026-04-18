@@ -1,0 +1,2 @@
+-- Production repairs prefixed SES anulacionLoteResponse rows.
+-- Test databases do not contain historical rows to repair.

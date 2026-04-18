@@ -7,9 +7,9 @@
     <link rel="stylesheet" th:href="@{/app.css}">
     <script th:src="@{/booking-details.js}" defer></script>
 </head>
-<body class="bg-radial-[at_0%_0%] from-primary/12 via-background-light to-slate-50 text-slate-900 antialiased">
+<body class="owner-body">
 <main class="owner-shell booking-detail-page">
-    <div th:replace="~{fragments/owner-menu :: ownerMenu}"></div>
+    <div th:replace="~{fragments/owner-menu :: ownerMenu('bookings')}"></div>
 
     <section class="owner-page">
         <header class="owner-header">
@@ -28,16 +28,7 @@
                             <span th:text="${#temporals.format(details.booking.checkInDate, 'dd/MM/yyyy') + ' a ' + #temporals.format(details.booking.checkOutDate, 'dd/MM/yyyy')}">01/04/2026 a 05/04/2026</span>
                         </p>
                     </div>
-                    <span class="owner-status-ready"
-                          th:if="${details.readyForTravelerPart}"
-                          th:text="${details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SUBMITTED_TO_SES'
-                              ? 'Pendiente en SES'
-                              : (details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SES_PROCESSED'
-                                  ? 'Presentada en SES'
-                                  : (details.sesSubmissionAvailable ? 'Lista para presentar' : 'Lista para XML'))}">Lista para XML</span>
-                    <span class="owner-status-pending"
-                          th:if="${!details.readyForTravelerPart and details.operationalStatus.name() != 'WAITING_GUESTS'}"
-                          th:text="${details.operationalStatus.label}">Pendiente</span>
+                    <span th:class="${detailView.statusClass}" th:text="${detailView.statusLabel}">Pendiente</span>
                 </div>
             </div>
         </header>
@@ -48,74 +39,58 @@
         <div class="detail-inline-feedback" data-review-feedback hidden aria-live="polite"></div>
 
         <div class="owner-stack" data-owner-top-stack>
-            <section class="owner-banner" th:classappend="${details.readyForTravelerPart} ? '' : ' owner-banner-danger'">
+            <section th:class="${detailView.bannerClass}">
                 <div class="owner-banner-row">
                     <div class="space-y-3">
                         <p class="owner-priority-eyebrow">Siguiente paso</p>
                         <div class="space-y-2">
                             <h2 class="text-3xl font-extrabold tracking-tight text-slate-900"
-                                th:text="${details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SUBMITTED_TO_SES'
-                                    ? 'SES está procesando el envío'
-                                    : (details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SES_PROCESSED'
-                                        ? 'La comunicación ya está presentada en SES'
-                                        : (details.readyForTravelerPart
-                                            ? (details.sesSubmissionAvailable ? 'Todo está listo para presentar en SES' : 'Todo está listo para descargar el archivo')
-                                            : (((details.operationalStatus.name() == 'GUEST_COUNT_MISMATCH' and details.guestCount < details.expectedGuestCount) or details.operationalStatus.name() == 'WAITING_GUESTS')
-                                                ? (shareMessage != null ? 'Enlace preparado' : 'Faltan los datos de los huéspedes')
-                                                : (details.operationalStatus.name() == 'REVIEW_PENDING' ? 'Hay datos pendientes de revisar' : 'Todavía no se puede descargar el archivo'))))}">Todo está listo para descargar el archivo</h2>
-                            <p class="owner-copy" th:if="${details.operationalStatus.name() == 'REVIEW_PENDING'}"
-                               th:text="${details.pendingReviewGuestCount == 1 ? 'Hay 1 huésped pendiente de revisión.' : 'Hay ' + details.pendingReviewGuestCount + ' huéspedes pendientes de revisión.'}"></p>
-                            <p class="owner-copy"
-                               th:if="${((details.operationalStatus.name() == 'GUEST_COUNT_MISMATCH' and details.guestCount < details.expectedGuestCount) or details.operationalStatus.name() == 'WAITING_GUESTS') and shareMessage == null}">Envíales el enlace para que completen sus datos. Si no pueden, puedes añadirlos tú.</p>
-                            <p class="owner-copy"
-                               th:if="${((details.operationalStatus.name() == 'GUEST_COUNT_MISMATCH' and details.guestCount < details.expectedGuestCount) or details.operationalStatus.name() == 'WAITING_GUESTS') and shareMessage != null}">Ya puedes enviarlo.</p>
-                            <p class="owner-copy" th:if="${details.readyForTravelerPart}"
-                               th:text="${details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SUBMITTED_TO_SES'
-                                   ? 'El envío ya salió hacia SES. Ahora conviene consultar el estado del lote.'
-                                   : (details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SES_PROCESSED'
-                                       ? 'SES ya ha devuelto un código de comunicación para esta estancia.'
-                                       : details.guestCount + ' de ' + details.expectedGuestCount + ' huéspedes ya están listos para ' + (details.sesSubmissionAvailable ? 'presentar en SES.' : 'SES.'))}"></p>
-                            <p class="owner-copy"
-                               th:if="${!details.readyForTravelerPart and details.operationalStatus.name() != 'GUEST_COUNT_MISMATCH' and details.operationalStatus.name() != 'REVIEW_PENDING' and details.operationalStatus.name() != 'WAITING_GUESTS' and details.blockingSummary != null}"
-                               th:text="${details.blockingSummary}"></p>
+                                th:text="${detailView.heroTitle}">Todo está listo para descargar el archivo</h2>
+                            <p class="owner-copy" th:text="${detailView.heroCopy}">Revisa el siguiente paso.</p>
                         </div>
                     </div>
 
                     <div class="owner-banner-actions">
                         <a class="owner-button-primary"
-                           th:if="${details.operationalStatus.name() == 'REVIEW_PENDING'}"
-                           th:href="${details.guests.^[reviewStatus.name() == 'PENDING_REVIEW'] != null ? '/bookings/' + details.booking.id + '/guests/' + details.guests.^[reviewStatus.name() == 'PENDING_REVIEW'].id + '/review' : '#guests'}">Revisar siguiente huésped</a>
-                        <form th:if="${((details.operationalStatus.name() == 'GUEST_COUNT_MISMATCH' and details.guestCount < details.expectedGuestCount) or details.operationalStatus.name() == 'WAITING_GUESTS') and shareMessage == null}"
+                           th:if="${detailView.primaryAction == 'REVIEW_GUEST'}"
+                           th:href="${detailView.pendingReviewGuestId != null ? '/bookings/' + details.booking.id + '/guests/' + detailView.pendingReviewGuestId + '/review' : '#guests'}">Revisar siguiente huésped</a>
+                        <form th:if="${detailView.primaryAction == 'SEND_LINK'}"
                               th:action="@{|/bookings/${details.booking.id}/share-self-service-link|}" method="post">
                             <button type="submit" class="owner-button-primary w-full justify-center">Enviar enlace</button>
                         </form>
                         <button type="button"
                                 class="owner-button-primary w-full justify-center"
-                                th:if="${((details.operationalStatus.name() == 'GUEST_COUNT_MISMATCH' and details.guestCount < details.expectedGuestCount) or details.operationalStatus.name() == 'WAITING_GUESTS') and shareMessage != null}"
+                                th:if="${detailView.primaryAction == 'COPY_SHARE_MESSAGE'}"
                                 data-copy-share-message>Copiar mensaje</button>
                         <p class="text-sm leading-6 text-slate-500"
-                           th:if="${((details.operationalStatus.name() == 'GUEST_COUNT_MISMATCH' and details.guestCount < details.expectedGuestCount) or details.operationalStatus.name() == 'WAITING_GUESTS') and shareMessage != null}"
+                           th:if="${detailView.primaryAction == 'COPY_SHARE_MESSAGE'}"
                            data-copy-feedback
                            hidden
                            aria-live="polite">Copiado. Ya puedes pegarlo donde quieras.</p>
                         <a class="owner-button-secondary"
-                           th:if="${((details.operationalStatus.name() == 'GUEST_COUNT_MISMATCH' and details.guestCount < details.expectedGuestCount) or details.operationalStatus.name() == 'WAITING_GUESTS') and shareMessage != null}"
+                           th:if="${detailView.showWhatsappAction}"
                            th:href="${shareMessage.whatsappUrl}" target="_blank" rel="noopener">Abrir WhatsApp</a>
                         <a class="inline-flex items-center justify-center text-sm font-medium text-slate-500 transition duration-150 hover:text-primary"
-                           th:if="${(details.operationalStatus.name() == 'GUEST_COUNT_MISMATCH' and details.guestCount < details.expectedGuestCount) or details.operationalStatus.name() == 'WAITING_GUESTS'}"
+                           th:if="${detailView.showManualGuestAction}"
                            th:href="@{|/bookings/${details.booking.id}/guests/new|}">Añadir huésped manualmente</a>
-                        <a class="owner-button-primary" th:if="${details.operationalStatus.name() == 'GUEST_COUNT_MISMATCH' and details.guestCount >= details.expectedGuestCount}" th:href="@{|/bookings/${details.booking.id}/edit|}">Revisar estancia</a>
-                        <form th:if="${details.readyForTravelerPart and details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SUBMITTED_TO_SES'}"
-                              th:action="@{|/bookings/${details.booking.id}/communications/${details.lastGeneratedCommunication.get.id}/refresh-ses-status|}" method="post">
-                            <button type="submit" class="owner-button-primary">Consultar estado SES</button>
+                        <a class="inline-flex items-center justify-center text-sm font-medium text-slate-500 transition duration-150 hover:text-primary"
+                           th:if="${detailView.showManualGuestAction}"
+                           th:href="@{|/bookings/${details.booking.id}/edit|}">Editar estancia</a>
+                        <a class="owner-button-primary" th:if="${detailView.primaryAction == 'REVIEW_BOOKING'}" th:href="@{|/bookings/${details.booking.id}/edit|}">Revisar estancia</a>
+                        <form th:if="${detailView.primaryAction == 'REFRESH_SES'}"
+                              th:action="@{|/bookings/${details.booking.id}/communications/${detailView.lastCommunicationId}/refresh-ses-status|}" method="post">
+                            <button type="submit" class="owner-button-primary w-full justify-center">Consultar estado SES</button>
                         </form>
-                        <form th:if="${details.readyForTravelerPart and details.sesSubmissionAvailable and (!details.lastGeneratedCommunication.present or (details.lastGeneratedCommunication.get.dispatchStatus.name() != 'SUBMITTED_TO_SES' and details.lastGeneratedCommunication.get.dispatchStatus.name() != 'SES_PROCESSED'))}"
+                        <form th:if="${detailView.showCancelSesAction}"
+                              th:action="@{|/bookings/${details.booking.id}/communications/${detailView.lastCommunicationId}/cancel-ses|}" method="post">
+                            <button type="submit" class="owner-button-secondary w-full justify-center">Anular en SES</button>
+                        </form>
+                        <a class="owner-button-primary" th:if="${detailView.primaryAction == 'EDIT_BOOKING'}" th:href="@{|/bookings/${details.booking.id}/edit|}">Editar estancia</a>
+                        <form th:if="${detailView.primaryAction == 'SUBMIT_SES'}"
                               th:action="@{|/bookings/${details.booking.id}/submit-to-ses|}" method="post">
-                            <button type="submit" class="owner-button-primary">Presentar en SES</button>
+                            <button type="submit" class="owner-button-primary w-full justify-center">Presentar parte en SES</button>
                         </form>
-                        <a class="owner-button-secondary" th:if="${details.readyForTravelerPart and details.sesSubmissionAvailable}" th:href="@{|/bookings/${details.booking.id}/traveler-part.xml|}">Descargar XML</a>
-                        <a class="owner-button-primary" th:if="${details.readyForTravelerPart and !details.sesSubmissionAvailable}" th:href="@{|/bookings/${details.booking.id}/traveler-part.xml|}">Descargar archivo para SES</a>
-                        <a class="owner-button-primary" th:if="${!details.readyForTravelerPart and details.operationalStatus.name() != 'REVIEW_PENDING' and details.operationalStatus.name() != 'GUEST_COUNT_MISMATCH' and details.operationalStatus.name() != 'WAITING_GUESTS'}" th:href="@{|/bookings/${details.booking.id}/edit|}">Revisar estancia</a>
+                        <a class="owner-button-primary" th:if="${detailView.primaryAction == 'DOWNLOAD_XML'}" th:href="@{|/bookings/${details.booking.id}/traveler-part.xml|}">Descargar archivo para SES</a>
                     </div>
                 </div>
 
@@ -127,11 +102,13 @@
             <div class="owner-section-head">
                 <div>
                     <p class="owner-kicker">Huéspedes</p>
-                    <h2 class="text-2xl font-extrabold tracking-tight text-slate-900">Revisa solo lo necesario</h2>
-                    <p class="mt-2 owner-copy">Si algo ya está correcto, no hace falta tocarlo. Entra solo en las fichas que bloquean la descarga.</p>
+                    <h2 class="text-2xl font-extrabold tracking-tight text-slate-900"
+                        th:text="${detailView.sesLocked ? 'Datos enviados a SES' : 'Revisa solo lo necesario'}">Revisa solo lo necesario</h2>
+                    <p class="mt-2 owner-copy"
+                       th:text="${detailView.sesLocked ? 'Estos son los huéspedes incluidos en el parte enviado. No cambies datos salvo que anules y vuelvas a preparar la comunicación.' : 'Si algo ya está correcto, no hace falta tocarlo. Entra solo en las fichas que bloquean el siguiente paso.'}">Si algo ya está correcto, no hace falta tocarlo. Entra solo en las fichas que bloquean el siguiente paso.</p>
                 </div>
                 <a class="owner-button-secondary"
-                   th:if="${!(details.operationalStatus.name() == 'GUEST_COUNT_MISMATCH' and details.guestCount < details.expectedGuestCount) and details.operationalStatus.name() != 'WAITING_GUESTS'}"
+                   th:if="${detailView.canAddGuestFromGuestsSection}"
                    th:href="@{|/bookings/${details.booking.id}/guests/new|}">Añadir huésped</a>
             </div>
 
@@ -168,25 +145,20 @@
                            th:if="${guest.reviewStatus.name() == 'PENDING_REVIEW'}"
                            th:href="@{|/bookings/${details.booking.id}/guests/${guest.id}/review|}">Revisar huésped</a>
                         <a class="owner-button-secondary"
+                           th:if="${!detailView.sesLocked}"
                            th:href="@{|/bookings/${details.booking.id}/guests/${guest.id}/edit|}"
                            th:text="${guest.reviewStatus.name() == 'PENDING_REVIEW' ? 'Editar si hace falta' : 'Editar'}">Editar</a>
                     </div>
                 </article>
             </div>
-
-            <div class="mt-5 owner-actions"
-                 th:if="${!(details.operationalStatus.name() == 'GUEST_COUNT_MISMATCH' and details.guestCount < details.expectedGuestCount) and details.operationalStatus.name() != 'WAITING_GUESTS'}">
-                <a class="owner-button-secondary w-full justify-center sm:w-auto"
-                   th:href="@{|/bookings/${details.booking.id}/guests/new|}">Añadir otro huésped</a>
-            </div>
         </section>
 
         <section class="owner-grid-main" data-owner-secondary th:if="${details.readyForTravelerPart}">
-            <div class="owner-stack">
-                <article class="owner-card-soft">
-                    <p class="owner-kicker">Otras opciones</p>
-                    <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">Enviar un enlace para rellenar datos</h2>
-                    <p class="mt-2 owner-copy">Si no pueden completarlo contigo, puedes generar o reutilizar un enlace para que lo hagan ellos.</p>
+            <div class="owner-stack owner-detail-secondary-stack">
+                <article class="owner-card-soft" th:if="${detailView.showSelfServiceOptions}">
+                    <p class="owner-kicker">Enlace público</p>
+                    <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">Pedir datos a huéspedes</h2>
+                    <p class="mt-2 owner-copy">Usa el enlace solo si necesitas que los huéspedes completen o revisen información.</p>
                     <div class="mt-4 rounded-2xl border border-slate-200/80 bg-white px-4 py-4" th:if="${details.selfServiceAccess.present}">
                         <p class="owner-copy" th:text="${'Caduca: ' + #temporals.format(details.selfServiceAccess.get.expiresAt, 'dd/MM/yyyy HH:mm')}">Caduca: 01/04/2026 18:00</p>
                         <p class="mt-2"><a class="text-sm font-semibold text-primary" th:href="@{|/guest-access/${details.selfServiceAccess.get.token}|}" target="_blank">Abrir enlace público</a></p>
@@ -201,105 +173,27 @@
                     </div>
                 </article>
 
-                <section class="owner-card-soft" data-files-section th:if="${details.generatedCommunicationCount > 0}">
-                    <div class="space-y-2">
-                        <p class="owner-kicker">Historial</p>
-                        <h2 class="text-2xl font-extrabold tracking-tight text-slate-900">Últimos archivos generados</h2>
+                <section class="owner-card-soft" data-files-section th:if="${detailView.showCommunicationSummary}">
+                    <div class="owner-guest-top">
+                        <div>
+                            <p class="owner-kicker">Comunicación</p>
+                            <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-slate-900"
+                                th:text="${detailView.communicationSummaryTitle}">Última comunicación SES</h2>
+                        </div>
+                        <span th:class="${detailView.communicationSummaryStatusClass}"
+                              th:text="${detailView.communicationSummaryStatusLabel}">Pendiente</span>
                     </div>
-                    <p class="owner-note mt-4" th:if="${!details.readyForTravelerPart}">El archivo actual puede estar desactualizado respecto al estado de la estancia.</p>
-                    <div class="owner-list mt-4">
-                        <article class="owner-guest-card" th:each="communication : ${details.generatedCommunications}">
-                            <div class="owner-guest-top">
-                                <div>
-                                    <h3 class="owner-guest-name" th:text="${communication.version == details.generatedCommunicationCount ? 'Archivo actual v' + communication.version : 'Archivo v' + communication.version}">Archivo actual v2</h3>
-                                    <p class="owner-guest-document" th:text="${#temporals.format(communication.generatedAt, 'dd/MM/yyyy HH:mm')}">01/04/2026 12:00</p>
-                                </div>
-                                <span class="owner-status-ready"
-                                      th:text="${communication.dispatchMode.name() == 'SES_WEB_SERVICE'
-                                          ? (communication.dispatchStatus.name() == 'SUBMITTED_TO_SES'
-                                              ? 'Pendiente en SES'
-                                              : (communication.dispatchStatus.name() == 'SES_PROCESSED'
-                                                  ? 'Procesada en SES'
-                                                  : 'Error en SES'))
-                                          : communication.downloadCount + ' descargas'}">2 descargas</span>
-                            </div>
-                            <p class="owner-muted-note" th:if="${communication.lastDownloadedAt != null}"
-                               th:text="${'Última descarga: ' + #temporals.format(communication.lastDownloadedAt, 'dd/MM/yyyy HH:mm')}"></p>
-                            <p class="owner-muted-note" th:if="${communication.sesLoteCode != null}"
-                               th:text="${'Lote SES: ' + communication.sesLoteCode}"></p>
-                            <p class="owner-muted-note" th:if="${communication.sesCommunicationCode != null}"
-                               th:text="${'Código SES: ' + communication.sesCommunicationCode}"></p>
-                            <p class="owner-muted-note" th:if="${communication.sesLastStatusCheckedAt != null}"
-                               th:text="${'Última consulta: ' + #temporals.format(communication.sesLastStatusCheckedAt, 'dd/MM/yyyy HH:mm')}"></p>
-                            <p class="owner-muted-note" th:if="${communication.sesProcessingStateDescription != null}"
-                               th:text="${communication.sesProcessingStateDescription}"></p>
-                            <p class="owner-muted-note" th:if="${communication.dispatchStatus.name() == 'SUBMISSION_FAILED' and communication.sesResponseDescription != null}"
-                               th:text="${communication.sesResponseDescription}"></p>
-                            <p class="owner-muted-note" th:if="${communication.dispatchStatus.name() == 'SES_PROCESSING_ERROR' and communication.sesProcessingErrorDescription != null}"
-                               th:text="${communication.sesProcessingErrorDescription}"></p>
-                            <div class="mt-4 owner-actions">
-                                <form th:if="${communication.sesLoteCode != null and communication.dispatchStatus.name() == 'SUBMITTED_TO_SES'}"
-                                      th:action="@{|/bookings/${details.booking.id}/communications/${communication.id}/refresh-ses-status|}" method="post">
-                                    <button type="submit" class="owner-button-primary">Consultar estado SES</button>
-                                </form>
-                                <form th:if="${communication.sesLoteCode != null and communication.dispatchStatus.name() != 'SES_CANCELLED'}"
-                                      th:action="@{|/bookings/${details.booking.id}/communications/${communication.id}/cancel-ses|}" method="post">
-                                    <button type="submit" class="owner-button-secondary">Anular en SES</button>
-                                </form>
-                                <a class="owner-button-secondary" th:href="@{|/bookings/${details.booking.id}/communications/${communication.id}.xml|}">Descargar este archivo</a>
-                            </div>
-                        </article>
+                    <p class="mt-4 owner-copy" th:text="${detailView.communicationSummaryCopy}">Estado de la última comunicación.</p>
+                    <p class="mt-2 owner-muted-note"
+                       th:text="${detailView.communicationSummaryMeta + ' · ' + #temporals.format(details.lastGeneratedCommunication.get.generatedAt, 'dd/MM/yyyy HH:mm')}">Versión 1 · 01/04/2026 12:00</p>
+                    <div class="mt-4 owner-actions"
+                         th:if="${!details.sesSubmissionAvailable}">
+                        <a class="owner-button-secondary"
+                           th:href="@{|/bookings/${details.booking.id}/communications/${detailView.lastCommunicationId}.xml|}">Descargar XML</a>
                     </div>
                 </section>
             </div>
 
-            <aside class="owner-side-stack">
-                <section class="owner-banner-soft">
-                    <p class="owner-kicker">Archivo para SES</p>
-                    <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-slate-900"
-                        th:text="${details.sesSubmissionAvailable ? '¿Está lista para presentar?' : '¿Está listo para descargar?'}">¿Está listo para descargar?</h2>
-                    <p class="mt-2 owner-copy" th:if="${details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SUBMITTED_TO_SES'}">Ya se ha enviado a SES. El siguiente paso es consultar el lote hasta que devuelva el código final.</p>
-                    <p class="mt-2 owner-copy" th:if="${details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SES_PROCESSED'}">SES ya ha confirmado esta comunicación. Conserva el XML y el código como trazabilidad.</p>
-                    <p class="mt-2 owner-copy" th:if="${details.readyForTravelerPart and details.sesSubmissionAvailable and (!details.lastGeneratedCommunication.present or (details.lastGeneratedCommunication.get.dispatchStatus.name() != 'SUBMITTED_TO_SES' and details.lastGeneratedCommunication.get.dispatchStatus.name() != 'SES_PROCESSED'))}">Sí. Ya puedes presentarla en SES y, si quieres, descargar el XML como copia.</p>
-                    <p class="mt-2 owner-copy" th:if="${details.readyForTravelerPart and !details.sesSubmissionAvailable}">Sí. Ya puedes descargar el archivo y guardarlo como trazabilidad de la estancia.</p>
-                    <p class="mt-2 owner-copy" th:if="${!details.readyForTravelerPart}">Todavía no. Primero completa el paso indicado arriba y revisa lo pendiente.</p>
-                    <div class="mt-4 owner-actions" th:if="${details.readyForTravelerPart and details.lastGeneratedCommunication.present and details.lastGeneratedCommunication.get.dispatchStatus.name() == 'SUBMITTED_TO_SES'}">
-                        <form th:action="@{|/bookings/${details.booking.id}/communications/${details.lastGeneratedCommunication.get.id}/refresh-ses-status|}" method="post">
-                            <button type="submit" class="owner-button-primary">Consultar estado SES</button>
-                        </form>
-                        <a class="owner-button-secondary" th:href="@{|/bookings/${details.booking.id}/traveler-part.xml|}">Descargar XML</a>
-                    </div>
-                    <div class="mt-4 owner-actions" th:if="${details.readyForTravelerPart and details.sesSubmissionAvailable and (!details.lastGeneratedCommunication.present or (details.lastGeneratedCommunication.get.dispatchStatus.name() != 'SUBMITTED_TO_SES' and details.lastGeneratedCommunication.get.dispatchStatus.name() != 'SES_PROCESSED'))}">
-                        <form th:action="@{|/bookings/${details.booking.id}/submit-to-ses|}" method="post">
-                            <button type="submit" class="owner-button-primary">Presentar en SES</button>
-                        </form>
-                        <a class="owner-button-secondary" th:href="@{|/bookings/${details.booking.id}/traveler-part.xml|}">Descargar XML</a>
-                    </div>
-                    <div class="mt-4 owner-actions" th:if="${details.readyForTravelerPart and !details.sesSubmissionAvailable}">
-                        <a class="owner-button-primary" th:href="@{|/bookings/${details.booking.id}/traveler-part.xml|}">Descargar archivo para SES</a>
-                    </div>
-                    <div class="mt-4 owner-helper-list" th:if="${!details.readyForTravelerPart}">
-                        <div class="owner-helper-item">
-                            <strong>Qué suele faltar</strong>
-                            <span>Huéspedes sin revisar, personas pendientes o datos mínimos aún incompletos.</span>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="owner-banner-soft">
-                    <p class="owner-kicker">Criterio de revisión</p>
-                    <div class="mt-4 owner-helper-list">
-                        <div class="owner-helper-item">
-                            <strong>No repases todo</strong>
-                            <span>Revisa solo los huéspedes marcados como pendientes o con datos incompletos.</span>
-                        </div>
-                        <div class="owner-helper-item">
-                            <strong>Descarga al final</strong>
-                            <span th:text="${details.sesSubmissionAvailable ? 'Cuando el estado pase a listo, podrás presentarla en SES o descargar el XML.' : 'Cuando el estado pase a listo, la estancia ya estará preparada para SES.'}">Cuando el estado pase a listo, la estancia ya estará preparada para SES.</span>
-                        </div>
-                    </div>
-                </section>
-            </aside>
         </section>
     </section>
 </main>
