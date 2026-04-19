@@ -226,6 +226,7 @@ Documentacion principal del proyecto:
 - `docs/architecture.md`
 - `docs/domain-model.md`
 - `docs/mvp-scope.md`
+- `docs/billing-stripe.md`
 - `docs/development-guidelines.md`
 - `docs/roadmap.md`
 - `docs/municipality-catalog.md`

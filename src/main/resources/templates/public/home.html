@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Checkpol | Trámite de huéspedes para alquileres turísticos</title>
+    <meta name="description" content="Checkpol ayuda a propietarios de viviendas turísticas a recoger los datos de sus huéspedes y preparar la comunicación obligatoria antes de la llegada.">
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="home-body">
+<header class="home-header">
+    <a class="home-brand" th:href="@{/}" aria-label="Checkpol">
+        <span class="home-brand-mark">C</span>
+        <span>Checkpol</span>
+    </a>
+    <a class="home-login-link" th:href="@{/login}">Entrar</a>
+</header>
+
+<main>
+    <section class="home-hero">
+        <div class="home-hero-copy">
+            <p class="home-kicker">Para propietarios de viviendas turísticas</p>
+            <h1>Que tus huéspedes lleguen sin el trámite pendiente</h1>
+            <p class="home-lead">
+                Checkpol te guía para pedir los datos, ver qué falta y dejar preparado lo que tienes que presentar antes de la entrada.
+            </p>
+            <div class="home-actions">
+                <a class="home-button-primary" href="mailto:hola@checkpol.es?subject=Quiero%20contratar%20Checkpol">Contratar Checkpol</a>
+                <a class="home-button-secondary" th:href="@{/login}">Ya tengo cuenta</a>
+            </div>
+            <p class="home-price-note">3,90 € al mes por alojamiento.</p>
+        </div>
+
+        <div class="home-hero-visual" aria-label="Vivienda preparada para recibir huéspedes">
+            <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"
+                 alt="Salón luminoso preparado para la llegada de huéspedes">
+            <div class="home-status-panel">
+                <span class="home-status-label">Próxima llegada</span>
+                <strong>Faltan datos de 1 huésped</strong>
+                <span>Envía el enlace y revisa la reserva antes de la entrada.</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="home-empathy">
+        <div>
+            <p class="home-kicker">El problema real</p>
+            <h2>“Me piden presentar algo a la policía de la gente que viene de Airbnb”</h2>
+        </div>
+        <p>
+            Si recibes reservas por Airbnb, Booking o de forma directa, no deberías acabar el día de entrada buscando datos, copiando documentos o peleándote con una web que no usas a diario.
+        </p>
+    </section>
+
+    <section class="home-flow" aria-labelledby="home-flow-title">
+        <div class="home-section-heading">
+            <p class="home-kicker">Cómo te ayuda</p>
+            <h2 id="home-flow-title">Una reserva, un enlace y una revisión clara</h2>
+        </div>
+
+        <div class="home-steps">
+            <article class="home-step">
+                <span>1</span>
+                <h3>Tienes una reserva</h3>
+                <p>Añades la estancia con los datos básicos de tu vivienda y las fechas de llegada.</p>
+            </article>
+            <article class="home-step">
+                <span>2</span>
+                <h3>Los huéspedes rellenan sus datos</h3>
+                <p>Les mandas un enlace para que completen lo necesario desde el móvil.</p>
+            </article>
+            <article class="home-step">
+                <span>3</span>
+                <h3>Ves qué falta</h3>
+                <p>Checkpol te indica si hay huéspedes pendientes o datos que conviene revisar.</p>
+            </article>
+            <article class="home-step">
+                <span>4</span>
+                <h3>Dejas listo lo que hay que presentar</h3>
+                <p>Cuando todo está completo, preparas el trámite sin volver a copiar los datos.</p>
+            </article>
+        </div>
+    </section>
+
+    <section class="home-reassurance">
+        <div>
+            <p class="home-kicker">Sin aprender nombres raros</p>
+            <h2>No necesitas entender el trámite para hacerlo bien</h2>
+        </div>
+        <ul>
+            <li>Sabes qué huésped falta.</li>
+            <li>Sabes qué dato revisar.</li>
+            <li>Sabes cuál es el siguiente paso.</li>
+        </ul>
+    </section>
+
+    <section class="home-pricing" aria-labelledby="home-pricing-title">
+        <div>
+            <p class="home-kicker">Precio sencillo</p>
+            <h2 id="home-pricing-title">Una obligación concreta. Un precio claro.</h2>
+            <p>Para propietarios que quieren cumplir bien y seguir con su día.</p>
+        </div>
+        <div class="home-price-card">
+            <span>Checkpol Esencial</span>
+            <strong>3,90 €</strong>
+            <p>al mes por alojamiento</p>
+            <a class="home-button-primary" href="mailto:hola@checkpol.es?subject=Quiero%20contratar%20Checkpol">Contratar Checkpol</a>
+            <small>Contratación mensual. Sin prueba gratuita.</small>
+        </div>
+    </section>
+</main>
+</body>
+</html>

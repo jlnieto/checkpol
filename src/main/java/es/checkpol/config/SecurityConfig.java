@@ -18,9 +18,8 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationSuccessHandler authenticationSuccessHandler) throws Exception {
         http
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/guest-access/**", "/login", "/error", "/access-denied", "/app.css", "/wizard-form.js", "/address-form.js", "/municipality-catalog/**").permitAll()
+                .requestMatchers("/", "/guest-access/**", "/login", "/error", "/access-denied", "/app.css", "/wizard-form.js", "/address-form.js", "/municipality-catalog/**").permitAll()
                 .requestMatchers("/admin/**").hasRole("SUPER_ADMIN")
-                .requestMatchers("/").authenticated()
                 .requestMatchers("/bookings/**", "/accommodations/**", "/guests/**").hasRole("OWNER")
                 .anyRequest().authenticated()
             )

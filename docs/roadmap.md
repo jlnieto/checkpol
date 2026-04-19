@@ -39,30 +39,45 @@ Construir el producto por incrementos pequenos, dejando siempre algo usable y si
 
 ## Fases razonables siguientes
 
-### 1. Cierre visual del frontend compartido
+### 1. Registro, pago recurrente y billing
+
+- implementar registro publico minimo,
+- integrar Stripe Checkout embebido para suscripciones mensuales,
+- vender por numero de alojamientos contratados,
+- activar owners solo por webhook confirmado,
+- limitar alojamientos activos segun cantidad pagada,
+- delegar facturas y portal de cliente en Stripe,
+- guardar espejo interno de suscripciones, facturas y eventos,
+- contemplar OSS para B2C UE sin implementar declaracion fiscal propia.
+
+Documento de referencia:
+
+- [billing-stripe.md](billing-stripe.md)
+
+### 2. Cierre visual del frontend compartido
 
 - consolidar la base visual compartida de `public`, `owner` y `admin`,
 - simplificar naming, fragmentos y utilidades para reducir deuda visual.
 
-### 2. Mejora operativa del autoservicio
+### 3. Mejora operativa del autoservicio
 
 - reforzar mensajes y ayudas por paso,
 - ajustar edge cases del wizard,
 - mejorar consistencia movil entre vistas publicas relacionadas.
 
-### 3. Mayor control del enlace publico
+### 4. Mayor control del enlace publico
 
 - enlace individual por huesped,
 - cierre por numero esperado de huespedes,
 - reglas mas estrictas de ciclo de vida del acceso.
 
-### 4. Capas de ayuda al gestor
+### 5. Capas de ayuda al gestor
 
 - mejoras en revision interna,
 - mejoras en validacion y cobertura del catálogo nacional de municipios,
 - mejor soporte a datos dudosos o incompletos.
 
-### 5. Endurecimiento del area administrativa
+### 6. Endurecimiento del area administrativa
 
 - gestion de contraseñas y estado de usuarios,
 - trazabilidad de operaciones administrativas,
@@ -76,7 +91,9 @@ Construir el producto por incrementos pequenos, dejando siempre algo usable y si
 - OCR de documentos,
 - recordatorios automaticos,
 - integraciones con PMS,
-- SaaS multi-tenant.
+- SaaS multi-tenant,
+- facturacion propia fuera de Stripe,
+- declaracion OSS automatica dentro de Checkpol.
 
 ## Regla del roadmap
 
