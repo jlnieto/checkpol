@@ -90,3 +90,19 @@ Estas lineas pueden explorarse mas adelante, pero no deben condicionar el diseno
 - check-in remoto,
 - integraciones con Airbnb o PMS,
 - SaaS multi-tenant.
+
+## Monetizacion prevista
+
+Checkpol se vendera como SaaS mensual por alojamiento contratado.
+
+Decision inicial:
+
+- `3,90 EUR / mes / alojamiento`,
+- impuestos incluidos cuando aplique,
+- sin prueba gratuita,
+- pago recurrente con Stripe,
+- facturacion y datos fiscales gestionados por Stripe,
+- soporte a particulares, autonomos y empresas,
+- OSS previsto para ventas B2C UE mediante registro de la LLC en Irlanda.
+
+La implementacion detallada se documenta en [billing-stripe.md](billing-stripe.md).

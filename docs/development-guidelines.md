@@ -70,6 +70,20 @@ Reglas:
 - Flyway es obligatorio para todos los cambios de esquema.
 - No modificar esquemas manualmente fuera de migraciones.
 
+## Billing y Stripe
+
+La integracion de pagos debe seguir [billing-stripe.md](billing-stripe.md).
+
+Reglas:
+
+- no activar cuentas por redirect de navegador,
+- procesar Stripe por webhooks verificados,
+- guardar eventos de Stripe de forma idempotente,
+- no calcular IVA manualmente en Checkpol,
+- no generar facturas PDF propias en el MVP,
+- usar Stripe Customer Portal para pago, facturas y datos fiscales,
+- mantener el registro publico con el minimo de campos posible.
+
 ## Testing
 
 Cada cambio debe dejar una verificacion proporcionada a su alcance.

@@ -107,7 +107,25 @@ Responsabilidades:
 
 - generacion XML,
 - adaptadores tecnicos,
-- integraciones externas futuras.
+- integraciones externas futuras,
+- adaptadores de billing externos como Stripe cuando se implemente el cobro.
+
+## Billing y pagos
+
+El cobro recurrente se implementara con Stripe, manteniendo Checkpol como monolito.
+
+Principios:
+
+- Checkpol no debe generar facturas propias en el MVP.
+- Stripe debe recoger datos de pago y facturacion.
+- Stripe Tax debe calcular impuestos con precio inclusivo cuando aplique.
+- La activacion de cuentas debe depender de webhooks, no del redirect del navegador.
+- Checkpol debe guardar un espejo interno de suscripciones, facturas y eventos para acceso, soporte y diagnostico.
+- La declaracion OSS no debe implementarse dentro de Checkpol.
+
+Documento de referencia:
+
+- [billing-stripe.md](billing-stripe.md)
 
 ## Frontend
 
