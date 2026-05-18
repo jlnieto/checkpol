@@ -1,0 +1,23 @@
+version: 1
+project: Checkpol
+runtimeProfile: local-compose
+runtimeType: docker-compose
+composeFile: docker-compose.yml
+serviceName: app
+hostBaseUrl: http://127.0.0.1:8091
+internalBaseUrl: http://app:8080
+healthPath: /login
+browserTestBaseUrl: http://app:8080
+startCommand: docker compose --env-file ops/atenea-runtime.env -p checkpol -f docker-compose.yml up -d --build
+healthCommand: docker run --rm --network checkpol_default curlimages/curl:8.10.1 -fsS http://app:8080/login
+testCommand: ./mvnw test
+browserTestCommand: docker run --rm --network checkpol_default curlimages/curl:8.10.1 -fsS http://app:8080/login
+healthStartupTimeoutSeconds: 240
+commandTimeoutSeconds: 900
+cleanupAfterVerification: false
+artifactPaths:
+  - target/surefire-reports
+databaseEngine: postgresql
+databaseLocalName: checkpol
+databaseReplaceMode: explicit_only
+dataRefreshEnabled: false
