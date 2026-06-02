@@ -11,7 +11,54 @@ Responsabilidades:
 - autenticar acceso persistido,
 - distinguir roles `SUPER_ADMIN` y `OWNER`,
 - actuar como propietario de viviendas y estancias,
-- aislar los datos operativos internos por usuario.
+- aislar los datos operativos internos por usuario,
+- quedar asociado a una cuenta de billing cuando procede de Stripe.
+
+### PendingSignup
+
+Representa un registro publico iniciado pero todavia no activado.
+
+Responsabilidades:
+
+- guardar email, hash de contrasena y cantidad de alojamientos solicitada,
+- guardar token publico temporal para volver al pago o confirmacion,
+- enlazar con `Stripe Customer` y `Checkout Session`,
+- evitar crear el `AppUser` antes de que Stripe confirme el pago,
+- expirar registros abandonados.
+
+### BillingAccount
+
+Representa el estado de suscripcion Stripe de un `OWNER`.
+
+Responsabilidades:
+
+- asociar un `AppUser` owner con `Stripe Customer` y `Stripe Subscription`,
+- guardar estado, periodo vigente y cancelacion al final de periodo,
+- guardar `paid_accommodation_limit`,
+- guardar pais, tipo de cliente y modo fiscal resumido,
+- decidir si la suscripcion permite crear nuevas viviendas.
+
+### BillingInvoice
+
+Representa el espejo interno minimo de una factura de Stripe.
+
+Responsabilidades:
+
+- guardar identificador y numero de factura Stripe,
+- guardar estado, importes, moneda, impuesto, periodo y pais fiscal,
+- conservar enlaces a hosted invoice y PDF de Stripe,
+- dar soporte operativo sin generar facturas propias.
+
+### StripeEventLog
+
+Representa un webhook recibido de Stripe.
+
+Responsabilidades:
+
+- guardar el `stripe_event_id` de forma unica,
+- guardar tipo de evento, payload, estado de procesamiento y error,
+- hacer idempotente el procesamiento de webhooks,
+- facilitar diagnostico y soporte.
 
 ### Accommodation
 
@@ -120,6 +167,10 @@ Responsabilidades:
 
 - Un `AppUser` puede tener muchas `Accommodation`.
 - Un `AppUser` puede tener muchas `Booking`.
+- Un `AppUser` owner puede tener una `BillingAccount`.
+- Un `PendingSignup` puede terminar creando un `AppUser` owner y una `BillingAccount`.
+- Una `BillingAccount` puede tener muchas `BillingInvoice`.
+- Un `StripeEventLog` no pertenece a un owner concreto; representa la trazabilidad tecnica de eventos Stripe.
 - Una `Accommodation` puede tener muchas `Booking`.
 - Una `Booking` pertenece a una `Accommodation`.
 - Una `Booking` puede tener muchas `Guest`.
@@ -136,10 +187,15 @@ El sistema ya trabaja con enums y estados operativos como:
 - `AppUserRole`
 - `BookingChannel`
 - `BookingOperationalStatus`
+- `BillingCustomerType`
+- `BillingSubscriptionStatus`
+- `BillingTaxMode`
 - `DocumentType`
 - `GuestSubmissionSource`
 - `GuestReviewStatus`
 - `GuestSex`
+- `PendingSignupStatus`
+- `StripeEventProcessingStatus`
 
 ## Reglas de modelado
 
@@ -163,3 +219,6 @@ En este proyecto:
 - `SUPER_ADMIN` accede al área administrativa global.
 - `OWNER` accede solo a sus viviendas, estancias, huéspedes y XML.
 - El sistema no es multi-tenant; el aislamiento actual es por usuario.
+- Las cuentas owner creadas por Stripe quedan limitadas por `paid_accommodation_limit` al crear viviendas.
+- Las cuentas owner antiguas sin `BillingAccount` se tratan como cuentas manuales y no quedan bloqueadas por Stripe.
+- La primera version solo aplica el bloqueo de billing a la creacion de viviendas; bloqueos mas amplios por estado quedan para una fase posterior.

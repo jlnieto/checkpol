@@ -41,3 +41,13 @@ checkpol:
       truststore-path: ${CHECKPOL_SES_WS_TRUSTSTORE_PATH:}
       truststore-password: ${CHECKPOL_SES_WS_TRUSTSTORE_PASSWORD:}
       truststore-type: ${CHECKPOL_SES_WS_TRUSTSTORE_TYPE:PKCS12}
+  billing:
+    stripe:
+      secret-key: ${CHECKPOL_BILLING_STRIPE_SECRET_KEY:}
+      publishable-key: ${CHECKPOL_BILLING_STRIPE_PUBLISHABLE_KEY:}
+      webhook-secret: ${CHECKPOL_BILLING_STRIPE_WEBHOOK_SECRET:}
+      price-checkpol-esencial: ${CHECKPOL_BILLING_STRIPE_PRICE_CHECKPOL_ESENCIAL:}
+      customer-portal-configuration-id: ${CHECKPOL_BILLING_STRIPE_CUSTOMER_PORTAL_CONFIGURATION_ID:}
+      public-base-url: ${CHECKPOL_PUBLIC_BASE_URL:http://localhost:${server.port}}
+      signup-expiration-minutes: ${CHECKPOL_BILLING_SIGNUP_EXPIRATION_MINUTES:60}
+      grace-period-days: ${CHECKPOL_BILLING_GRACE_PERIOD_DAYS:7}

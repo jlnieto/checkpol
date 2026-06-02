@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Facturación | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="owner-body">
+<main class="owner-shell">
+    <div th:replace="~{fragments/owner-menu :: ownerMenu('billing')}"></div>
+
+    <section class="owner-page">
+        <header class="owner-header">
+            <a class="public-back-link" th:href="@{/bookings}">
+                <span aria-hidden="true">←</span>
+                <span>Volver al inicio</span>
+            </a>
+
+            <div class="owner-header-row">
+                <div class="space-y-2">
+                    <p class="owner-kicker">Facturación</p>
+                    <h1 class="owner-title">Estado de tu suscripción</h1>
+                    <p class="owner-copy">Revisa el pago, las viviendas contratadas y tus facturas.</p>
+                </div>
+            </div>
+        </header>
+
+        <div th:if="${flashMessage}"
+             th:class="${flashKind == 'success'} ? 'owner-success-box' : 'owner-error-box error-box'"
+             th:text="${flashMessage}"></div>
+
+        <section class="owner-priority-card" th:if="${billingStatus.billingManaged}">
+            <div class="owner-banner-row">
+                <div class="space-y-3">
+                    <p class="owner-priority-eyebrow">Estado</p>
+                    <div class="space-y-2">
+                        <h2 class="text-3xl font-extrabold tracking-tight text-slate-900"
+                            th:text="${billingStatus.status == T(es.checkpol.domain.billing.BillingSubscriptionStatus).ACTIVE ? 'Suscripción activa' : billingStatus.status}">
+                            Suscripción activa
+                        </h2>
+                        <p class="owner-copy"
+                           th:text="${billingStatus.currentAccommodationCount + ' de ' + billingStatus.paidAccommodationLimit + ' viviendas usadas'}">
+                            1 de 1 viviendas usadas
+                        </p>
+                    </div>
+                </div>
+                <form th:action="@{/bookings/billing/portal}" method="post" class="owner-banner-actions">
+                    <button class="owner-button-primary justify-center" type="submit">Abrir facturación Stripe</button>
+                </form>
+            </div>
+        </section>
+
+        <section class="owner-card" th:unless="${billingStatus.billingManaged}">
+            <div class="space-y-2">
+                <p class="owner-kicker">Cuenta manual</p>
+                <h2 class="text-xl font-extrabold tracking-tight text-slate-900">Esta cuenta no está gestionada por Stripe</h2>
+                <p class="owner-copy">Las viviendas creadas desde el alta pública sí quedarán limitadas por la suscripción.</p>
+            </div>
+        </section>
+
+        <section class="owner-card">
+            <div class="owner-section-head">
+                <div class="space-y-1">
+                    <p class="owner-kicker">Detalle</p>
+                    <h2 class="text-xl font-extrabold tracking-tight text-slate-900">Datos de billing</h2>
+                </div>
+            </div>
+
+            <dl class="owner-billing-grid">
+                <div>
+                    <dt>Viviendas contratadas</dt>
+                    <dd th:text="${billingStatus.billingManaged ? billingStatus.paidAccommodationLimit : 'Sin límite Stripe'}">1</dd>
+                </div>
+                <div>
+                    <dt>Viviendas creadas</dt>
+                    <dd th:text="${billingStatus.currentAccommodationCount}">1</dd>
+                </div>
+                <div>
+                    <dt>País factura</dt>
+                    <dd th:text="${#strings.isEmpty(billingStatus.customerCountry) ? 'Pendiente' : billingStatus.customerCountry}">ES</dd>
+                </div>
+                <div>
+                    <dt>Fiscalidad</dt>
+                    <dd th:text="${billingStatus.taxModeLabel}">OSS UE B2C</dd>
+                </div>
+            </dl>
+        </section>
+
+        <section class="owner-card">
+            <div class="owner-section-head">
+                <div class="space-y-1">
+                    <p class="owner-kicker">Facturas</p>
+                    <h2 class="text-xl font-extrabold tracking-tight text-slate-900">Últimas facturas</h2>
+                </div>
+            </div>
+
+            <p class="owner-copy mt-4" th:if="${#lists.isEmpty(invoices)}">Todavía no hay facturas registradas.</p>
+
+            <div class="owner-list mt-5" th:unless="${#lists.isEmpty(invoices)}">
+                <article class="owner-queue-card" th:each="invoice : ${invoices}">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="space-y-1">
+                            <h3 class="text-lg font-extrabold tracking-tight text-slate-900"
+                                th:text="${#strings.isEmpty(invoice.stripeInvoiceNumber) ? invoice.stripeInvoiceId : invoice.stripeInvoiceNumber}">
+                                INV-0001
+                            </h3>
+                            <p class="owner-queue-meta"
+                               th:text="${invoice.status == null ? 'Estado pendiente' : invoice.status}">
+                                paid
+                            </p>
+                        </div>
+                        <a class="owner-button-secondary justify-center sm:w-auto"
+                           th:if="${!#strings.isEmpty(invoice.hostedInvoiceUrl)}"
+                           th:href="${invoice.hostedInvoiceUrl}"
+                           target="_blank"
+                           rel="noopener">Ver factura</a>
+                    </div>
+                </article>
+            </div>
+        </section>
+    </section>
+</main>
+<script defer th:src="@{/vendor/alpinejs.min.js}"></script>
+</body>
+</html>

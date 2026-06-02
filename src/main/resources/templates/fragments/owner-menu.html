@@ -17,6 +17,7 @@
             <a class="owner-menu-nav-link" th:classappend="${activeSection == 'bookings'} ? ' owner-menu-nav-link-active'" th:href="@{/bookings}">Estancias</a>
             <a class="owner-menu-nav-link" th:classappend="${activeSection == 'accommodations'} ? ' owner-menu-nav-link-active'" th:href="@{/accommodations}">Viviendas</a>
             <a class="owner-menu-nav-link" th:classappend="${activeSection == 'ses'} ? ' owner-menu-nav-link-active'" th:href="@{/bookings/ses-settings}">Conexión SES</a>
+            <a class="owner-menu-nav-link" th:classappend="${activeSection == 'billing'} ? ' owner-menu-nav-link-active'" th:href="@{/bookings/billing}">Facturación</a>
             <form th:action="@{/logout}" method="post">
                 <button type="submit" class="owner-menu-nav-link owner-menu-nav-logout">Salir</button>
             </form>
@@ -61,6 +62,7 @@
             <a class="owner-drawer-link" th:classappend="${activeSection == 'bookings'} ? ' owner-drawer-link-active'" th:href="@{/bookings}" @click="ownerMenuOpen = false">Estancias</a>
             <a class="owner-drawer-link" th:classappend="${activeSection == 'accommodations'} ? ' owner-drawer-link-active'" th:href="@{/accommodations}" @click="ownerMenuOpen = false">Viviendas</a>
             <a class="owner-drawer-link" th:classappend="${activeSection == 'ses'} ? ' owner-drawer-link-active'" th:href="@{/bookings/ses-settings}" @click="ownerMenuOpen = false">Conexión SES</a>
+            <a class="owner-drawer-link" th:classappend="${activeSection == 'billing'} ? ' owner-drawer-link-active'" th:href="@{/bookings/billing}" @click="ownerMenuOpen = false">Facturación</a>
             <form th:action="@{/logout}" method="post" @submit="ownerMenuOpen = false">
                 <button type="submit" class="owner-drawer-link w-full text-left">Cerrar sesión</button>
             </form>

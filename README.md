@@ -31,7 +31,12 @@ La aplicacion ya incluye:
 - enlace publico por estancia para que los huespedes completen sus datos,
 - flujo publico guiado en varios pasos con seleccion o creacion de direccion,
 - revision interna de huespedes enviados por enlace,
-- catálogo local de municipios de España y relacion codigo postal -> municipio para validar direcciones españolas.
+- catálogo local de municipios de España y relacion codigo postal -> municipio para validar direcciones españolas,
+- registro publico de propietarios en `/registro`,
+- pago recurrente mensual con Stripe Checkout embebido,
+- activacion de cuentas `OWNER` por webhook confirmado de Stripe,
+- limite de viviendas segun cantidad contratada,
+- pantalla owner de facturacion en `/bookings/billing` con acceso a Stripe Customer Portal.
 
 Limitaciones importantes:
 
@@ -40,7 +45,35 @@ Limitaciones importantes:
 - no hay notificaciones ni envio automatico del enlace,
 - los datos se aislan por usuario, pero no existe modelo multi-tenant ni gestion de equipos,
 - la carga administrativa del catálogo municipal depende de que las URLs oficiales sigan manteniendo el formato esperado,
+- el area admin de billing todavia no esta implementada,
+- la operacion comercial con Stripe requiere configurar producto, Tax, portal y webhook antes de vender,
 - la migracion visual a Tailwind aun no esta cerrada en todo `owner`.
+
+## Registro y billing con Stripe
+
+La primera vertical de cobro esta integrada como parte del monolito:
+
+- `/registro` crea un alta pendiente y lanza Stripe Checkout embebido,
+- `/webhooks/stripe` verifica la firma de Stripe y procesa eventos de checkout, suscripcion y factura,
+- el `AppUser` con rol `OWNER` se crea solo cuando el webhook confirma una suscripcion utilizable,
+- `paid_accommodation_limit` limita las viviendas que puede crear el owner,
+- `/bookings/billing` muestra estado, viviendas contratadas, datos fiscales resumidos y ultimas facturas,
+- `POST /bookings/billing/portal` abre Stripe Customer Portal.
+
+Variables de entorno soportadas:
+
+- `CHECKPOL_BILLING_STRIPE_SECRET_KEY`
+- `CHECKPOL_BILLING_STRIPE_PUBLISHABLE_KEY`
+- `CHECKPOL_BILLING_STRIPE_WEBHOOK_SECRET`
+- `CHECKPOL_BILLING_STRIPE_PRICE_CHECKPOL_ESENCIAL`
+- `CHECKPOL_PUBLIC_BASE_URL`
+- `CHECKPOL_BILLING_STRIPE_CUSTOMER_PORTAL_CONFIGURATION_ID`
+- `CHECKPOL_BILLING_SIGNUP_EXPIRATION_MINUTES`
+- `CHECKPOL_BILLING_GRACE_PERIOD_DAYS`
+
+Guia de producto, operacion y pruebas:
+
+- [docs/billing-stripe.md](/home/jose/IdeaProjects/checkpol/docs/billing-stripe.md)
 
 ## SES por servicio web
 

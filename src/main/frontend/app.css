@@ -203,6 +203,62 @@
         @apply mt-3 block text-xs leading-5 text-slate-500;
     }
 
+    .register-shell {
+        @apply mx-auto grid w-full max-w-5xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:items-start;
+    }
+
+    .register-copy h1,
+    .register-payment-head h1,
+    .register-state-card h1 {
+        @apply mt-3 text-4xl font-extrabold tracking-normal text-slate-950;
+    }
+
+    .register-copy p,
+    .register-payment-head p,
+    .register-state-card p {
+        @apply mt-4 text-lg leading-7 text-slate-600;
+    }
+
+    .register-summary {
+        @apply mt-7 grid gap-3;
+    }
+
+    .register-summary span {
+        @apply rounded-sm border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800;
+    }
+
+    .register-panel {
+        @apply rounded-sm border border-slate-200 bg-white p-5 shadow-[0_16px_36px_rgba(15,23,42,0.08)];
+    }
+
+    .register-fineprint {
+        @apply text-sm leading-6 text-slate-500;
+    }
+
+    .register-payment-shell {
+        @apply mx-auto w-full max-w-3xl px-4 py-10 sm:px-6;
+    }
+
+    .register-payment-head {
+        @apply mb-6;
+    }
+
+    .register-payment-panel {
+        @apply min-h-96;
+    }
+
+    .register-state-shell {
+        @apply mx-auto flex min-h-screen w-full max-w-3xl items-center px-4 py-10 sm:px-6;
+    }
+
+    .register-state-card {
+        @apply w-full rounded-sm border border-slate-200 bg-white p-6 shadow-[0_16px_36px_rgba(15,23,42,0.08)];
+    }
+
+    .register-state-card .home-button-primary {
+        @apply mt-6;
+    }
+
     .public-shell {
         @apply mx-auto flex min-h-screen w-full flex-col px-4 py-6 sm:px-6 sm:py-8;
     }
@@ -1739,6 +1795,22 @@
         border-radius: var(--public-panel-radius-sm);
         box-shadow: var(--public-card-shadow-soft);
         @apply border border-slate-200/80 bg-white/92 p-5 ring-1 ring-white/60 backdrop-blur-sm;
+    }
+
+    .owner-billing-grid {
+        @apply mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4;
+    }
+
+    .owner-billing-grid > div {
+        @apply rounded-sm bg-slate-50 px-4 py-3;
+    }
+
+    .owner-billing-grid dt {
+        @apply text-xs font-semibold uppercase tracking-normal text-slate-500;
+    }
+
+    .owner-billing-grid dd {
+        @apply mt-2 text-base font-extrabold text-slate-900;
     }
 
     .owner-booking-card {

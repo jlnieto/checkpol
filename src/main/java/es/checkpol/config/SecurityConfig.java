@@ -18,7 +18,7 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationSuccessHandler authenticationSuccessHandler) throws Exception {
         http
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/", "/guest-access/**", "/login", "/error", "/access-denied", "/app.css", "/wizard-form.js", "/address-form.js", "/municipality-catalog/**").permitAll()
+                .requestMatchers("/", "/registro/**", "/webhooks/stripe", "/guest-access/**", "/login", "/error", "/access-denied", "/app.css", "/wizard-form.js", "/address-form.js", "/municipality-catalog/**").permitAll()
                 .requestMatchers("/admin/**").hasRole("SUPER_ADMIN")
                 .requestMatchers("/bookings/**", "/accommodations/**", "/guests/**").hasRole("OWNER")
                 .anyRequest().authenticated()
@@ -32,7 +32,10 @@ public class SecurityConfig {
                 .accessDeniedPage("/access-denied")
             )
             .csrf(csrf -> csrf
-                .ignoringRequestMatchers(new AntPathRequestMatcher("/logout", "POST"))
+                .ignoringRequestMatchers(
+                    new AntPathRequestMatcher("/logout", "POST"),
+                    new AntPathRequestMatcher("/webhooks/stripe", "POST")
+                )
             )
             .logout(logout -> logout
                 .logoutRequestMatcher(new OrRequestMatcher(

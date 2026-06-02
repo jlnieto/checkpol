@@ -107,12 +107,21 @@ Responsabilidades:
 
 - generacion XML,
 - adaptadores tecnicos,
-- integraciones externas futuras,
-- adaptadores de billing externos como Stripe cuando se implemente el cobro.
+- integraciones externas,
+- adaptador tecnico de Stripe para Checkout, Customer Portal, suscripciones, facturas y webhooks.
 
 ## Billing y pagos
 
-El cobro recurrente se implementara con Stripe, manteniendo Checkpol como monolito.
+El cobro recurrente se implementa con Stripe, manteniendo Checkpol como monolito.
+
+Piezas actuales:
+
+- `es.checkpol.web.billing`: registro publico, pantalla owner de billing y webhook Stripe.
+- `es.checkpol.service.billing`: casos de uso de alta, sincronizacion de suscripciones, facturas y limites.
+- `es.checkpol.domain.billing`: espejo interno de registros pendientes, cuentas, facturas y eventos.
+- `es.checkpol.repository.billing`: persistencia JPA del modulo de billing.
+- `es.checkpol.infrastructure.stripe`: adaptador sobre `stripe-java`.
+- `V28__create_billing_tables.sql`: tablas `pending_signups`, `billing_accounts`, `billing_invoices` y `stripe_event_logs`.
 
 Principios:
 

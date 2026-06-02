@@ -11,4 +11,6 @@ public interface AccommodationRepository extends JpaRepository<Accommodation, Lo
     List<Accommodation> findAllByOwnerIdOrderByNameAsc(Long ownerId);
 
     Optional<Accommodation> findByIdAndOwnerId(Long id, Long ownerId);
+
+    int countByOwnerId(Long ownerId);
 }

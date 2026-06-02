@@ -25,10 +25,10 @@
                 Checkpol te guía para pedir los datos, ver qué falta y dejar preparado lo que tienes que presentar antes de la entrada.
             </p>
             <div class="home-actions">
-                <a class="home-button-primary" href="mailto:hola@checkpol.es?subject=Quiero%20contratar%20Checkpol">Contratar Checkpol</a>
+                <a class="home-button-primary" th:href="@{/registro}">Contratar Checkpol</a>
                 <a class="home-button-secondary" th:href="@{/login}">Ya tengo cuenta</a>
             </div>
-            <p class="home-price-note">3,90 € al mes por alojamiento.</p>
+            <p class="home-price-note">3,90 € al mes por alojamiento. Impuestos incluidos cuando aplique.</p>
         </div>
 
         <div class="home-hero-visual" aria-label="Vivienda preparada para recibir huéspedes">
@@ -104,8 +104,8 @@
             <span>Checkpol Esencial</span>
             <strong>3,90 €</strong>
             <p>al mes por alojamiento</p>
-            <a class="home-button-primary" href="mailto:hola@checkpol.es?subject=Quiero%20contratar%20Checkpol">Contratar Checkpol</a>
-            <small>Contratación mensual. Sin prueba gratuita.</small>
+            <a class="home-button-primary" th:href="@{/registro}">Contratar Checkpol</a>
+            <small>Contratación mensual. Impuestos incluidos cuando aplique. Sin prueba gratuita.</small>
         </div>
     </section>
 </main>

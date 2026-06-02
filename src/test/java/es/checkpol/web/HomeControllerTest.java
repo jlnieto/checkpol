@@ -29,7 +29,7 @@ class HomeControllerTest {
             .andExpect(view().name("public/home"))
             .andExpect(content().string(containsString("Que tus huéspedes lleguen sin el trámite pendiente")))
             .andExpect(content().string(containsString("3,90 € al mes por alojamiento")))
-            .andExpect(content().string(containsString("Contratación mensual. Sin prueba gratuita.")));
+            .andExpect(content().string(containsString("Contratación mensual. Impuestos incluidos cuando aplique. Sin prueba gratuita.")));
     }
 
     @Test

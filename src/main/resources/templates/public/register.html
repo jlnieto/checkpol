@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Contratar Checkpol</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="home-body">
+<header class="home-header">
+    <a class="home-brand" th:href="@{/}">
+        <span class="home-brand-mark" aria-hidden="true">C</span>
+        <span>Checkpol</span>
+    </a>
+    <a class="home-login-link" th:href="@{/login}">Entrar</a>
+</header>
+
+<main class="register-shell">
+    <section class="register-copy">
+        <p class="home-kicker">Contratación</p>
+        <h1>Empieza con las viviendas que necesitas ahora</h1>
+        <p>Pagas 3,90 € al mes por alojamiento, impuestos incluidos cuando aplique. Sin prueba gratuita.</p>
+
+        <div class="register-summary">
+            <span>Stripe pedirá los datos fiscales y de factura.</span>
+            <span>La cuenta se activa cuando Stripe confirme el pago.</span>
+            <span>Podrás cambiar la cantidad desde facturación.</span>
+        </div>
+    </section>
+
+    <section class="register-panel">
+        <form th:action="@{/registro}" th:object="${registrationForm}" method="post" class="space-y-5" novalidate>
+            <div class="owner-error-box error-box" th:if="${#fields.hasGlobalErrors()}">
+                <p th:each="err : ${#fields.globalErrors()}" th:text="${err}">No se puede iniciar el registro.</p>
+            </div>
+
+            <label class="owner-label">
+                <span>Email de acceso</span>
+                <input class="owner-input" th:field="*{email}" type="email" autocomplete="email" maxlength="160" required placeholder="tu@email.com">
+                <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></small>
+            </label>
+
+            <label class="owner-label">
+                <span>Contraseña</span>
+                <input class="owner-input" th:field="*{password}" type="password" autocomplete="new-password" maxlength="80" required>
+                <small class="public-hint">Mínimo 8 caracteres.</small>
+                <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></small>
+            </label>
+
+            <label class="owner-label">
+                <span>Alojamientos a contratar</span>
+                <input class="owner-input" th:field="*{accommodationQuantity}" type="number" min="1" max="50" inputmode="numeric" required>
+                <small class="public-hint">El límite de viviendas quedará vinculado a la cantidad pagada.</small>
+                <small class="owner-error error" data-server-error th:if="${#fields.hasErrors('accommodationQuantity')}" th:errors="*{accommodationQuantity}"></small>
+            </label>
+
+            <button class="home-button-primary w-full" type="submit">Continuar al pago</button>
+            <p class="register-fineprint">El pago se hace con Stripe. Checkpol se activa automáticamente al confirmarse la suscripción.</p>
+        </form>
+    </section>
+</main>
+</body>
+</html>

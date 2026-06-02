@@ -27,6 +27,10 @@
         <section class="mx-auto w-full max-w-2xl">
             <div class="owner-form-shell">
                 <form th:action="${formAction}" th:object="${accommodationForm}" method="post" class="space-y-6" novalidate>
+                    <div class="owner-error-box error-box" th:if="${#fields.hasGlobalErrors()}">
+                        <p th:each="err : ${#fields.globalErrors()}" th:text="${err}">No se puede guardar la vivienda.</p>
+                    </div>
+
                     <section class="owner-form-section-highlight">
                         <div class="space-y-2">
                             <p class="owner-kicker">Obligatorio para guardar</p>

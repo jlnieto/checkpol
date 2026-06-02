@@ -16,7 +16,41 @@ El sistema debe permitir:
 
 La prioridad no es construir un sistema de billing propio. La prioridad es integrar Stripe de forma controlada y mantener en Checkpol un espejo interno suficiente para soporte, acceso y diagnostico.
 
-## Decisiones cerradas
+## Estado implementado
+
+Primera vertical implementada:
+
+- `GET /registro` y `POST /registro`
+- `GET /registro/pago/{token}`
+- `GET /registro/confirmando/{token}`
+- `POST /webhooks/stripe`
+- `GET /bookings/billing`
+- `POST /bookings/billing/portal`
+- migracion `V28__create_billing_tables.sql`
+- dependencia `com.stripe:stripe-java:32.0.0`
+- Checkout embebido de Stripe
+- activacion de `AppUser` con rol `OWNER` solo desde webhook
+- limite de alojamientos segun `subscription.quantity`
+- portal de Stripe para facturas, datos fiscales y cambios permitidos por la configuracion del portal
+
+Variables de entorno reales:
+
+- `CHECKPOL_BILLING_STRIPE_SECRET_KEY`
+- `CHECKPOL_BILLING_STRIPE_PUBLISHABLE_KEY`
+- `CHECKPOL_BILLING_STRIPE_WEBHOOK_SECRET`
+- `CHECKPOL_BILLING_STRIPE_PRICE_CHECKPOL_ESENCIAL`
+- `CHECKPOL_PUBLIC_BASE_URL`
+- `CHECKPOL_BILLING_STRIPE_CUSTOMER_PORTAL_CONFIGURATION_ID` opcional
+- `CHECKPOL_BILLING_SIGNUP_EXPIRATION_MINUTES` opcional
+- `CHECKPOL_BILLING_GRACE_PERIOD_DAYS` opcional
+
+Pendiente operativo antes de vender:
+
+- crear el producto/precio mensual en Stripe con impuestos inclusivos,
+- activar Stripe Tax y los datos legales de la LLC,
+- configurar Customer Portal para permitir facturas, metodo de pago y, si se acepta, cambio de cantidad,
+- configurar el webhook en Stripe apuntando a `/webhooks/stripe`,
+- validar fiscalidad OSS con asesor antes de emitir facturas reales.
 
 ### Precio
 
@@ -105,7 +139,7 @@ Esos datos se recogen despues, cuando correspondan:
 
 ### Paso 1. Formulario de registro
 
-Ruta propuesta:
+Rutas implementadas:
 
 - `GET /registro`
 - `POST /registro`
@@ -118,7 +152,7 @@ Pantalla:
 - resumen de precio,
 - boton `Continuar al pago`.
 
-Copy recomendado:
+Copy de referencia:
 
 - titulo: `Empieza con tu primera vivienda`
 - resumen: `Elige cuantos alojamientos quieres cubrir. El pago es mensual.`
@@ -155,15 +189,13 @@ Configuracion esperada de Checkout:
 
 - `mode=subscription`
 - `ui_mode=embedded`
-- `line_items[0].price = STRIPE_PRICE_CHECKPOL_ESENCIAL`
+- `line_items[0].price = CHECKPOL_BILLING_STRIPE_PRICE_CHECKPOL_ESENCIAL`
 - `line_items[0].quantity = accommodation_quantity`
 - `automatic_tax.enabled = true`
 - `tax_id_collection.enabled = true`
 - `billing_address_collection = required`
 - metadata:
-  - `pendingSignupId`
-  - `product=checkpol_esencial`
-  - `accommodationQuantity`
+  - `pending_signup_id`
 
 ### Paso 4. Activacion por webhook
 
@@ -191,7 +223,7 @@ Si el usuario vuelve del pago:
 - si aun no proceso: mostrar `Estamos confirmando el pago` y permitir refrescar,
 - si fallo: mostrar accion para volver al pago o contactar soporte.
 
-## Modelo de datos propuesto
+## Modelo de datos implementado
 
 ### `pending_signup`
 
@@ -204,6 +236,7 @@ Campos:
 - `status`
 - `stripe_customer_id`
 - `stripe_checkout_session_id`
+- `checkout_client_secret`
 - `expires_at`
 - `created_at`
 - `updated_at`
@@ -211,7 +244,6 @@ Campos:
 Estados:
 
 - `PENDING_PAYMENT`
-- `CHECKOUT_CREATED`
 - `COMPLETED`
 - `EXPIRED`
 - `FAILED`
@@ -244,28 +276,27 @@ Campos:
 
 Estados internos:
 
+- `PENDING`
 - `ACTIVE`
+- `TRIALING`
 - `PAST_DUE`
 - `UNPAID`
-- `CANCEL_AT_PERIOD_END`
 - `CANCELED`
 - `INCOMPLETE`
 - `INCOMPLETE_EXPIRED`
-- `SUSPENDED`
+- `PAUSED`
 
-`customer_type` propuesto:
+`customer_type` implementado:
 
 - `INDIVIDUAL`
-- `BUSINESS_REVERSE_CHARGE`
-- `BUSINESS_WITHOUT_VALID_VAT_ID`
+- `BUSINESS`
 - `UNKNOWN`
 
-`tax_mode` propuesto:
+`tax_mode` implementado:
 
-- `OSS_B2C`
+- `OSS_EU_B2C`
 - `EU_B2B_REVERSE_CHARGE`
-- `NO_TAX_COLLECTED`
-- `MANUAL_REVIEW`
+- `DOMESTIC_OR_OTHER`
 - `UNKNOWN`
 
 ### `billing_invoice`
@@ -328,23 +359,42 @@ Eventos minimos:
 - `customer.subscription.created`
 - `customer.subscription.updated`
 - `customer.subscription.deleted`
+- `invoice.created`
 - `invoice.finalized`
 - `invoice.paid`
 - `invoice.payment_failed`
+
+Pendientes de una segunda entrega:
+
 - `invoice.voided`
 - `invoice.marked_uncollectible`
 - `customer.updated`
 
 Reglas de procesamiento:
 
-- verificar firma con `STRIPE_WEBHOOK_SECRET`,
+- verificar firma con `CHECKPOL_BILLING_STRIPE_WEBHOOK_SECRET`,
 - guardar evento,
 - ignorar eventos ya procesados,
 - no asumir orden perfecto,
-- poder reintentar eventos fallidos,
+- dejar los eventos fallidos registrados para revision,
 - no borrar payloads necesarios para diagnostico sin una politica explicita.
 
+No implementado todavia:
+
+- pantalla admin para consultar eventos,
+- reprocesado manual de eventos fallidos,
+- eventos `invoice.voided`, `invoice.marked_uncollectible` y `customer.updated`.
+
 ## Reglas de acceso por estado
+
+Alcance implementado en la primera vertical:
+
+- `ACTIVE` y `TRIALING` permiten crear viviendas si no se supera el limite contratado.
+- `PAST_DUE` permite crear viviendas solo dentro del periodo de gracia configurado.
+- estados no utilizables bloquean la creacion de nuevas viviendas.
+- owners sin `BillingAccount` se consideran cuentas manuales y no se bloquean por Stripe.
+
+Bloqueos mas amplios sobre crear estancias, generar XML o presentar en SES quedan para una segunda entrega.
 
 ### `ACTIVE`
 
@@ -367,7 +417,7 @@ Bloquear:
 - presentar en SES,
 - crear alojamientos.
 
-### `CANCEL_AT_PERIOD_END`
+### `cancel_at_period_end`
 
 Permitir acceso normal hasta `current_period_end`.
 
@@ -509,26 +559,143 @@ Operacion prevista:
 
 Variables:
 
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
-- `STRIPE_PRICE_CHECKPOL_ESENCIAL`
+- `CHECKPOL_BILLING_STRIPE_SECRET_KEY`
+- `CHECKPOL_BILLING_STRIPE_PUBLISHABLE_KEY`
+- `CHECKPOL_BILLING_STRIPE_WEBHOOK_SECRET`
+- `CHECKPOL_BILLING_STRIPE_PRICE_CHECKPOL_ESENCIAL`
 - `CHECKPOL_PUBLIC_BASE_URL`
 
-Opcionales futuras:
+Variables opcionales:
 
-- `STRIPE_CUSTOMER_PORTAL_CONFIGURATION_ID`
+- `CHECKPOL_BILLING_STRIPE_CUSTOMER_PORTAL_CONFIGURATION_ID`
 - `CHECKPOL_BILLING_SIGNUP_EXPIRATION_MINUTES`
 - `CHECKPOL_BILLING_GRACE_PERIOD_DAYS`
+
+Valores esperados:
+
+- `CHECKPOL_BILLING_STRIPE_SECRET_KEY`: clave secreta de Stripe, normalmente `sk_test_...` o `sk_live_...`.
+- `CHECKPOL_BILLING_STRIPE_PUBLISHABLE_KEY`: clave publicable de Stripe, normalmente `pk_test_...` o `pk_live_...`.
+- `CHECKPOL_BILLING_STRIPE_WEBHOOK_SECRET`: secreto `whsec_...` del endpoint de webhook.
+- `CHECKPOL_BILLING_STRIPE_PRICE_CHECKPOL_ESENCIAL`: id de precio recurrente mensual, normalmente `price_...`.
+- `CHECKPOL_PUBLIC_BASE_URL`: URL publica de Checkpol, sin barra final preferiblemente.
+- `CHECKPOL_BILLING_STRIPE_CUSTOMER_PORTAL_CONFIGURATION_ID`: id opcional de configuracion del portal, normalmente `bpc_...`.
+- `CHECKPOL_BILLING_SIGNUP_EXPIRATION_MINUTES`: minutos de validez de un registro pendiente. Por defecto `60`.
+- `CHECKPOL_BILLING_GRACE_PERIOD_DAYS`: dias de gracia para `PAST_DUE`. Por defecto `7`.
+
+## Runbook operativo Stripe
+
+Antes de vender:
+
+1. Crear el producto `Checkpol Esencial` en Stripe.
+2. Crear un precio recurrente mensual de `3,90 EUR` con `tax_behavior=inclusive`.
+3. Guardar el id del precio en `CHECKPOL_BILLING_STRIPE_PRICE_CHECKPOL_ESENCIAL`.
+4. Activar Stripe Tax y revisar que Checkout exige direccion de facturacion.
+5. Configurar datos legales, soporte, web, emails y plantilla de factura de la LLC.
+6. Configurar Customer Portal para actualizar metodo de pago, datos fiscales, descarga de facturas y, si se acepta, cambio de cantidad.
+7. Crear endpoint de webhook apuntando a `https://dominio/webhooks/stripe`.
+8. Suscribir los eventos minimos documentados en la seccion de webhooks.
+9. Guardar el signing secret del endpoint en `CHECKPOL_BILLING_STRIPE_WEBHOOK_SECRET`.
+10. Validar con asesor la configuracion fiscal OSS antes de emitir facturas reales.
+
+Prueba local con Stripe CLI:
+
+```bash
+stripe login
+stripe listen --forward-to localhost:8080/webhooks/stripe
+```
+
+Usar el `whsec_...` mostrado por `stripe listen` como `CHECKPOL_BILLING_STRIPE_WEBHOOK_SECRET` local.
+
+Flujo local esperado:
+
+1. Arrancar Checkpol con las variables Stripe de test.
+2. Entrar en `/registro`.
+3. Crear registro con email nuevo y cantidad de alojamientos.
+4. Completar Checkout con tarjeta de prueba de Stripe.
+5. Esperar el webhook `checkout.session.completed`.
+6. Confirmar que se crea `AppUser`, `billing_account` y `pending_signup` queda `COMPLETED`.
+7. Entrar con el email y contrasena usados en el registro.
+8. Revisar `/bookings/billing`.
+
+## Incidencias y soporte
+
+Checkout completado pero cuenta sin activar:
+
+- revisar `stripe_event_logs` por `checkout.session.completed`,
+- confirmar que el evento no esta `FAILED`,
+- confirmar que la suscripcion Stripe existe y tiene estado utilizable,
+- si no existe evento, revisar configuracion del webhook y firma `whsec_...`.
+
+Registro pendiente con el mismo email:
+
+- si el `pending_signup` no ha expirado, el sistema bloquea un nuevo intento para evitar duplicados,
+- si ha expirado, se marca como `EXPIRED` y se permite iniciar otro registro.
+
+Webhook fallido:
+
+- queda guardado con `processing_status=FAILED` y `error_message`,
+- la primera version no incluye reprocesado manual desde admin,
+- para resolverlo hay que revisar el payload, corregir la causa y usar herramientas de Stripe para reenviar el evento si procede.
+
+Stripe sin configurar:
+
+- `/registro` muestra error al enviar el formulario,
+- `/webhooks/stripe` responde error si falta la configuracion necesaria,
+- el owner no puede abrir Customer Portal si no hay clave secreta o cuenta Stripe asociada.
+
+Limite de viviendas alcanzado:
+
+- al crear una vivienda se compara `countByOwnerId` con `paid_accommodation_limit`,
+- si se alcanza el limite, se muestra un error global en el formulario de vivienda,
+- la accion esperada es ampliar cantidad desde `/bookings/billing` y Customer Portal si esta configurado.
+
+## Privacidad y retencion
+
+Checkpol guarda payloads completos de webhooks en `stripe_event_logs.payload` para diagnostico e idempotencia.
+
+Reglas operativas hasta definir una politica automatizada:
+
+- tratar `stripe_event_logs.payload` como dato sensible,
+- no exponer payloads completos en pantallas publicas ni owner,
+- limitar el acceso operativo a administradores tecnicos,
+- no registrar claves Stripe ni secretos de webhook,
+- revisar con asesor/legal el plazo de conservacion necesario para soporte, auditoria y fiscalidad,
+- definir antes de produccion una politica de purga o minimizacion si los payloads contienen datos personales no necesarios.
+
+## Checklist de QA
+
+Cobertura manual minima antes de publicar:
+
+- `/registro` valida email, contrasena y cantidad.
+- Un email ya existente en `app_users` queda bloqueado.
+- Un email con `pending_signup` no expirado queda bloqueado.
+- Checkout embebido carga con `publishable_key` y `client_secret`.
+- Pago correcto crea owner y billing account por webhook, no por redirect.
+- Refresh en `/registro/confirmando/{token}` muestra estado pendiente o completado segun webhook.
+- Webhook duplicado se ignora si ya estaba procesado.
+- `customer.subscription.updated` actualiza estado, periodo, cantidad y `cancel_at_period_end`.
+- `invoice.paid` o `invoice.finalized` crea/actualiza `billing_invoice`.
+- `/bookings/billing` abre Customer Portal si el owner tiene cuenta Stripe.
+- Crear vivienda se permite bajo limite contratado.
+- Crear vivienda se bloquea al alcanzar limite contratado.
+- Owner manual sin `BillingAccount` no queda bloqueado por Stripe.
+
+Tests automatizados pendientes recomendados:
+
+- MVC de `/registro` con validaciones y error de configuracion Stripe.
+- Servicio de activacion desde `checkout.session.completed`.
+- Webhook con firma valida y fixtures Stripe.
+- Idempotencia de webhook repetido.
+- Sincronizacion de `subscription.updated`.
+- Sincronizacion de facturas.
 
 ## Pantallas necesarias
 
 Publicas:
 
 - `/registro`
-- `/registro/pago`
-- `/registro/confirmando`
-- `/registro/completado`
-- `/registro/error`
+- `/registro/pago/{token}`
+- `/registro/confirmando/{token}`
 
 Owner:
 
@@ -540,21 +707,21 @@ Admin:
 - `/admin/billing/events`
 - `/admin/billing/invoices`
 
-Las pantallas admin pueden ser posteriores al MVP de cobro, pero deben estar contempladas.
+Las pantallas admin no estan implementadas en la primera vertical. Quedan contempladas para soporte y diagnostico en una entrega posterior.
 
 ## MVP de implementacion
 
 Primera entrega usable:
 
-1. Configuracion Stripe.
-2. Migraciones de billing.
-3. Formulario publico de registro.
-4. Checkout embebido.
-5. Webhook con idempotencia.
-6. Activacion de usuario por webhook.
-7. Limite de alojamientos segun cantidad pagada.
-8. Pantalla owner de billing con enlace al portal Stripe.
-9. Tests de controlador, servicio y webhook.
+1. Configuracion Stripe. Implementado.
+2. Migraciones de billing. Implementado.
+3. Formulario publico de registro. Implementado.
+4. Checkout embebido. Implementado.
+5. Webhook con idempotencia. Implementado.
+6. Activacion de usuario por webhook. Implementado.
+7. Limite de alojamientos segun cantidad pagada. Implementado.
+8. Pantalla owner de billing con enlace al portal Stripe. Implementado.
+9. Tests de limite de alojamientos y suite completa. Implementado parcialmente; faltan pruebas especificas de webhook con fixtures Stripe.
 
 No incluir en esta primera entrega:
 

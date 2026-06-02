@@ -1,6 +1,7 @@
 package es.checkpol.web;
 
 import es.checkpol.service.AccommodationService;
+import es.checkpol.service.billing.BillingLimitExceededException;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -43,7 +44,12 @@ public class AccommodationController {
             return populateForm(model, form, "/accommodations", "Nueva vivienda", "Guardar vivienda");
         }
 
-        accommodationService.create(form);
+        try {
+            accommodationService.create(form);
+        } catch (BillingLimitExceededException ex) {
+            bindingResult.reject("billing.limit", ex.getMessage());
+            return populateForm(model, form, "/accommodations", "Nueva vivienda", "Guardar vivienda");
+        }
         redirectAttributes.addFlashAttribute("flashMessage", "Vivienda guardada correctamente.");
         redirectAttributes.addFlashAttribute("flashKind", "success");
         return "redirect:/accommodations";

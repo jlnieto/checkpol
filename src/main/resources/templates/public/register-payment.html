@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pago | Checkpol</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body class="home-body">
+<header class="home-header">
+    <a class="home-brand" th:href="@{/}">
+        <span class="home-brand-mark" aria-hidden="true">C</span>
+        <span>Checkpol</span>
+    </a>
+</header>
+
+<main class="register-payment-shell">
+    <section class="register-payment-head">
+        <p class="home-kicker">Pago seguro</p>
+        <h1>Último paso para activar Checkpol</h1>
+        <p th:text="${signup.accommodationQuantity == 1 ? '1 alojamiento contratado.' : signup.accommodationQuantity + ' alojamientos contratados.'}">
+            1 alojamiento contratado.
+        </p>
+    </section>
+
+    <section class="register-panel register-payment-panel">
+        <div id="checkout"></div>
+        <p id="checkout-error" class="owner-error error mt-4" hidden>No se ha podido cargar el pago. Recarga la página o inténtalo de nuevo.</p>
+    </section>
+</main>
+
+<script th:inline="javascript">
+    const stripe = Stripe(/*[[${publishableKey}]]*/ "");
+    const clientSecret = /*[[${clientSecret}]]*/ "";
+
+    stripe.initEmbeddedCheckout({ clientSecret })
+        .then((checkout) => checkout.mount("#checkout"))
+        .catch(() => {
+            document.getElementById("checkout-error").hidden = false;
+        });
+</script>
+</body>
+</html>

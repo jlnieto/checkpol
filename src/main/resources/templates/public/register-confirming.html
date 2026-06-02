@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Activando Checkpol</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="home-body">
+<main class="register-state-shell">
+    <section class="register-state-card">
+        <p class="home-kicker">Pago recibido</p>
+        <h1>Estamos activando tu cuenta</h1>
+        <p>Stripe ya ha terminado el pago. Falta recibir la confirmación técnica para abrir el acceso.</p>
+        <a class="home-button-primary" th:href="@{|/registro/confirmando/${signup.token}|}">Comprobar de nuevo</a>
+    </section>
+</main>
+</body>
+</html>

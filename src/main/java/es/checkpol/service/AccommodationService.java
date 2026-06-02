@@ -2,6 +2,7 @@ package es.checkpol.service;
 
 import es.checkpol.domain.Accommodation;
 import es.checkpol.repository.AccommodationRepository;
+import es.checkpol.service.billing.BillingAccountService;
 import es.checkpol.web.AccommodationForm;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,13 +15,16 @@ public class AccommodationService {
 
     private final AccommodationRepository accommodationRepository;
     private final CurrentAppUserService currentAppUserService;
+    private final BillingAccountService billingAccountService;
 
     public AccommodationService(
         AccommodationRepository accommodationRepository,
-        CurrentAppUserService currentAppUserService
+        CurrentAppUserService currentAppUserService,
+        BillingAccountService billingAccountService
     ) {
         this.accommodationRepository = accommodationRepository;
         this.currentAppUserService = currentAppUserService;
+        this.billingAccountService = billingAccountService;
     }
 
     @Transactional(readOnly = true)
@@ -31,6 +35,7 @@ public class AccommodationService {
     @Transactional
     public Accommodation create(AccommodationForm form) {
         var currentUser = currentAppUserService.requireCurrentUserEntity();
+        billingAccountService.assertCanCreateAccommodation(currentUser);
         Accommodation accommodation = new Accommodation(
             currentUser,
             form.name().trim(),

@@ -37,52 +37,63 @@ Construir el producto por incrementos pequenos, dejando siempre algo usable y si
 - seleccion o creacion de direccion sin perder el contexto,
 - revision interna final antes del XML.
 
-## Fases razonables siguientes
+### Registro, pago recurrente y billing
 
-### 1. Registro, pago recurrente y billing
-
-- implementar registro publico minimo,
-- integrar Stripe Checkout embebido para suscripciones mensuales,
+- registro publico minimo en `/registro`,
+- Stripe Checkout embebido para suscripciones mensuales,
 - vender por numero de alojamientos contratados,
-- activar owners solo por webhook confirmado,
-- limitar alojamientos activos segun cantidad pagada,
-- delegar facturas y portal de cliente en Stripe,
-- guardar espejo interno de suscripciones, facturas y eventos,
-- contemplar OSS para B2C UE sin implementar declaracion fiscal propia.
+- activacion de owners solo por webhook confirmado,
+- limite de alojamientos segun cantidad pagada,
+- portal de cliente y facturas delegados en Stripe,
+- espejo interno de suscripciones, facturas y eventos,
+- OSS contemplado para B2C UE sin declaracion fiscal propia dentro de Checkpol.
+
+Queda fuera de esta primera vertical: admin billing, reprocesado manual de webhooks, export fiscal CSV, cambio de cantidad propio y politica fina de suspension.
 
 Documento de referencia:
 
 - [billing-stripe.md](billing-stripe.md)
 
-### 2. Cierre visual del frontend compartido
+## Fases razonables siguientes
+
+### 1. Cierre visual del frontend compartido
 
 - consolidar la base visual compartida de `public`, `owner` y `admin`,
 - simplificar naming, fragmentos y utilidades para reducir deuda visual.
 
-### 3. Mejora operativa del autoservicio
+### 2. Mejora operativa del autoservicio
 
 - reforzar mensajes y ayudas por paso,
 - ajustar edge cases del wizard,
 - mejorar consistencia movil entre vistas publicas relacionadas.
 
-### 4. Mayor control del enlace publico
+### 3. Mayor control del enlace publico
 
 - enlace individual por huesped,
 - cierre por numero esperado de huespedes,
 - reglas mas estrictas de ciclo de vida del acceso.
 
-### 5. Capas de ayuda al gestor
+### 4. Capas de ayuda al gestor
 
 - mejoras en revision interna,
 - mejoras en validacion y cobertura del catálogo nacional de municipios,
 - mejor soporte a datos dudosos o incompletos.
 
-### 6. Endurecimiento del area administrativa
+### 5. Endurecimiento del area administrativa
 
 - gestion de contraseñas y estado de usuarios,
 - trazabilidad de operaciones administrativas,
 - consolidar el módulo administrativo de `municipalities`,
 - vigilar y endurecer la compatibilidad con futuras publicaciones oficiales del callejero del INE.
+
+### 6. Segunda entrega de billing
+
+- admin billing con filtros de problemas,
+- reprocesado manual de webhooks fallidos,
+- export CSV interno para contraste fiscal,
+- flujo propio para cambiar cantidad si Stripe Customer Portal no es suficiente,
+- avisos mas finos para pagos fallidos,
+- politica de suspension tras periodo de gracia.
 
 ## Fuera del roadmap inmediato
 
