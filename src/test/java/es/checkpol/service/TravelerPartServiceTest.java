@@ -64,6 +64,17 @@ class TravelerPartServiceTest {
     }
 
     @Test
+    void rejectsGenerationWhenBookingIsArchived() {
+        BookingDetails details = sampleDetails(true);
+        details.booking().archive(OffsetDateTime.now());
+        Mockito.when(bookingService.getDetails(1L)).thenReturn(details);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> travelerPartService.generateXml(1L));
+
+        assertEquals("Esta estancia está archivada. Recupérala antes de preparar o presentar un parte.", exception.getMessage());
+    }
+
+    @Test
     void returnsStoredXmlForExistingCommunication() {
         GeneratedCommunication communication = new GeneratedCommunication(sampleDetails(true).booking(), 2, OffsetDateTime.now(), "<xml/>");
         Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);

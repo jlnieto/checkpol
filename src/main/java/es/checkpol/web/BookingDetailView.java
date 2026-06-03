@@ -37,6 +37,9 @@ public record BookingDetailView(
     public static BookingDetailView from(BookingDetails details, boolean shareMessagePrepared) {
         GeneratedCommunication communication = details.lastGeneratedCommunication().orElse(null);
         CommunicationDispatchStatus status = communication == null ? null : communication.getDispatchStatus();
+        if (details.booking().isArchived()) {
+            return archived(details, communication);
+        }
         boolean duplicateFailureNeedsChanges = status == CommunicationDispatchStatus.SUBMISSION_FAILED
             && Integer.valueOf(10121).equals(communication.getSesResponseCode());
         boolean duplicateFailure = duplicateFailureNeedsChanges && details.lastGeneratedCommunicationMatchesCurrentXml();
@@ -89,6 +92,32 @@ public record BookingDetailView(
             details.readyForTravelerPart() && !details.sesSubmissionAvailable(),
             !sesLocked && !waitingForGuests,
             details.readyForTravelerPart() && !sesLocked,
+            communication != null,
+            communicationSummaryTitle(communication),
+            communicationSummaryStatusLabel(communication),
+            communicationSummaryStatusClass(communication),
+            communicationSummaryCopy(communication, details),
+            communicationSummaryMeta(communication)
+        );
+    }
+
+    private static BookingDetailView archived(BookingDetails details, GeneratedCommunication communication) {
+        return new BookingDetailView(
+            "Archivada",
+            "owner-status-neutral",
+            "owner-banner",
+            "Estancia archivada",
+            "Fuera de pendientes.",
+            "UNARCHIVE",
+            null,
+            communication == null ? null : communication.getId(),
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
             communication != null,
             communicationSummaryTitle(communication),
             communicationSummaryStatusLabel(communication),

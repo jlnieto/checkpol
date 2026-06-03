@@ -26,7 +26,7 @@
 
         <section class="owner-grid-main">
             <div class="owner-stack">
-                <section class="owner-priority-card" th:unless="${hasAccommodations}">
+                <section class="owner-priority-card" th:unless="${hasAccommodations or selectedFilter == 'ARCHIVED'}">
                     <div class="owner-banner-row">
                         <div class="space-y-3">
                             <p class="owner-priority-eyebrow">Siguiente paso</p>
@@ -41,7 +41,7 @@
                     </div>
                 </section>
 
-                <section class="owner-priority-card" th:if="${hasAccommodations and nextBooking != null}">
+                <section class="owner-priority-card" th:if="${selectedFilter != 'ARCHIVED' and hasAccommodations and nextBooking != null}">
                     <div class="owner-banner-row">
                         <div class="space-y-3">
                             <p class="owner-priority-eyebrow">Siguiente paso</p>
@@ -59,7 +59,7 @@
                     </div>
                 </section>
 
-                <section class="owner-priority-card" th:if="${hasAccommodations and nextBooking == null and nextCommunicationBooking != null}">
+                <section class="owner-priority-card" th:if="${selectedFilter != 'ARCHIVED' and hasAccommodations and nextBooking == null and nextCommunicationBooking != null}">
                     <div class="owner-banner-row">
                         <div class="space-y-3">
                             <p class="owner-priority-eyebrow">Siguiente paso</p>
@@ -77,7 +77,7 @@
                     </div>
                 </section>
 
-                <section class="owner-priority-card" th:if="${hasAccommodations and nextBooking == null and nextCommunicationBooking == null}">
+                <section class="owner-priority-card" th:if="${selectedFilter != 'ARCHIVED' and hasAccommodations and nextBooking == null and nextCommunicationBooking == null}">
                     <div class="owner-banner-row">
                         <div class="space-y-3">
                             <p class="owner-priority-eyebrow">Siguiente paso</p>
@@ -96,7 +96,22 @@
                     </div>
                 </section>
 
-                <section class="owner-card" th:if="${hasAccommodations and #lists.size(reviewQueue) > 1}">
+                <section class="owner-priority-card" th:if="${selectedFilter == 'ARCHIVED'}">
+                    <div class="owner-banner-row">
+                        <div class="space-y-3">
+                            <p class="owner-priority-eyebrow">Archivo</p>
+                            <div class="space-y-2">
+                                <h2 class="text-3xl font-extrabold tracking-tight text-slate-900">Estancias archivadas</h2>
+                                <p class="owner-copy">No aparecen en pendientes.</p>
+                            </div>
+                        </div>
+                        <div class="owner-banner-actions">
+                            <a class="owner-button-primary" th:href="@{/bookings}">Volver a estancias</a>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="owner-card" th:if="${selectedFilter != 'ARCHIVED' and hasAccommodations and #lists.size(reviewQueue) > 1}">
                     <div class="space-y-1">
                         <p class="owner-kicker">Para revisar ahora</p>
                         <h2 class="text-xl font-extrabold tracking-tight text-slate-900">Estas son las siguientes</h2>
@@ -123,7 +138,7 @@
                     </div>
                 </section>
 
-                <section class="owner-card" th:if="${hasAccommodations and #lists.isEmpty(reviewQueue) and nextCommunicationBooking == null and countAll > 0}">
+                <section class="owner-card" th:if="${selectedFilter != 'ARCHIVED' and hasAccommodations and #lists.isEmpty(reviewQueue) and nextCommunicationBooking == null and countAll > 0}">
                     <div class="space-y-2">
                         <p class="owner-kicker">Pendientes</p>
                         <h2 class="text-2xl font-extrabold tracking-tight text-slate-900">No hay nada que revisar ahora</h2>
@@ -138,14 +153,16 @@
                     <div class="space-y-2">
                         <p class="owner-kicker" th:text="${selectedFilter == 'ALL' ? 'Todas' : 'Vista filtrada'}">Todas</p>
                         <h2 class="text-2xl font-extrabold tracking-tight text-slate-900"
-                            th:text="${selectedFilter == 'ALL' ? 'Todas las estancias' : (selectedFilter == 'INCOMPLETE' ? 'Estancias pendientes' : (selectedFilter == 'READY' ? 'Estancias listas' : (selectedFilter == 'TODAY' ? 'Entradas de hoy' : 'Próximas estancias')))}">Todas las estancias</h2>
+                            th:text="${selectedFilter == 'ALL' ? 'Todas las estancias' : (selectedFilter == 'INCOMPLETE' ? 'Estancias pendientes' : (selectedFilter == 'READY' ? 'Estancias listas' : (selectedFilter == 'TODAY' ? 'Entradas de hoy' : (selectedFilter == 'ARCHIVED' ? 'Estancias archivadas' : 'Próximas estancias'))))}">Todas las estancias</h2>
                     </div>
 
                     <div class="mt-4 owner-queue-list">
                         <article class="owner-queue-card" th:each="item : ${bookings}">
 	                            <div class="owner-booking-badge-row">
+                                <span class="owner-status-neutral"
+                                      th:if="${item.booking.archived}">Archivada</span>
 	                                <span class="owner-status-ready"
-	                                      th:if="${item.communicationStatusSummary != null}"
+	                                      th:if="${!item.booking.archived and item.communicationStatusSummary != null}"
 	                                      th:text="${item.communicationDispatchStatus != null and item.communicationDispatchStatus.name() == 'SES_CANCELLED'
 	                                          ? 'Anulada'
 	                                          : (item.communicationDispatchStatus != null and item.communicationDispatchStatus.name() == 'SES_RESPONSE_NEEDS_REVIEW'
@@ -158,9 +175,9 @@
 	                                                          ? 'Pendiente SES'
 	                                                          : (item.readyForTravelerPart ? 'Lista' : 'Pendiente')))))}">Lista</span>
                                 <span class="owner-status-ready"
-                                      th:if="${item.communicationStatusSummary == null and item.readyForTravelerPart}">Lista</span>
+                                      th:if="${!item.booking.archived and item.communicationStatusSummary == null and item.readyForTravelerPart}">Lista</span>
                                 <span class="owner-status-pending"
-                                      th:unless="${item.communicationStatusSummary != null or item.readyForTravelerPart}"
+                                      th:unless="${item.booking.archived or item.communicationStatusSummary != null or item.readyForTravelerPart}"
                                       th:text="${item.operationalStatus.name() == 'REVIEW_PENDING' ? 'Pendiente' : 'Bloqueada'}">Pendiente</span>
                                 <span class="owner-pill-muted" th:text="${item.booking.channel.label}">Airbnb</span>
                             </div>
@@ -202,6 +219,12 @@
                             <strong>Viviendas</strong>
                             <span>Solo será necesario cuando des de alta una vivienda nueva o quieras corregir una existente.</span>
                         </div>
+                        <a class="owner-helper-item owner-helper-link"
+                           th:if="${countArchived > 0}"
+                           th:href="@{/bookings(filter='archived')}">
+                            <strong th:text="${countArchived == 1 ? '1 estancia archivada' : countArchived + ' estancias archivadas'}">1 estancia archivada</strong>
+                            <span>Ver estancias fuera de pendientes.</span>
+                        </a>
                     </div>
                 </section>
             </aside>

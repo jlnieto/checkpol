@@ -82,6 +82,7 @@ Responsabilidades:
 - guardar referencia interna o del canal,
 - guardar fechas de reserva, entrada y salida,
 - reflejar estado operativo,
+- permitir archivado cuando la estancia debe salir de la operativa diaria sin perder trazabilidad,
 - mantener, cuando exista, un acceso publico temporal para el autoservicio de huespedes.
 
 ### Guest
@@ -179,6 +180,13 @@ Responsabilidades:
 - Un `Guest` referencia una `Address`.
 - Un `GeneratedCommunication` pertenece a una `Booking`.
 - Un `SelfServiceAccess` pertenece a una `Booking`.
+
+## Borrado y archivado de estancias
+
+- Una estancia solo se puede eliminar si no tiene ningun `GeneratedCommunication`.
+- Al eliminar una estancia sin comunicaciones se eliminan tambien sus huespedes, direcciones y enlace publico.
+- Si ya existe un XML o comunicacion SES, la estancia no se borra: se archiva para quitarla de pendientes y conservar la trazabilidad.
+- Una estancia archivada puede recuperarse si el gestor necesita volver a trabajar sobre ella.
 
 ## Vocabularios controlados
 

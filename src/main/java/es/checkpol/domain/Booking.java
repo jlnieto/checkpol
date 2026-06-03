@@ -72,6 +72,9 @@ public class Booking {
     @Column(name = "self_service_expires_at")
     private OffsetDateTime selfServiceExpiresAt;
 
+    @Column(name = "archived_at")
+    private OffsetDateTime archivedAt;
+
     protected Booking() {
     }
 
@@ -200,6 +203,14 @@ public class Booking {
         return selfServiceExpiresAt;
     }
 
+    public OffsetDateTime getArchivedAt() {
+        return archivedAt;
+    }
+
+    public boolean isArchived() {
+        return archivedAt != null;
+    }
+
     public void update(
         Accommodation accommodation,
         String referenceCode,
@@ -231,5 +242,13 @@ public class Booking {
     public void updateSelfServiceAccess(String token, OffsetDateTime expiresAt) {
         this.selfServiceToken = token;
         this.selfServiceExpiresAt = expiresAt;
+    }
+
+    public void archive(OffsetDateTime archivedAt) {
+        this.archivedAt = archivedAt;
+    }
+
+    public void unarchive() {
+        this.archivedAt = null;
     }
 }

@@ -5,7 +5,8 @@ public enum BookingFilter {
     INCOMPLETE,
     READY,
     TODAY,
-    UPCOMING;
+    UPCOMING,
+    ARCHIVED;
 
     public static BookingFilter fromParam(String value) {
         if (value == null || value.isBlank()) {
@@ -16,6 +17,7 @@ public enum BookingFilter {
             case "ready" -> READY;
             case "today" -> TODAY;
             case "upcoming" -> UPCOMING;
+            case "archived" -> ARCHIVED;
             default -> ALL;
         };
     }

@@ -15,9 +15,22 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         from Booking b
         join fetch b.accommodation
         where b.owner.id = :ownerId
+          and b.archivedAt is null
         order by b.checkInDate asc, b.id asc
         """)
     List<Booking> findAllForList(Long ownerId);
+
+    @Query("""
+        select b
+        from Booking b
+        join fetch b.accommodation
+        where b.owner.id = :ownerId
+          and b.archivedAt is not null
+        order by b.archivedAt desc, b.id desc
+        """)
+    List<Booking> findAllArchivedForList(Long ownerId);
+
+    long countByOwnerIdAndArchivedAtIsNotNull(Long ownerId);
 
     @Query("""
         select b

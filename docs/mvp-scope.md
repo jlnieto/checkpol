@@ -17,6 +17,8 @@
 - guardar referencia interna o del canal,
 - guardar fechas operativas,
 - calcular estado operativo.
+- eliminar estancias si todavia no tienen XML generado,
+- archivar estancias con XML o SES para conservar trazabilidad sin mostrarlas como pendientes.
 
 ### B2. Acceso y administracion
 

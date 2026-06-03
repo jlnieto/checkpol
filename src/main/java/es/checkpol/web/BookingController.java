@@ -39,6 +39,7 @@ public class BookingController {
         List<BookingListItem> readyItems = bookingService.findAll(BookingFilter.READY);
         List<BookingListItem> todayItems = bookingService.findAll(BookingFilter.TODAY);
         List<BookingListItem> upcomingItems = bookingService.findAll(BookingFilter.UPCOMING);
+        long archivedCount = bookingService.countArchived();
         List<BookingListItem> reviewQueue = incompleteItems.stream()
             .limit(3)
             .toList();
@@ -53,6 +54,7 @@ public class BookingController {
             case READY -> readyItems;
             case TODAY -> todayItems;
             case UPCOMING -> upcomingItems;
+            case ARCHIVED -> bookingService.findAll(BookingFilter.ARCHIVED);
         });
         model.addAttribute("reviewQueue", reviewQueue);
         model.addAttribute("nextBooking", incompleteItems.isEmpty() ? null : incompleteItems.getFirst());
@@ -66,6 +68,7 @@ public class BookingController {
         model.addAttribute("countReady", readyItems.size());
         model.addAttribute("countToday", todayItems.size());
         model.addAttribute("countUpcoming", upcomingItems.size());
+        model.addAttribute("countArchived", archivedCount);
         model.addAttribute("reviewSummary", buildReviewSummary(incompleteItems.size()));
         model.addAttribute("communicationSummary", buildCommunicationSummary(readyItems, communicationActionItems));
         return "bookings/list";
@@ -253,6 +256,48 @@ public class BookingController {
         redirectAttributes.addFlashAttribute("flashMessage", "Estancia actualizada correctamente.");
         redirectAttributes.addFlashAttribute("flashKind", "success");
         return "redirect:/bookings/" + id;
+    }
+
+    @PostMapping("/bookings/{id}/delete")
+    public String deleteBooking(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            bookingService.delete(id);
+            redirectAttributes.addFlashAttribute("flashMessage", "Estancia eliminada.");
+            redirectAttributes.addFlashAttribute("flashKind", "success");
+            return "redirect:/bookings";
+        } catch (IllegalStateException | IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("flashMessage", exception.getMessage());
+            redirectAttributes.addFlashAttribute("flashKind", "error");
+            return "redirect:/bookings/" + id;
+        }
+    }
+
+    @PostMapping("/bookings/{id}/archive")
+    public String archiveBooking(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            bookingService.archive(id);
+            redirectAttributes.addFlashAttribute("flashMessage", "Estancia archivada. Ya no aparece en pendientes.");
+            redirectAttributes.addFlashAttribute("flashKind", "success");
+            return "redirect:/bookings";
+        } catch (IllegalStateException | IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("flashMessage", exception.getMessage());
+            redirectAttributes.addFlashAttribute("flashKind", "error");
+            return "redirect:/bookings/" + id;
+        }
+    }
+
+    @PostMapping("/bookings/{id}/unarchive")
+    public String unarchiveBooking(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            bookingService.unarchive(id);
+            redirectAttributes.addFlashAttribute("flashMessage", "Estancia recuperada.");
+            redirectAttributes.addFlashAttribute("flashKind", "success");
+            return "redirect:/bookings/" + id;
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("flashMessage", exception.getMessage());
+            redirectAttributes.addFlashAttribute("flashKind", "error");
+            return "redirect:/bookings";
+        }
     }
 
     private String populateForm(Model model, BookingForm form, String action, String backHref, String title, String submitLabel) {

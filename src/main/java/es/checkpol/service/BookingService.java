@@ -10,6 +10,7 @@ import es.checkpol.domain.GuestRelationship;
 import es.checkpol.domain.GuestReviewStatus;
 import es.checkpol.domain.PaymentType;
 import es.checkpol.repository.AccommodationRepository;
+import es.checkpol.repository.AddressRepository;
 import es.checkpol.repository.BookingRepository;
 import es.checkpol.repository.GeneratedCommunicationRepository;
 import es.checkpol.repository.GuestRepository;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -32,6 +34,7 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final AccommodationRepository accommodationRepository;
+    private final AddressRepository addressRepository;
     private final GuestRepository guestRepository;
     private final GeneratedCommunicationRepository generatedCommunicationRepository;
     private final CurrentAppUserService currentAppUserService;
@@ -40,6 +43,7 @@ public class BookingService {
     public BookingService(
         BookingRepository bookingRepository,
         AccommodationRepository accommodationRepository,
+        AddressRepository addressRepository,
         GuestRepository guestRepository,
         GeneratedCommunicationRepository generatedCommunicationRepository,
         CurrentAppUserService currentAppUserService,
@@ -47,6 +51,7 @@ public class BookingService {
     ) {
         this.bookingRepository = bookingRepository;
         this.accommodationRepository = accommodationRepository;
+        this.addressRepository = addressRepository;
         this.guestRepository = guestRepository;
         this.generatedCommunicationRepository = generatedCommunicationRepository;
         this.currentAppUserService = currentAppUserService;
@@ -55,37 +60,62 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public List<BookingListItem> findAll() {
+        return findActiveListItems();
+    }
+
+    private List<BookingListItem> findActiveListItems() {
         List<BookingListItem> items = new ArrayList<>();
         Long currentUserId = currentAppUserService.requireCurrentUserId();
         for (Booking booking : bookingRepository.findAllForList(currentUserId)) {
-            List<Guest> guests = guestRepository.findAllByBookingIdAndBookingOwnerIdOrderByIdAsc(booking.getId(), currentUserId);
-            List<GeneratedCommunication> communications = generatedCommunicationRepository.findAllByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(booking.getId(), currentUserId);
-            int generatedCount = communications.size();
-            GeneratedCommunication lastCommunication = communications.isEmpty() ? null : communications.getFirst();
-            ReadinessAssessment assessment = assessReadiness(booking, guests);
-            items.add(new BookingListItem(
-                booking,
-                guests.size(),
-                booking.getPersonCount() == null ? 0 : booking.getPersonCount(),
-                assessment.readyForTravelerPart(),
-                booking.getOwner() != null && booking.getOwner().hasSesWebServiceConfiguration(),
-                calculateOperationalStatus(assessment, generatedCount),
-                assessment.pendingReviewGuestCount(),
-                assessment.guestCountMismatch(),
-                assessment.blockingSummary(),
-                buildCommunicationStatusSummary(lastCommunication),
-                lastCommunication == null ? null : lastCommunication.getDispatchStatus()
-            ));
+            items.add(toListItem(booking, currentUserId));
         }
         return items;
     }
 
     @Transactional(readOnly = true)
     public List<BookingListItem> findAll(BookingFilter filter) {
+        if (filter == BookingFilter.ARCHIVED) {
+            return findArchivedListItems();
+        }
         LocalDate today = LocalDate.now();
         return findAll().stream()
             .filter(item -> matchesFilter(item, filter, today))
             .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public long countArchived() {
+        return bookingRepository.countByOwnerIdAndArchivedAtIsNotNull(currentAppUserService.requireCurrentUserId());
+    }
+
+    private List<BookingListItem> findArchivedListItems() {
+        List<BookingListItem> items = new ArrayList<>();
+        Long currentUserId = currentAppUserService.requireCurrentUserId();
+        for (Booking booking : bookingRepository.findAllArchivedForList(currentUserId)) {
+            items.add(toListItem(booking, currentUserId));
+        }
+        return items;
+    }
+
+    private BookingListItem toListItem(Booking booking, Long ownerId) {
+        List<Guest> guests = guestRepository.findAllByBookingIdAndBookingOwnerIdOrderByIdAsc(booking.getId(), ownerId);
+        List<GeneratedCommunication> communications = generatedCommunicationRepository.findAllByBookingIdAndBookingOwnerIdOrderByGeneratedAtDesc(booking.getId(), ownerId);
+        int generatedCount = communications.size();
+        GeneratedCommunication lastCommunication = communications.isEmpty() ? null : communications.getFirst();
+        ReadinessAssessment assessment = assessReadiness(booking, guests);
+        return new BookingListItem(
+            booking,
+            guests.size(),
+            booking.getPersonCount() == null ? 0 : booking.getPersonCount(),
+            assessment.readyForTravelerPart(),
+            booking.getOwner() != null && booking.getOwner().hasSesWebServiceConfiguration(),
+            booking.isArchived() ? BookingOperationalStatus.ARCHIVED : calculateOperationalStatus(assessment, generatedCount),
+            assessment.pendingReviewGuestCount(),
+            assessment.guestCountMismatch(),
+            booking.isArchived() ? "Fuera de pendientes." : assessment.blockingSummary(),
+            buildCommunicationStatusSummary(lastCommunication),
+            lastCommunication == null ? null : lastCommunication.getDispatchStatus()
+        );
     }
 
     @Transactional
@@ -176,7 +206,7 @@ public class BookingService {
             booking.getSelfServiceToken() == null || booking.getSelfServiceExpiresAt() == null
                 ? java.util.Optional.empty()
                 : java.util.Optional.of(new SelfServiceAccess(booking.getSelfServiceToken(), booking.getSelfServiceExpiresAt())),
-            calculateOperationalStatus(assessment, communications.size()),
+            booking.isArchived() ? BookingOperationalStatus.ARCHIVED : calculateOperationalStatus(assessment, communications.size()),
             assessment.pendingReviewGuestCount(),
             guests.stream().filter(guest -> guest.getSubmissionSource() == es.checkpol.domain.GuestSubmissionSource.SELF_SERVICE).count(),
             assessment.blockedByBookingData(),
@@ -187,6 +217,43 @@ public class BookingService {
             assessment.blockingMessage(),
             assessment.blockingReasons()
         );
+    }
+
+    @Transactional
+    public void delete(Long id) {
+        Long currentUserId = currentAppUserService.requireCurrentUserId();
+        Booking booking = bookingRepository.findByIdAndOwnerId(id, currentUserId)
+            .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa estancia."));
+        long communicationCount = generatedCommunicationRepository.countByBookingIdAndBookingOwnerId(id, currentUserId);
+        if (communicationCount > 0) {
+            throw new IllegalStateException("No se puede eliminar porque ya tiene XML o comunicación SES. Archívala si no debe aparecer en pendientes.");
+        }
+
+        guestRepository.deleteAllByBookingIdAndOwnerId(id, currentUserId);
+        addressRepository.deleteAllByBookingIdAndOwnerId(id, currentUserId);
+        bookingRepository.delete(booking);
+    }
+
+    @Transactional
+    public void archive(Long id) {
+        Long currentUserId = currentAppUserService.requireCurrentUserId();
+        Booking booking = bookingRepository.findByIdAndOwnerId(id, currentUserId)
+            .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa estancia."));
+        if (booking.isArchived()) {
+            return;
+        }
+        long communicationCount = generatedCommunicationRepository.countByBookingIdAndBookingOwnerId(id, currentUserId);
+        if (communicationCount == 0) {
+            throw new IllegalStateException("Esta estancia no tiene XML ni comunicación SES. Puedes eliminarla.");
+        }
+        booking.archive(OffsetDateTime.now());
+    }
+
+    @Transactional
+    public void unarchive(Long id) {
+        Booking booking = bookingRepository.findByIdAndOwnerId(id, currentAppUserService.requireCurrentUserId())
+            .orElseThrow(() -> new IllegalArgumentException("No he encontrado esa estancia."));
+        booking.unarchive();
     }
 
     private boolean latestCommunicationMatchesCurrentXml(
@@ -265,6 +332,7 @@ public class BookingService {
                 || item.operationalStatus() == BookingOperationalStatus.XML_GENERATED;
             case TODAY -> item.booking().getCheckInDate().isEqual(today);
             case UPCOMING -> item.booking().getCheckInDate().isAfter(today);
+            case ARCHIVED -> item.operationalStatus() == BookingOperationalStatus.ARCHIVED;
         };
     }
 
