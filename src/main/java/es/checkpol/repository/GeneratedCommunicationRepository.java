@@ -31,6 +31,8 @@ public interface GeneratedCommunicationRepository extends JpaRepository<Generate
 
     long countByDispatchStatusInAndSesProblemReviewedAtIsNull(List<CommunicationDispatchStatus> statuses);
 
+    long countByBookingIdAndBookingOwnerId(Long bookingId, Long ownerId);
+
     long countByBookingOwnerIdAndDispatchStatus(Long ownerId, CommunicationDispatchStatus dispatchStatus);
 
     long countByBookingOwnerIdAndDispatchStatusIn(Long ownerId, List<CommunicationDispatchStatus> statuses);

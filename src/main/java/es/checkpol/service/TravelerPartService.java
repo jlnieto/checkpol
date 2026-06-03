@@ -156,6 +156,9 @@ public class TravelerPartService {
 
     private BookingDetails getReadyDetails(Long bookingId) {
         BookingDetails details = bookingService.getDetails(bookingId);
+        if (details.booking().isArchived()) {
+            throw new IllegalStateException("Esta estancia está archivada. Recupérala antes de preparar o presentar un parte.");
+        }
         if (!details.readyForTravelerPart()) {
             throw new IllegalStateException(details.blockingMessage() == null
                 ? "La estancia no está lista para generar el archivo SES."

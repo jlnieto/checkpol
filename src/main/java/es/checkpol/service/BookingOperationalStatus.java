@@ -6,7 +6,8 @@ public enum BookingOperationalStatus {
     REVIEW_PENDING("Revisión pendiente"),
     INCOMPLETE("Incompleta"),
     READY_FOR_XML("Lista para XML"),
-    XML_GENERATED("XML generado");
+    XML_GENERATED("XML generado"),
+    ARCHIVED("Archivada");
 
     private final String label;
 

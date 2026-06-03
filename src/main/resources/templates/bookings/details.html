@@ -91,10 +91,45 @@
                             <button type="submit" class="owner-button-primary w-full justify-center">Presentar parte en SES</button>
                         </form>
                         <a class="owner-button-primary" th:if="${detailView.primaryAction == 'DOWNLOAD_XML'}" th:href="@{|/bookings/${details.booking.id}/traveler-part.xml|}">Descargar archivo para SES</a>
+                        <form th:if="${detailView.primaryAction == 'UNARCHIVE'}"
+                              th:action="@{|/bookings/${details.booking.id}/unarchive|}" method="post">
+                            <button type="submit" class="owner-button-primary w-full justify-center">Recuperar estancia</button>
+                        </form>
                     </div>
                 </div>
 
                 <div class="sr-only" th:if="${shareMessage != null}" data-share-message-text th:text="${shareMessage.messageText}"></div>
+            </section>
+
+            <section class="owner-card-soft" th:if="${details.canDelete() or details.canArchive() or details.booking.archived}">
+                <div class="owner-section-head">
+                    <div>
+                        <p class="owner-kicker">Gestión</p>
+                        <h2 class="text-xl font-extrabold tracking-tight text-slate-900"
+                            th:text="${details.booking.archived ? 'Estancia archivada' : (details.canArchive() ? 'Archivar estancia' : 'Eliminar estancia')}">Eliminar estancia</h2>
+                        <p class="mt-2 owner-copy"
+                           th:if="${details.canArchive()}">Conserva XML y comunicaciones SES.</p>
+                    </div>
+                    <div class="owner-actions">
+                        <form th:if="${details.canDelete()}"
+                              th:action="@{|/bookings/${details.booking.id}/delete|}"
+                              method="post"
+                              onsubmit="return confirm('Se eliminará la estancia y sus datos asociados. No se puede deshacer.');">
+                            <button type="submit" class="owner-button-danger">Eliminar estancia</button>
+                        </form>
+                        <form th:if="${details.canArchive()}"
+                              th:action="@{|/bookings/${details.booking.id}/archive|}"
+                              method="post"
+                              onsubmit="return confirm('Se archivará la estancia. Podrás recuperarla después.');">
+                            <button type="submit" class="owner-button-secondary">Archivar estancia</button>
+                        </form>
+                        <form th:if="${details.booking.archived}"
+                              th:action="@{|/bookings/${details.booking.id}/unarchive|}"
+                              method="post">
+                            <button type="submit" class="owner-button-secondary">Recuperar estancia</button>
+                        </form>
+                    </div>
+                </div>
             </section>
         </div>
 
@@ -153,7 +188,7 @@
             </div>
         </section>
 
-        <section class="owner-grid-main" data-owner-secondary th:if="${details.readyForTravelerPart}">
+        <section class="owner-grid-main" data-owner-secondary th:if="${details.readyForTravelerPart or details.generatedCommunicationCount > 0}">
             <div class="owner-stack owner-detail-secondary-stack">
                 <article class="owner-card-soft" th:if="${detailView.showSelfServiceOptions}">
                     <p class="owner-kicker">Enlace público</p>

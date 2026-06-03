@@ -31,6 +31,14 @@ public record BookingDetails(
     String blockingMessage,
     List<String> blockingReasons
 ) {
+    public boolean canDelete() {
+        return !booking.isArchived() && generatedCommunicationCount == 0;
+    }
+
+    public boolean canArchive() {
+        return !booking.isArchived() && generatedCommunicationCount > 0;
+    }
+
     public BookingDetails(
         Booking booking,
         List<Guest> guests,

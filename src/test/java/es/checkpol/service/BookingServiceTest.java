@@ -15,6 +15,7 @@ import es.checkpol.domain.GeneratedCommunication;
 import es.checkpol.domain.PaymentType;
 import es.checkpol.infrastructure.xml.TravelerPartXmlGenerator;
 import es.checkpol.repository.AccommodationRepository;
+import es.checkpol.repository.AddressRepository;
 import es.checkpol.repository.BookingRepository;
 import es.checkpol.repository.GeneratedCommunicationRepository;
 import es.checkpol.repository.GuestRepository;
@@ -35,6 +36,7 @@ class BookingServiceTest {
 
     private final BookingRepository bookingRepository = Mockito.mock(BookingRepository.class);
     private final AccommodationRepository accommodationRepository = Mockito.mock(AccommodationRepository.class);
+    private final AddressRepository addressRepository = Mockito.mock(AddressRepository.class);
     private final GuestRepository guestRepository = Mockito.mock(GuestRepository.class);
     private final GeneratedCommunicationRepository generatedCommunicationRepository = Mockito.mock(GeneratedCommunicationRepository.class);
     private final CurrentAppUserService currentAppUserService = Mockito.mock(CurrentAppUserService.class);
@@ -42,6 +44,7 @@ class BookingServiceTest {
     private final BookingService bookingService = new BookingService(
         bookingRepository,
         accommodationRepository,
+        addressRepository,
         guestRepository,
         generatedCommunicationRepository,
         currentAppUserService,
@@ -244,6 +247,69 @@ class BookingServiceTest {
         assertEquals(false, details.readyForTravelerPart());
         assertEquals(true, details.blockedByAddressExport());
         assertEquals(BookingOperationalStatus.INCOMPLETE, details.operationalStatus());
+    }
+
+    @Test
+    void deletesBookingWithoutGeneratedCommunications() {
+        Booking booking = sampleBooking(1);
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(bookingRepository.findByIdAndOwnerId(1L, 7L)).thenReturn(Optional.of(booking));
+        Mockito.when(generatedCommunicationRepository.countByBookingIdAndBookingOwnerId(1L, 7L)).thenReturn(0L);
+
+        bookingService.delete(1L);
+
+        Mockito.verify(guestRepository).deleteAllByBookingIdAndOwnerId(1L, 7L);
+        Mockito.verify(addressRepository).deleteAllByBookingIdAndOwnerId(1L, 7L);
+        Mockito.verify(bookingRepository).delete(booking);
+    }
+
+    @Test
+    void rejectsDeleteWhenGeneratedCommunicationExists() {
+        Booking booking = sampleBooking(1);
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(bookingRepository.findByIdAndOwnerId(1L, 7L)).thenReturn(Optional.of(booking));
+        Mockito.when(generatedCommunicationRepository.countByBookingIdAndBookingOwnerId(1L, 7L)).thenReturn(1L);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> bookingService.delete(1L));
+
+        assertEquals("No se puede eliminar porque ya tiene XML o comunicación SES. Archívala si no debe aparecer en pendientes.", exception.getMessage());
+        Mockito.verify(bookingRepository, Mockito.never()).delete(Mockito.any());
+    }
+
+    @Test
+    void archivesBookingWithGeneratedCommunication() {
+        Booking booking = sampleBooking(1);
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(bookingRepository.findByIdAndOwnerId(1L, 7L)).thenReturn(Optional.of(booking));
+        Mockito.when(generatedCommunicationRepository.countByBookingIdAndBookingOwnerId(1L, 7L)).thenReturn(1L);
+
+        bookingService.archive(1L);
+
+        assertEquals(true, booking.isArchived());
+    }
+
+    @Test
+    void rejectsArchiveWithoutGeneratedCommunication() {
+        Booking booking = sampleBooking(1);
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(bookingRepository.findByIdAndOwnerId(1L, 7L)).thenReturn(Optional.of(booking));
+        Mockito.when(generatedCommunicationRepository.countByBookingIdAndBookingOwnerId(1L, 7L)).thenReturn(0L);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> bookingService.archive(1L));
+
+        assertEquals("Esta estancia no tiene XML ni comunicación SES. Puedes eliminarla.", exception.getMessage());
+    }
+
+    @Test
+    void restoresArchivedBooking() {
+        Booking booking = sampleBooking(1);
+        booking.archive(java.time.OffsetDateTime.now());
+        Mockito.when(currentAppUserService.requireCurrentUserId()).thenReturn(7L);
+        Mockito.when(bookingRepository.findByIdAndOwnerId(1L, 7L)).thenReturn(Optional.of(booking));
+
+        bookingService.unarchive(1L);
+
+        assertEquals(false, booking.isArchived());
     }
 
     private Booking sampleBooking(int personCount) {

@@ -360,6 +360,103 @@ class BookingControllerTest {
 
     @Test
     @WithMockUser(username = "owner", roles = "OWNER")
+    void deletesBookingAndReturnsToList() throws Exception {
+        mockMvc.perform(post("/bookings/1/delete").with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/bookings"))
+            .andExpect(flash().attribute("flashMessage", "Estancia eliminada."))
+            .andExpect(flash().attribute("flashKind", "success"));
+
+        org.mockito.Mockito.verify(bookingService).delete(1L);
+    }
+
+    @Test
+    @WithMockUser(username = "owner", roles = "OWNER")
+    void redirectsBackToDetailWhenDeleteIsBlocked() throws Exception {
+        doThrow(new IllegalStateException("No se puede eliminar porque ya existe un XML o comunicación SES."))
+            .when(bookingService).delete(1L);
+
+        mockMvc.perform(post("/bookings/1/delete").with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/bookings/1"))
+            .andExpect(flash().attribute("flashKind", "error"));
+    }
+
+    @Test
+    @WithMockUser(username = "owner", roles = "OWNER")
+    void archivesBookingAndReturnsToList() throws Exception {
+        mockMvc.perform(post("/bookings/1/archive").with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/bookings"))
+            .andExpect(flash().attribute("flashMessage", "Estancia archivada. Ya no aparece en pendientes."))
+            .andExpect(flash().attribute("flashKind", "success"));
+
+        org.mockito.Mockito.verify(bookingService).archive(1L);
+    }
+
+    @Test
+    @WithMockUser(username = "owner", roles = "OWNER")
+    void restoresArchivedBookingAndReturnsToDetail() throws Exception {
+        mockMvc.perform(post("/bookings/1/unarchive").with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/bookings/1"))
+            .andExpect(flash().attribute("flashMessage", "Estancia recuperada."))
+            .andExpect(flash().attribute("flashKind", "success"));
+
+        org.mockito.Mockito.verify(bookingService).unarchive(1L);
+    }
+
+    @Test
+    @WithMockUser(username = "owner", roles = "OWNER")
+    void showsArchivedBookingsWhenArchivedFilterIsSelected() throws Exception {
+        Accommodation accommodation = new Accommodation("Casa Olivo", "H123456789", "VT-123");
+        when(accommodationService.findAll()).thenReturn(List.of(accommodation));
+        Booking booking = new Booking(
+            accommodation,
+            "CANCEL-1",
+            2,
+            LocalDate.of(2026, 3, 25),
+            BookingChannel.AIRBNB,
+            LocalDate.of(2026, 3, 27),
+            LocalDate.of(2026, 4, 1),
+            PaymentType.PLATF,
+            null,
+            "Airbnb",
+            null,
+            null
+        );
+        booking.archive(java.time.OffsetDateTime.now());
+        BookingListItem archivedItem = new BookingListItem(
+            booking,
+            2,
+            2,
+            true,
+            false,
+            BookingOperationalStatus.ARCHIVED,
+            0,
+            false,
+            "Fuera de pendientes.",
+            "XML preparado para descargar.",
+            CommunicationDispatchStatus.XML_READY
+        );
+
+        when(bookingService.findAll()).thenReturn(List.of());
+        when(bookingService.findAll(BookingFilter.INCOMPLETE)).thenReturn(List.of());
+        when(bookingService.findAll(BookingFilter.READY)).thenReturn(List.of());
+        when(bookingService.findAll(BookingFilter.TODAY)).thenReturn(List.of());
+        when(bookingService.findAll(BookingFilter.UPCOMING)).thenReturn(List.of());
+        when(bookingService.findAll(BookingFilter.ARCHIVED)).thenReturn(List.of(archivedItem));
+        when(bookingService.countArchived()).thenReturn(1L);
+
+        mockMvc.perform(get("/bookings").param("filter", "archived"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Estancias archivadas")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Archivada")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("CANCEL-1")));
+    }
+
+    @Test
+    @WithMockUser(username = "owner", roles = "OWNER")
     void keepsPlaceholderWhenSeveralAccommodationsAreAvailable() throws Exception {
         Accommodation firstAccommodation = new Accommodation("Casa Olivo", "H123456789", "VT-123");
         ReflectionTestUtils.setField(firstAccommodation, "id", 7L);
